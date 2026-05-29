@@ -51,7 +51,11 @@ let state = {
     recurringExpenses: [],
     emis: [],
     trips: [],
-    theme: "dark"
+    theme: "dark",
+    syncEnabled: false,
+    updatedAt: new Date().toISOString(),
+    lastSyncedAt: "",
+    syncStatus: "idle"
 };
 
 let trendChartInstance = null;
@@ -107,6 +111,10 @@ window.onload = function () {
     if (!state.pinCode) state.pinCode = "1234";
     if (!state.theme) state.theme = "dark";
     if (state.creditCardsEnabled === undefined) state.creditCardsEnabled = false;
+    if (state.syncEnabled === undefined) state.syncEnabled = false;
+    if (state.updatedAt === undefined) state.updatedAt = new Date().toISOString();
+    if (state.lastSyncedAt === undefined) state.lastSyncedAt = "";
+    if (state.syncStatus === undefined) state.syncStatus = "idle";
 
     /* ── v1.01 MIGRATION ─────────────────────────────────────
        Ensure every trip expense has categoryId + paymentId.
@@ -147,6 +155,9 @@ window.onload = function () {
         scheduleDailyReminder();
     }
     try { renderNewTripEmojiPicker(); } catch (e) { }
+    if (state.syncEnabled && typeof syncFromDrive === "function") {
+        syncFromDrive();
+    }
     wrapAllSelects();
     initLucideIcons();
 };
@@ -233,9 +244,23 @@ function cleanArchivedPayments() {
     } catch (e) { }
 }
 
+let syncTimeout = null;
+function debouncedPushToDrive() {
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(() => {
+        if (state.syncEnabled && typeof pushToDrive === "function") {
+            pushToDrive();
+        }
+    }, 3000);
+}
+
 function saveStateToLocalStorage() {
     cleanArchivedPayments();
+    state.updatedAt = new Date().toISOString();
     localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
+    if (state.syncEnabled) {
+        debouncedPushToDrive();
+    }
 }
 
 /* BANNER TOAST MESSAGES */

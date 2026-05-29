@@ -31,6 +31,19 @@ function syncSettingsFormFields() {
     if (creditCardsToggle) creditCardsToggle.checked = !!state.creditCardsEnabled;
     const lightToggle = document.getElementById("settingLightTheme");
     if (lightToggle) lightToggle.checked = (state.theme || "dark") === "light";
+    
+    // Cloud Sync Settings
+    const clientIdInput = document.getElementById("settingGoogleClientId");
+    if (clientIdInput) {
+        clientIdInput.value = state.googleClientId || "";
+    }
+    if (typeof renderSyncControls === "function") {
+        renderSyncControls();
+    }
+    if (typeof updateSyncStatus === "function") {
+        updateSyncStatus(state.syncEnabled ? state.syncStatus : "offline");
+    }
+
     toggleCycleDateSelector();
     syncNotificationSettings();
 }
