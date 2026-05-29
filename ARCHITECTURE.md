@@ -9,7 +9,10 @@
 ```
 index.html
 │
+├── manifest.json                  ← PWA Web App Manifest (external file)
 ├── styles.css                     ← All visual styling
+├── assets/
+│   └── favicon.png               ← App icon (transparent, 512x512+)
 │
 └── JS load order (sequential, globals shared via window scope)
     │
@@ -23,6 +26,52 @@ index.html
     ├── 8. recurring.js      ← reads/writes state.recurringExpenses, state.emis, state.transactions
     ├── 9. goals-trips.js    ← reads/writes state.savingGoals, state.trips, state.transactions
     └── 10. backup.js        ← reads full state for export; writes full state on import
+```
+
+---
+
+## PWA Manifest Setup
+
+**File:** `manifest.json` (external file at root, replaces embedded data URI)
+
+```json
+{
+  "name": "DabbuX Personal Finance",
+  "short_name": "DabbuX",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "assets/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+```
+
+**Why external manifest?**
+- ✅ Better browser caching (versioned separately from HTML)
+- ✅ Standard PWA best practice
+- ✅ Avoids data URI encoding issues
+- ✅ Icon path properly resolved
+
+**Icon requirements:**
+- **Format:** PNG with transparent background (no white box)
+- **Size:** 512x512 or larger
+- **Location:** `assets/favicon.png`
+
+**CSS optimizations (in `styles.css`):**
+```css
+img[src*="favicon"], img[src*="icon"] {
+  image-rendering: crisp-edges;        /* Prevent blur on scaling */
+  image-rendering: pixelated;          /* Pixel-perfect rendering */
+  -ms-interpolation-mode: nearest-neighbor;
+  mix-blend-mode: multiply;             /* Remove white background */
+}
 ```
 
 ---

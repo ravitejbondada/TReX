@@ -38,7 +38,11 @@ Then open `http://localhost:3000` (or whatever port) in Chrome.
 
 **iOS Safari:** Visit the URL → Share → "Add to Home Screen"
 
-The app already has all required PWA meta tags, a manifest, and a service-worker-compatible structure.
+The app already has all required PWA meta tags and an external manifest (`manifest.json`) for proper icon resolution.
+
+The app icon is served from `assets/favicon.png` and referenced by both the HTML favicon links and the PWA manifest.
+
+> If you update `assets/favicon.png`, clear the browser cache and hard refresh to ensure the new icon is loaded.
 
 ---
 
@@ -47,9 +51,10 @@ The app already has all required PWA meta tags, a manifest, and a service-worker
 ```
 dabbux/
 ├── index.html          HTML shell — all views + CDN script tags + module loaders
+├── manifest.json       External PWA manifest for proper icon resolution
 ├── styles.css          All app CSS (dark/light theme, glassmorphism, dropdowns)
 ├── assets/
-│   └── icon.png            App icon (favicon, Apple touch icon, PWA manifest icon)
+│   └── favicon.png        App icon (transparent, favicon + Apple touch icon + PWA icon)
 └── js/
     ├── core.js             State, boot, persistence, routing, theme, notifications
     ├── auth.js             PIN lock/unlock, biometrics, PIN change

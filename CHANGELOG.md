@@ -5,7 +5,73 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ---
 
+## [v2.1.1] 2026-05-29 — Fixed PWA manifest and optimized icon rendering
+
+**What changed:** Replaced embedded PWA manifest data URI with external `manifest.json` file. Removed stale base64-encoded images from HTML. Added CSS optimizations for crisp icon rendering and white background removal.
+
+**Files modified:**
+- `index.html` — removed two embedded base64 image data URIs (header logo line 39, lock screen logo line 68); updated `<link rel="manifest">` to point to external `manifest.json` instead of data URI
+- `manifest.json` — created new external PWA manifest file (replaces embedded data URI in HTML)
+- `styles.css` — added high-quality icon rendering rules: `image-rendering: crisp-edges`, `image-rendering: pixelated`, `mix-blend-mode: multiply` for white background removal
+- `assets/favicon.png` — replaced with new transparent icon (3D golden coin with green checkmark, no white background)
+
+**What this fixes:**
+- ✅ PWA icon no longer cached incorrectly (manifest now externally versioned)
+- ✅ Favicon renders crisp/pixel-perfect (no more blur/interpolation artifacts)
+- ✅ White background removed from icon display
+- ✅ Reduced HTML file size (removed large base64 strings)
+- ✅ Better cross-browser icon compatibility
+
+**Migration notes:**
+- Ensure `manifest.json` exists at project root alongside `index.html`
+- Ensure `assets/favicon.png` is the transparent version (1.7MB+)
+- Clear browser cache and hard refresh (Ctrl+Shift+R) to see changes
+
+---
+
 ## [v2.1] 2026-05-29 — Project renamed to DabbuX; deployed to GitHub Pages
+
+**What changed:** Renamed the project from "Trex" to "DabbuX — Personal Finance Made Personal". Replaced canvas-generated favicon with a static `assets/icon.png`. Deployed to GitHub Pages.
+
+**Live URL:** https://ravitejbondada.github.io/dabbux/
+**Repository:** https://github.com/ravitejbondada/dabbux
+
+**Files modified:**
+- `index.html` — updated `<title>`, `apple-mobile-web-app-title` meta, PWA manifest name/short_name/icon, header app name + tagline, lock screen title. Replaced dynamic `<link id="dynamicFavicon">` and `<link id="dynamicAppleIcon">` with static `<link rel="icon">` and `<link rel="apple-touch-icon">` pointing to `assets/icon.png`
+- `js/core.js` — updated file header; removed `generateDynamicIcons()` function and its call from `window.onload`; favicon is now static
+- `README.md` — updated title, added live URL and repo link, project folder name, added `assets/` to project structure
+- `ARCHITECTURE.md` — updated title
+- `FUNCTIONS.md` — updated title; marked `generateDynamicIcons()` as deprecated
+- `CHANGELOG.md` — updated title and added this entry
+
+**Migration notes:**
+- The `assets/` directory must exist at the project root with `icon.png` inside it
+- `generateDynamicIcons()` in `core.js` has been removed; no other code depends on it
+
+---
+
+## [v2.0] 2026-05-29 — Option B module split
+
+**What changed:** Broke the monolithic `Trex_v2_0.html` (8,191 lines) into 12 focused files.
+
+**Files created:**
+- `index.html` — HTML shell only, loads CSS and JS modules
+- `styles.css` — all CSS extracted from inline `<style>` block
+- `js/core.js` — state, boot, routing, persistence, utilities
+- `js/auth.js` — PIN lock/unlock, biometrics, PIN change
+- `js/dashboard.js` — budget widgets, heatmap, quick logs, alerts, charts
+- `js/transactions.js` — expense form, ledger, history filter
+- `js/reports.js` — Chart.js renderers, report modes, MoM comparison
+- `js/settings.js` — settings form, categories/payments CRUD, CC billing logic
+- `js/credit-cards.js` — card view renderer, card analytics chart
+- `js/recurring.js` — recurring expenses, EMI engine, date utilities
+- `js/goals-trips.js` — saving goals, trip budgets, trip expenses, ledger sync
+- `js/backup.js` — JSON/CSV export & import, state restore
+- `README.md`, `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`
+
+**No logic changed** — pure structural refactor. All 226 functions preserved verbatim.
+
+---
 
 **What changed:** Renamed the project from "Trex" to "DabbuX — Personal Finance Made Personal". Replaced canvas-generated favicon with a static `assets/icon.png`. Deployed to GitHub Pages.
 

@@ -12,7 +12,7 @@ To find where to add/edit something, scan the relevant section header then go to
 |---|---|
 | `forceDropdownDarkTheme(sel)` | Applies dark colour scheme inline to a `<select>` and its `<option>` elements |
 | `wrapAllSelects(root?)` | Wraps all `.app-dropdown` selects in a `.select-wrap` div for custom chevron styling |
-| `generateDynamicIcons()` | **Deprecated — no longer used.** Icon is now served statically from `assets/icon.png`. Previously drew the logo to canvas and set the favicon + Apple touch icon |
+| `generateDynamicIcons()` | **Deprecated — no longer used.** Static app icon is now served from `assets/favicon.png`, with the PWA manifest moved to external `manifest.json`. Previously drew the logo to canvas and set the favicon + Apple touch icon |
 | `initLucideIcons(root?)` | Calls `lucide.createIcons()` on the document or a scoped root element |
 | `cleanArchivedPayments()` | Removes archived payments that have zero linked transactions |
 | `saveStateToLocalStorage()` | Serializes `state` to `localStorage` key `androidWalletState_v4` |
