@@ -65,7 +65,8 @@ dabbux/
     ├── credit-cards.js     Credit card view, card analytics, payment lock UI
     ├── recurring.js        Recurring expenses, EMI engine, date utilities
     ├── goals-trips.js      Saving goals, trip budgets, trip expense tracking
-    └── backup.js           JSON/CSV export & import, state restore
+    ├── backup.js           JSON/CSV export & import, state restore
+    └── sync.js             Google Drive OAuth, push/pull sync, conflict resolution, onboarding
 ```
 
 ---
@@ -79,6 +80,7 @@ dabbux/
 | Charts | Chart.js (CDN) |
 | Font | Plus Jakarta Sans (Google Fonts) |
 | Storage | `localStorage` key: `androidWalletState_v4` |
+| Cloud Sync | Google Drive REST API v3 + Google Identity Services (GIS) |
 | JS | Vanilla ES6+ — no framework, no bundler |
 
 ---
@@ -90,18 +92,24 @@ On boot, `window.onload` reads it back. If the key is missing, seed data (defaul
 
 **localStorage key:** `androidWalletState_v4`
 
+> ⚠️ Local-only data is lost if the browser cache is cleared. Enable Google Drive sync in Settings to keep a persistent backup.
+
 ---
 
-## Adding Cloud Sync (future)
+## Google Drive Cloud Sync
 
-The architecture is designed for a local-first sync layer. When ready:
+Cloud sync is **live** via `js/sync.js`. It uses the Google Identity Services (GIS) implicit OAuth flow and the Drive REST API v3 `appDataFolder` scope — no server required.
 
-1. Create `js/sync.js` — Google Drive OAuth + read/write helpers
-2. In `core.js`, call `syncToDrive()` at the end of `saveStateToLocalStorage()`
-3. In `window.onload`, call `syncFromDrive()` after loading localStorage
-4. Add `<script src="js/sync.js"></script>` to `index.html` after `core.js`
+**Key behaviours:**
+- On every `saveStateToLocalStorage()` call a debounced (3 s) `pushToDrive()` is triggered.
+- On `window.onload`, `syncFromDrive()` pulls the remote state and applies last-write-wins conflict resolution.
+- A **Migration modal** (Merge / Fresh Start) appears before OAuth when the user has existing local data.
+- An **Onboarding modal** warns new users about local-only data loss risks and prompts them to connect Drive. Uses `sessionStorage` so it re-triggers in incognito.
+- **Reset Sync** deletes the `dabbux_sync_v4.json` file from `appDataFolder` and disconnects the device cleanly.
 
-See `ARCHITECTURE.md` for the full sync design pattern.
+**Drive file:** `dabbux_sync_v4.json` inside the `appDataFolder` (private to this app, invisible to the user's Drive).
+
+See `ARCHITECTURE.md` for the full sync design and `FUNCTIONS.md` for the `sync.js` function index.
 
 ---
 

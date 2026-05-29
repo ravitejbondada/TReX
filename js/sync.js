@@ -43,8 +43,9 @@ function initGoogleAuth(forceInteractive = false) {
             saveStateToLocalStorage();
             updateSyncStatus("idle");
             showNotification("Google Drive connected!");
-            
-            // Run initial pull/push
+            renderSyncControls();
+
+            // Run initial pull/push — migration choice already applied before auth
             syncFromDrive();
         }
     });
@@ -491,15 +492,39 @@ window.addEventListener("offline", () => {
 });
 
 /**
- * Initiates the Google OAuth authorization flow manually
+ * Initiates the Google OAuth authorization flow manually.
+ * If local data exists, prompts user to Merge or Fresh Start before OAuth.
  */
-function connectGoogleSync() {
+async function connectGoogleSync() {
+    const hasLocalData = (state.transactions && state.transactions.length > 0) ||
+                         (state.savingGoals && state.savingGoals.length > 0) ||
+                         (state.recurringExpenses && state.recurringExpenses.length > 0);
+
+    let migrationChoice = "merge"; // default
+    if (hasLocalData) {
+        migrationChoice = await showMigrationModal();
+        if (!migrationChoice) return; // user cancelled
+    }
+
     initGoogleAuth(true);
+
+    // Store choice so the callback in initGoogleAuth can act on it
+    window._pendingSyncMigration = migrationChoice;
+
     getValidToken(true)
-        .then(() => {
+        .then(async () => {
+            if (window._pendingSyncMigration === "fresh") {
+                // Fresh Start: pull remote data and overwrite local
+                await syncFromDrive();
+            } else {
+                // Merge: push local data up to Drive (syncFromDrive handles if remote newer)
+                await pushToDrive();
+            }
+            window._pendingSyncMigration = null;
             renderSyncControls();
         })
         .catch(err => {
+            window._pendingSyncMigration = null;
             console.error("Connection failed:", err);
             updateSyncStatus("error", err.message || "Auth error");
         });
@@ -556,29 +581,221 @@ function renderSyncControls() {
     const container = document.getElementById("syncControlsContainer");
     if (!container) return;
     container.innerHTML = "";
-    
+
     if (state.syncEnabled) {
         container.innerHTML = `
             <button onclick="triggerManualSync()"
                 class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95">
                 <i data-lucide="refresh-cw" class="w-4 h-4"></i> Sync Now
             </button>
-            <button onclick="disconnectGoogleSync()"
-                class="w-full bg-slate-900 hover:bg-slate-850 border border-slate-800 text-rose-450 font-bold py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95">
-                <i data-lucide="log-out" class="w-4 h-4"></i> Disconnect Google Drive
-            </button>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="disconnectGoogleSync()"
+                    class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-bold py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95">
+                    <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Disconnect
+                </button>
+                <button onclick="resetSyncData()"
+                    class="bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/50 text-rose-400 font-bold py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Reset Sync
+                </button>
+            </div>
         `;
     } else {
         container.innerHTML = `
             <button onclick="connectGoogleSync()"
                 class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95">
-                <i data-lucide="plus-circle" class="w-4 h-4"></i> Connect Google Drive
+                <i data-lucide="cloud-upload" class="w-4 h-4"></i> Connect Google Drive
             </button>
         `;
     }
-    
+
     if (typeof initLucideIcons === "function") {
         initLucideIcons(container);
     }
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   ONBOARDING MODAL — shown once per session when sync is not enabled.
+   Uses sessionStorage so it reappears in every incognito/private session.
+───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Shows the onboarding sync recommendation modal.
+ * Fires on first boot if sync is disabled. Dismissed state is stored in
+ * sessionStorage so it retriggers on new tabs/incognito sessions.
+ */
+function showOnboardingModal() {
+    if (document.getElementById("syncOnboardingModal")) return;
+
+    const div = document.createElement("div");
+    div.id = "syncOnboardingModal";
+    div.className = "fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-[105] flex items-end justify-center p-4 pb-8";
+    div.innerHTML = `
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 animate-slide-up">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 shrink-0 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mt-0.5">
+                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-extrabold text-white leading-tight">Your data is local-only</h3>
+                    <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                        DabbuX stores all your data in this browser. If you <strong class="text-amber-400">clear your cache, switch browsers, or use incognito</strong>, your transactions, goals, and settings will be permanently lost.
+                    </p>
+                </div>
+            </div>
+            <p class="text-[10px] text-slate-500 leading-relaxed border-t border-slate-800 pt-3">
+                Connect Google Drive to keep a private, encrypted backup that syncs across your devices — no server required.
+            </p>
+            <div class="flex gap-2">
+                <button onclick="document._dismissOnboarding()" 
+                    class="flex-1 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition-all active:scale-95">
+                    Not now
+                </button>
+                <button onclick="document._dismissOnboarding(); switchScreen('settings'); connectGoogleSync();"
+                    class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95">
+                    <i data-lucide="cloud" class="w-3.5 h-3.5"></i> Enable Sync
+                </button>
+            </div>
+        </div>
+    `;
+
+    document._dismissOnboarding = () => {
+        const el = document.getElementById("syncOnboardingModal");
+        if (el) el.remove();
+        try { sessionStorage.setItem("dabbux_onboarding_seen", "1"); } catch (e) {}
+    };
+
+    document.body.appendChild(div);
+    if (typeof initLucideIcons === "function") initLucideIcons(div);
+}
+
+/**
+ * Called from core.js window.onload — shows onboarding modal if conditions met:
+ * - sync is not enabled
+ * - not already seen this session (sessionStorage key absent → triggers in incognito)
+ */
+function checkAndShowOnboardingModal() {
+    if (state.syncEnabled) return;
+    try {
+        if (sessionStorage.getItem("dabbux_onboarding_seen")) return;
+    } catch (e) { /* sessionStorage blocked — show anyway */ }
+    // Small delay so the dashboard renders first
+    setTimeout(showOnboardingModal, 1200);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MIGRATION MODAL — shown before OAuth when local data already exists.
+   Returns a Promise resolving to "merge", "fresh", or null (cancelled).
+───────────────────────────────────────────────────────────────────────── */
+
+function showMigrationModal() {
+    return new Promise(resolve => {
+        if (document.getElementById("syncMigrationModal")) {
+            document.getElementById("syncMigrationModal").remove();
+        }
+
+        const txCount = (state.transactions || []).length;
+        const goalCount = (state.savingGoals || []).length;
+
+        const div = document.createElement("div");
+        div.id = "syncMigrationModal";
+        div.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[110] flex items-center justify-center p-4";
+        div.innerHTML = `
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                        <i data-lucide="cloud-upload" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-extrabold text-white">Connect Google Drive</h3>
+                        <p class="text-[10px] text-slate-400 mt-0.5">You have existing local data. Choose how to proceed:</p>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-slate-950/60 rounded-2xl border border-slate-800 text-[10px] text-slate-400">
+                    Local device has <strong class="text-white">${txCount} transaction${txCount !== 1 ? "s" : ""}</strong>
+                    and <strong class="text-white">${goalCount} goal${goalCount !== 1 ? "s" : ""}</strong>.
+                </div>
+
+                <div class="space-y-2">
+                    <button id="btnMigrationMerge"
+                        class="w-full text-left p-3.5 bg-indigo-950/50 hover:bg-indigo-950/80 border border-indigo-500/30 rounded-2xl transition-all active:scale-[0.99] group">
+                        <span class="text-xs font-extrabold text-indigo-300 flex items-center gap-2">
+                            <i data-lucide="upload-cloud" class="w-4 h-4"></i> Merge — Upload local data to Cloud
+                        </span>
+                        <p class="text-[9px] text-slate-400 mt-1 ml-6">Your current data is pushed to Google Drive. Any existing cloud data is overwritten with this device's version.</p>
+                    </button>
+                    <button id="btnMigrationFresh"
+                        class="w-full text-left p-3.5 bg-slate-950/60 hover:bg-slate-900 border border-slate-800 rounded-2xl transition-all active:scale-[0.99] group">
+                        <span class="text-xs font-extrabold text-slate-200 flex items-center gap-2">
+                            <i data-lucide="download-cloud" class="w-4 h-4"></i> Fresh Start — Replace with Cloud data
+                        </span>
+                        <p class="text-[9px] text-slate-400 mt-1 ml-6">Cloud data replaces your local data. Your current local transactions and settings will be overwritten.</p>
+                    </button>
+                </div>
+
+                <button id="btnMigrationCancel"
+                    class="w-full bg-transparent border border-slate-800 text-slate-500 hover:text-slate-300 font-bold py-2 rounded-xl text-[10px] transition-all active:scale-95">
+                    Cancel
+                </button>
+            </div>
+        `;
+
+        function cleanup(choice) {
+            div.remove();
+            resolve(choice);
+        }
+
+        document.body.appendChild(div);
+        if (typeof initLucideIcons === "function") initLucideIcons(div);
+
+        document.getElementById("btnMigrationMerge").onclick = () => cleanup("merge");
+        document.getElementById("btnMigrationFresh").onclick = () => cleanup("fresh");
+        document.getElementById("btnMigrationCancel").onclick = () => cleanup(null);
+    });
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   RESET SYNC — deletes the appDataFolder file from Drive, resets local flags.
+───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Deletes the DabbuX sync file from Google Drive appDataFolder
+ * and resets all local sync state. Provides a clean slate for re-setup.
+ */
+async function resetSyncData() {
+    const confirmed = await customConfirm(
+        "This will permanently delete your DabbuX backup from Google Drive and disconnect sync on this device. Your local data will remain untouched. This cannot be undone.",
+        "Reset Sync Data",
+        "Delete & Reset"
+    );
+    if (!confirmed) return;
+
+    updateSyncStatus("syncing");
+    try {
+        const token = await getValidToken(false);
+        const fileId = await findSyncFileId(token);
+        if (fileId) {
+            const delUrl = `https://www.googleapis.com/drive/v3/files/${fileId}`;
+            await fetchWithRetry(delUrl, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            console.log("DabbuX Drive sync file deleted.");
+        }
+    } catch (e) {
+        console.error("resetSyncData Drive delete failed:", e);
+        // Still reset local state even if Drive call fails
+    }
+
+    // Reset local sync flags
+    state.syncEnabled = false;
+    state.lastSyncedAt = "";
+    state.syncStatus = "idle";
+    accessToken = null;
+    tokenExpiry = 0;
+    localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
+
+    renderSyncControls();
+    updateSyncStatus("offline");
+    showNotification("Sync data reset. Google Drive backup deleted.");
+}

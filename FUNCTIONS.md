@@ -1,12 +1,12 @@
 # DabbuX — Function Index
 
-Searchable reference of all 226 functions. Format: `functionName` — what it does.
+Searchable reference of all 244 functions. Format: `functionName` — what it does.
 
 To find where to add/edit something, scan the relevant section header then go to that file.
 
 ---
 
-## core.js — App Core (11 functions)
+## core.js — App Core (12 functions)
 
 | Function | Description |
 |---|---|
@@ -15,12 +15,13 @@ To find where to add/edit something, scan the relevant section header then go to
 | `generateDynamicIcons()` | **Deprecated — no longer used.** Static app icon is now served from `assets/favicon.png`, with the PWA manifest moved to external `manifest.json`. Previously drew the logo to canvas and set the favicon + Apple touch icon |
 | `initLucideIcons(root?)` | Calls `lucide.createIcons()` on the document or a scoped root element |
 | `cleanArchivedPayments()` | Removes archived payments that have zero linked transactions |
-| `saveStateToLocalStorage()` | Serializes `state` to `localStorage` key `androidWalletState_v4` |
+| `saveStateToLocalStorage()` | Serializes `state` to `localStorage` key `androidWalletState_v4`; sets `state.updatedAt` timestamp; triggers debounced `pushToDrive()` if sync is enabled |
 | `showNotification(message)` | Shows the bottom toast banner for 2.8 seconds |
 | `customConfirm(message, title?, okLabel?)` | Promise-based confirm dialog replacing `window.confirm`. Returns `true`/`false` |
 | `applyTheme(theme)` | Sets `data-theme` attribute on `<html>` for light/dark CSS switching |
 | `toggleThemeSetting()` | Reads the theme toggle checkbox and calls `applyTheme()` + saves state |
 | `switchScreen(viewName)` | Main router — hides all view panels, shows target, updates nav tabs, calls init render |
+| `checkAndShowOnboardingModal()` | Called from `window.onload`; delegates to `sync.js` to show the Drive onboarding prompt if sync is disabled and not yet seen this session |
 
 ---
 
@@ -318,3 +319,63 @@ To find where to add/edit something, scan the relevant section header then go to
 | `exportDataToJSON()` | Builds and downloads a full JSON backup file |
 | `exportDataToCSV()` | Builds and downloads a full CSV backup file |
 | `importBackupFile(e)` | File input handler — reads JSON or CSV and calls `applyFullStateRestore()` |
+
+---
+
+## sync.js — Google Drive Cloud Sync (18 functions)
+
+**Auth & Token Management**
+
+| Function | Description |
+|---|---|
+| `initGoogleAuth(forceInteractive?)` | Initialises the GIS `TokenClient` with the configured Client ID and `drive.appdata` scope; sets up the OAuth callback |
+| `getValidToken(forceInteractive?)` | Returns a valid OAuth token from cache if not expired (1-min grace); otherwise requests one silently or interactively via GIS |
+
+**Drive API Wrappers**
+
+| Function | Description |
+|---|---|
+| `fetchWithRetry(url, options, retries?)` | `fetch` wrapper with exponential backoff `[2s, 5s, 15s]`; auto-refreshes token on 401 |
+| `findSyncFileId(token)` | Queries Drive `appDataFolder` for `dabbux_sync_v4.json`; returns the file ID or `null` |
+| `createSyncFile(token, content)` | Creates `dabbux_sync_v4.json` in `appDataFolder` with the given JSON string |
+| `updateSyncFile(token, fileId, content)` | Patches (multipart MIME) the content of an existing Drive sync file |
+| `downloadSyncFile(token, fileId)` | Downloads and JSON-parses the remote sync file |
+
+**Sync Engine**
+
+| Function | Description |
+|---|---|
+| `pushToDrive()` | Serializes `state` and uploads it to Drive; updates `state.lastSyncedAt` on success |
+| `syncFromDrive()` | Pulls the remote state, compares `updatedAt` timestamps, and applies last-write-wins or shows the conflict modal |
+| `applyRemoteState(remoteState)` | Normalizes and applies a remote state object to local state, then saves to `localStorage` |
+
+**Status UI**
+
+| Function | Description |
+|---|---|
+| `updateSyncStatus(status, message?)` | Updates the sync status indicator element in the settings panel (`idle` / `syncing` / `error` / `offline`) |
+
+**Conflict Resolution**
+
+| Function | Description |
+|---|---|
+| `showConflictModal(remoteState)` | Shows a modal when both local and remote have diverged; user chooses "Keep Local" or "Use Remote" |
+
+**Settings Controls**
+
+| Function | Description |
+|---|---|
+| `connectGoogleSync()` | Entry point for enabling sync — shows migration modal if local data exists, then starts OAuth, then pushes or pulls based on user choice |
+| `disconnectGoogleSync()` | Confirms then disables sync, clears token, resets sync state fields |
+| `triggerManualSync()` | Runs a full `syncFromDrive()` cycle on demand from the Settings panel |
+| `saveCustomClientId()` | Applies or clears a custom OAuth Client ID from the settings form |
+| `renderSyncControls()` | Renders the Connect / Sync Now / Disconnect / Reset Sync button set based on current `state.syncEnabled` |
+
+**Onboarding, Migration & Reset**
+
+| Function | Description |
+|---|---|
+| `showOnboardingModal()` | Injects the bottom-sheet onboarding modal warning about local-only data risk |
+| `checkAndShowOnboardingModal()` | Gate function called from `window.onload`; fires `showOnboardingModal()` after 1.2 s if sync is off and `sessionStorage` key is absent (re-triggers in incognito) |
+| `showMigrationModal()` | Promise-based modal shown before OAuth when local data exists; resolves to `"merge"`, `"fresh"`, or `null` (cancelled) |
+| `resetSyncData()` | Deletes `dabbux_sync_v4.json` from Drive and resets all local sync state; local app data is preserved |

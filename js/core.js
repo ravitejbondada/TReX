@@ -158,6 +158,9 @@ window.onload = function () {
     if (state.syncEnabled && typeof syncFromDrive === "function") {
         syncFromDrive();
     }
+    if (typeof checkAndShowOnboardingModal === "function") {
+        checkAndShowOnboardingModal();
+    }
     wrapAllSelects();
     initLucideIcons();
 };

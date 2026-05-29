@@ -1,22 +1,29 @@
-# Active Work Log - DabbuX Cloud Sync Implementation
+# Active Work Log - DabbuX Cloud Sync Updates
 
 ## [Current Phase]
-Complete & Verified
+Phase 2-4: COMPLETE
 
 ## [Completed Tasks]
-- Added sync fields to state in `core.js` (`syncEnabled`, `updatedAt`, `lastSyncedAt`, `syncStatus`)
-- Updated `saveStateToLocalStorage()` in `core.js` to update `state.updatedAt` and trigger debounced sync pushes
-- Added Google GIS and API client script tags to `index.html`
-- Integrated `js/sync.js` into `index.html` loading order
-- Implemented full sync logic in `js/sync.js` (including implicit flow Auth, silent/automatic token refreshes, exponential backoff retries, search/download/upload Drive API wrapper calls, and window focus/online listeners)
-- Integrated `syncFromDrive()` on app boot (`window.onload`) in `core.js`
-- Added dynamic glassmorphism Sync Conflict Resolution Modal UI with options to "Replace Local", "Keep Local", or "Cancel Sync"
-- Created the Settings panel UI block for Google Drive Cloud Sync including status indicators, action controls ("Sync Now", "Disconnect", "Connect"), and advanced expandable Custom Client ID configurations
-- Integrated sync UI rendering controls inside settings forms (`js/settings.js`)
-- Validated "First Run / New Device" scenario (automatic merge into empty local state from remote drive)
+- Reordered UI: Relocated 'Google Drive Cloud Sync' section directly under 'Base Engine Settings' in `index.html`.
+- **Onboarding Modal** (`showOnboardingModal` / `checkAndShowOnboardingModal` in `js/sync.js`):
+  - Bottom-sheet style modal fires 1.2s after boot if sync is disabled.
+  - Uses `sessionStorage` key so it retriggers in incognito/new sessions.
+  - "Enable Sync" button navigates to Settings and opens `connectGoogleSync()`.
+  - Hooked into `window.onload` in `js/core.js` via `checkAndShowOnboardingModal()`.
+- **Migration Modal** (`showMigrationModal` in `js/sync.js`):
+  - Promise-based modal shown before OAuth when local data exists.
+  - Options: "Merge" (push local to Drive) or "Fresh Start" (pull cloud over local).
+  - "Cancel" aborts the auth flow entirely.
+  - Integrated into `connectGoogleSync()`.
+- **Reset Sync** (`resetSyncData` in `js/sync.js`):
+  - Finds and DELETEs `dabbux_sync_v4.json` from Google Drive `appDataFolder`.
+  - Resets local `syncEnabled`, `lastSyncedAt`, `syncStatus`, clears token.
+  - Guarded by `customConfirm()` before execution.
+  - "Reset Sync" button added to `renderSyncControls()` beside "Disconnect".
 
 ## [Pending Tasks]
-- None (All integration objectives achieved)
+None. All requested features implemented.
 
-## [Next Immediate Step]
-Final report to the user.
+## [Files Modified]
+- `js/sync.js` — Added: `showOnboardingModal`, `checkAndShowOnboardingModal`, `showMigrationModal`, `resetSyncData`; updated `connectGoogleSync`, `renderSyncControls`, and `initGoogleAuth` callback.
+- `js/core.js` — Added `checkAndShowOnboardingModal()` call in `window.onload`.

@@ -5,6 +5,24 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ---
 
+## [v2.3] 2026-05-30 — Google Drive Cloud Sync
+
+**What changed:** Implemented full Google Drive `appDataFolder` sync engine with onboarding, migration, and reset capabilities.
+
+**Files modified:**
+- [js/sync.js](file:///c:/VS_Code/dabbux/js/sync.js) — **new file**. Added: OAuth via GIS (`initGoogleAuth`, `getValidToken`); Drive REST API wrappers (`fetchWithRetry`, `findSyncFileId`, `createSyncFile`, `updateSyncFile`, `downloadSyncFile`); sync engine (`pushToDrive`, `syncFromDrive`, `applyRemoteState`); conflict modal (`showConflictModal`); status UI (`updateSyncStatus`); settings controls (`connectGoogleSync`, `disconnectGoogleSync`, `triggerManualSync`, `saveCustomClientId`, `renderSyncControls`); onboarding modal (`showOnboardingModal`, `checkAndShowOnboardingModal`); migration modal (`showMigrationModal`); reset (`resetSyncData`).
+- [js/core.js](file:///c:/VS_Code/dabbux/js/core.js) — added `syncEnabled`, `updatedAt`, `lastSyncedAt`, `syncStatus`, `googleClientId` to `state`; `saveStateToLocalStorage()` now sets `updatedAt` and triggers debounced `pushToDrive()`; `window.onload` calls `syncFromDrive()` and `checkAndShowOnboardingModal()`.
+- [index.html](file:///c:/VS_Code/dabbux/index.html) — added GIS and Drive API CDN script tags; injected Cloud Sync settings UI block (status indicator, Client ID field, sync controls container); relocated Cloud Sync section to appear directly below Base Engine Settings; registered `<script src="js/sync.js">`.
+
+**Features shipped:**
+- **Onboarding modal** — bottom-sheet warning fires 1.2 s after boot when sync is off; uses `sessionStorage` so it retriggers in every incognito session.
+- **Migration modal** — shown before OAuth when local data exists; user chooses "Merge" (push local to Drive) or "Fresh Start" (pull cloud over local); cancel aborts auth.
+- **Reset Sync** — deletes `dabbux_sync_v4.json` from Drive and disconnects; local data untouched.
+- **Conflict resolution** — last-write-wins by `updatedAt`; conflict modal shown when both sides have data and timestamps diverge.
+- **Exponential backoff** — `fetchWithRetry()` retries failed Drive calls at 2 s, 5 s, 15 s; token auto-refreshed on 401.
+
+---
+
 ## [v2.2] 2026-05-29 — Clean onboarding and empty state handling for new users
 
 **What changed:** Removed all dummy/mock transactions, mock saving goals, mock quick logs, and specific credit card defaults to ensure a clean slate onboarding experience for new users. Added robust empty state views, budget placeholder guidance, and safety checks for default payment references.
@@ -85,50 +103,6 @@ Files listed are the ones modified. Always update this on any meaningful change.
 - `README.md`, `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`
 
 **No logic changed** — pure structural refactor. All 226 functions preserved verbatim.
-
----
-
-**What changed:** Renamed the project from "Trex" to "DabbuX — Personal Finance Made Personal". Replaced canvas-generated favicon with a static `assets/icon.png`. Deployed to GitHub Pages.
-
-**Live URL:** https://ravitejbondada.github.io/dabbux/
-**Repository:** https://github.com/ravitejbondada/dabbux
-
-**Files modified:**
-- `index.html` — updated `<title>`, `apple-mobile-web-app-title` meta, PWA manifest name/short_name/icon, header app name + tagline, lock screen title. Replaced dynamic `<link id="dynamicFavicon">` and `<link id="dynamicAppleIcon">` with static `<link rel="icon">` and `<link rel="apple-touch-icon">` pointing to `assets/icon.png`
-- `js/core.js` — updated file header; removed `generateDynamicIcons()` function and its call from `window.onload`; favicon is now static
-- `README.md` — updated title, added live URL and repo link, project folder name, added `assets/` to project structure
-- `ARCHITECTURE.md` — updated title
-- `FUNCTIONS.md` — updated title; marked `generateDynamicIcons()` as deprecated
-- `CHANGELOG.md` — updated title and added this entry
-
-**Migration notes:**
-- The `assets/` directory must exist at the project root with `icon.png` inside it
-- `generateDynamicIcons()` in `core.js` has been removed; no other code depends on it
-
----
-
-## [v2.0] 2026-05-29 — Option B module split
-
-**What changed:** Broke the monolithic `Trex_v2_0.html` (8,191 lines) into 12 focused files.
-
-**Files created:**
-- `index.html` — HTML shell only, loads CSS and JS modules
-- `styles.css` — all CSS extracted from inline `<style>` block
-- `js/core.js` — state, boot, routing, persistence, utilities
-- `js/auth.js` — PIN lock/unlock, biometrics, PIN change
-- `js/dashboard.js` — budget widgets, heatmap, quick logs, alerts, charts
-- `js/transactions.js` — expense form, ledger, history filter
-- `js/reports.js` — Chart.js renderers, report modes, MoM comparison
-- `js/settings.js` — settings form, categories/payments CRUD, CC billing logic
-- `js/credit-cards.js` — card view renderer, card analytics chart
-- `js/recurring.js` — recurring expenses, EMI engine, date utilities
-- `js/goals-trips.js` — saving goals, trip budgets, trip expenses, ledger sync
-- `js/backup.js` — JSON/CSV export & import, state restore
-- `README.md`, `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`
-
-**No logic changed** — pure structural refactor. All 226 functions preserved verbatim.
-
----
 
 ## [v2.0] 2026-05-28 — DabbuX v2.0 single-file release
 

@@ -25,7 +25,8 @@ index.html
     ├── 7. credit-cards.js   ← reads state via settings.js helpers; renders card views
     ├── 8. recurring.js      ← reads/writes state.recurringExpenses, state.emis, state.transactions
     ├── 9. goals-trips.js    ← reads/writes state.savingGoals, state.trips, state.transactions
-    └── 10. backup.js        ← reads full state for export; writes full state on import
+    ├── 10. backup.js        ← reads full state for export; writes full state on import
+    └── 11. sync.js          ← Google Drive OAuth, push/pull, conflict resolution, onboarding/migration/reset
 ```
 
 ---
@@ -123,7 +124,14 @@ let state = {
   ],
   recurringExpenses: [],
   emis: [],
-  trips: []
+  trips: [],
+
+  // ── Cloud Sync (sync.js) ──────────────────────────────────────
+  syncEnabled: false,          // true once Google Drive is authorized
+  updatedAt: "",               // ISO timestamp set on every saveStateToLocalStorage()
+  lastSyncedAt: "",            // ISO timestamp of the most recent successful Drive push
+  syncStatus: "idle",          // "idle" | "syncing" | "error" | "offline"
+  googleClientId: ""           // custom OAuth Client ID (falls back to DEFAULT_CLIENT_ID)
 }
 ```
 
@@ -249,29 +257,57 @@ Both formats are versioned via `BACKUP_FORMAT_VERSION` constant in `backup.js`.
 
 ---
 
-## Cloud Sync — Design Pattern (not yet implemented)
+## Cloud Sync — Implementation (js/sync.js)
 
-Recommended approach: **local-first, Drive as secondary store**.
+Architecture: **local-first, Google Drive `appDataFolder` as secondary store**.
+No backend — all auth happens via Google Identity Services (GIS) in-browser.
 
+### Drive File
+`dabbux_sync_v4.json` stored in `appDataFolder` (private, not visible in user's Drive UI).
+
+### Boot Sequence
 ```
-App boot:
-  1. Load localStorage immediately (instant, works offline)
-  2. Background fetch from Drive
-  3. Compare timestamps → if Drive is newer, merge into state → saveStateToLocalStorage()
-
-On state change:
-  1. saveStateToLocalStorage()  ← already called everywhere
-  2. debounced pushToDrive()    ← add this call here
-
-Files to create/modify:
-  - js/sync.js          (new) Google OAuth + Drive read/write + conflict resolution
-  - core.js             (modify) add syncToDrive() call in saveStateToLocalStorage()
-  - window.onload       (modify) add syncFromDrive() after localStorage load
-  - index.html          (modify) add <script src="js/sync.js"> after core.js
+window.onload (core.js):
+  1. Load state from localStorage            ← instant, works offline
+  2. syncFromDrive()  (if syncEnabled)       ← pull remote, apply if newer
+  3. checkAndShowOnboardingModal()           ← prompt if sync still disabled
 ```
 
-Conflict resolution strategy: **last-write-wins** using an `updatedAt` ISO timestamp
-added to the state root. Single-user app — no CRDT needed.
+### On State Change
+```
+saveStateToLocalStorage() → sets state.updatedAt = now → debounced pushToDrive() (3 s)
+```
+
+### Conflict Resolution
+Last-write-wins using `state.updatedAt` ISO timestamp:
+- `remoteTime === localTime` → already in sync, no-op
+- `remoteTime > localTime` AND local is empty → apply remote (new device)
+- `remoteTime > localTime` AND local has data → show **Conflict Modal** (keep local / use remote)
+- `localTime > remoteTime` → push local to Drive
+
+### Auth Flow
+- GIS `initTokenClient` with `drive.appdata` scope
+- `getValidToken(forceInteractive?)` — returns cached token if valid (1-min grace), else requests silently or interactively
+- Token refreshed on 401 inside `fetchWithRetry()`
+- `fetchWithRetry()` implements exponential backoff: `[2s, 5s, 15s]` retries
+
+### Onboarding Modal
+- `checkAndShowOnboardingModal()` called from `window.onload` after sync attempt
+- Shown if `!state.syncEnabled` and `sessionStorage` key `dabbux_onboarding_seen` is absent
+- `sessionStorage` ensures it re-triggers every incognito session
+- "Enable Sync" CTA navigates to Settings and calls `connectGoogleSync()`
+
+### Migration Modal (Merge / Fresh Start)
+- Shown inside `connectGoogleSync()` before OAuth when local data exists
+- **Merge:** `pushToDrive()` after auth — local state wins, overwrites cloud
+- **Fresh Start:** `syncFromDrive()` after auth — cloud state overwrites local
+- Cancel aborts the entire auth flow
+
+### Reset Sync
+- `resetSyncData()` — finds and DELETEs `dabbux_sync_v4.json` from Drive
+- Resets `state.syncEnabled`, `lastSyncedAt`, `syncStatus`; clears in-memory token
+- Local data is **never** touched — only the Drive file is deleted
+- Surfaced as "Reset Sync" button in the Cloud Sync settings panel
 
 ---
 
