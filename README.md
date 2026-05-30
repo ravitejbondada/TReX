@@ -102,10 +102,18 @@ Cloud sync is **live** via `js/sync.js`. It uses the Google Identity Services (G
 
 **Key behaviours:**
 - On every `saveStateToLocalStorage()` call a debounced (3 s) `pushToDrive()` is triggered.
-- On `window.onload`, `syncFromDrive()` pulls the remote state and applies last-write-wins conflict resolution.
-- A **Migration modal** (Merge / Fresh Start) appears before OAuth when the user has existing local data.
-- An **Onboarding modal** warns new users about local-only data loss risks and prompts them to connect Drive. Uses `sessionStorage` so it re-triggers in incognito.
+- On `window.onload`, `syncFromDrive()` pulls the remote state and applies a **silent background merge** — no intrusive conflict modals.
+- A `visibilitychange` listener fires `syncFromDrive()` whenever the user switches back to the app tab.
+- **Ongoing sync:** remote arrays (`transactions`, `trips`, `savingGoals`) overwrite local — remote is source of truth.
+- **Initial account linkage** (data on both sides): arrays are deduplicate-merged by unique `id`; merged result is pushed back to Drive.
+- **Budget discrepancy:** a scoped two-button modal asks which budget to keep; all other data syncs silently.
+- A **Migration modal** (Merge / Fresh Start) is shown only when an existing Drive file is found and local data is present.
+- An **Onboarding modal** warns new users about local-only data loss risks. Uses `sessionStorage` so it re-triggers in incognito.
 - **Reset Sync** deletes the `dabbux_sync_v4.json` file from `appDataFolder` and disconnects the device cleanly.
+- **Header sync icon** (`#headerSyncBtn`) — visible in the app header when sync is enabled; shows live status (`cloud-check` / spinning `refresh-cw` / `cloud-off`) and provides one-tap access to manual sync or settings.
+- **Account metadata badge** in the Settings panel shows the connected Google email and the Drive file ID once authenticated.
+
+**Default OAuth Client ID:** `219866394954-pg9187uvcq3gu0c4l51728m1u1hojt0c.apps.googleusercontent.com` (hardcoded fallback; overridable via Advanced Sync Settings).
 
 **Drive file:** `dabbux_sync_v4.json` inside the `appDataFolder` (private to this app, invisible to the user's Drive).
 

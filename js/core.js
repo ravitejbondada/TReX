@@ -34,6 +34,9 @@ const DEFAULT_PAYMENTS = [
 
 const DEFAULT_SAVING_GOALS = [];
 
+// Fallback OAuth Client ID — used if state.googleClientId is empty
+const DEFAULT_CLIENT_ID = "219866394954-pg9187uvcq3gu0c4l51728m1u1hojt0c.apps.googleusercontent.com";
+
 // System configuration defaults (PIN lock disabled on load for clean onboarding)
 let state = {
     currency: "INR",
@@ -55,7 +58,11 @@ let state = {
     syncEnabled: false,
     updatedAt: new Date().toISOString(),
     lastSyncedAt: "",
-    syncStatus: "idle"
+    syncStatus: "idle",
+    syncUserEmail: "",
+    syncDriveFileId: "",
+    googleClientId: "",
+    hideCloudPrompt: false
 };
 
 let trendChartInstance = null;
@@ -115,6 +122,9 @@ window.onload = function () {
     if (state.updatedAt === undefined) state.updatedAt = new Date().toISOString();
     if (state.lastSyncedAt === undefined) state.lastSyncedAt = "";
     if (state.syncStatus === undefined) state.syncStatus = "idle";
+    if (state.syncUserEmail === undefined) state.syncUserEmail = "";
+    if (state.syncDriveFileId === undefined) state.syncDriveFileId = "";
+    if (state.hideCloudPrompt === undefined) state.hideCloudPrompt = false;
 
     /* ── v1.01 MIGRATION ─────────────────────────────────────
        Ensure every trip expense has categoryId + paymentId.
@@ -160,6 +170,9 @@ window.onload = function () {
     }
     if (typeof checkAndShowOnboardingModal === "function") {
         checkAndShowOnboardingModal();
+    }
+    if (typeof updateHeaderSyncIcon === "function") {
+        updateHeaderSyncIcon();
     }
     wrapAllSelects();
     initLucideIcons();

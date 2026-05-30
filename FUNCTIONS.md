@@ -1,6 +1,6 @@
 # DabbuX — Function Index
 
-Searchable reference of all 244 functions. Format: `functionName` — what it does.
+Searchable reference of all 252 functions. Format: `functionName` — what it does.
 
 To find where to add/edit something, scan the relevant section header then go to that file.
 
@@ -22,6 +22,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `toggleThemeSetting()` | Reads the theme toggle checkbox and calls `applyTheme()` + saves state |
 | `switchScreen(viewName)` | Main router — hides all view panels, shows target, updates nav tabs, calls init render |
 | `checkAndShowOnboardingModal()` | Called from `window.onload`; delegates to `sync.js` to show the Drive onboarding prompt if sync is disabled and not yet seen this session |
+| `updateHeaderSyncIcon()` | *(defined in sync.js, called from core.js boot)* Updates the `#headerSyncBtn` icon and click binding in the app header based on `state.syncStatus` |
 
 ---
 
@@ -322,7 +323,7 @@ To find where to add/edit something, scan the relevant section header then go to
 
 ---
 
-## sync.js — Google Drive Cloud Sync (18 functions)
+## sync.js — Google Drive Cloud Sync (26 functions)
 
 **Auth & Token Management**
 
@@ -338,7 +339,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `fetchWithRetry(url, options, retries?)` | `fetch` wrapper with exponential backoff `[2s, 5s, 15s]`; auto-refreshes token on 401 |
 | `findSyncFileId(token)` | Queries Drive `appDataFolder` for `dabbux_sync_v4.json`; returns the file ID or `null` |
 | `createSyncFile(token, content)` | Creates `dabbux_sync_v4.json` in `appDataFolder` with the given JSON string |
-| `updateSyncFile(token, fileId, content)` | Patches (multipart MIME) the content of an existing Drive sync file |
+| `updateSyncFile(token, fileId, content)` | Patches the content of an existing Drive sync file |
 | `downloadSyncFile(token, fileId)` | Downloads and JSON-parses the remote sync file |
 
 **Sync Engine**
@@ -346,36 +347,47 @@ To find where to add/edit something, scan the relevant section header then go to
 | Function | Description |
 |---|---|
 | `pushToDrive()` | Serializes `state` and uploads it to Drive; updates `state.lastSyncedAt` on success |
-| `syncFromDrive()` | Pulls the remote state, compares `updatedAt` timestamps, and applies last-write-wins or shows the conflict modal |
-| `applyRemoteState(remoteState)` | Normalizes and applies a remote state object to local state, then saves to `localStorage` |
+| `syncFromDrive()` | Silent background pull: compares `updatedAt` timestamps; ongoing sync → remote overwrites arrays; initial linkage → deduplicate-merge by `id`; budget discrepancy → `_showBudgetConflictModal()`; no intrusive conflict popups |
+| `applyRemoteState(remoteState, silent?)` | Normalizes and applies a remote state object; preserves `googleClientId`, `syncUserEmail`, `syncDriveFileId`; forces `syncEnabled=true`; re-renders UI without page reload |
+| `_applyRemoteSilent(remoteState, isInitialLinkage, token, fileId)` | Internal: applies remote state after conflict decisions; merges or overwrites arrays based on `isInitialLinkage` flag; pushes merged result back to Drive on initial linkage |
+| `_showBudgetConflictModal(localBudget, remoteBudget, onResolved)` | Scoped two-button modal for budget-only discrepancy; calls `onResolved(keepRemote: boolean)` |
+
+**Account & Metadata**
+
+| Function | Description |
+|---|---|
+| `fetchGoogleUserEmail(token)` | Hits `/oauth2/v3/userinfo`; stores email in `state.syncUserEmail` and persists to localStorage |
+| `renderSyncMetaBadge()` | Shows/hides the `#syncMetaBadge` panel; populates connected email and Drive file ID; resolves file ID live if not cached in `state.syncDriveFileId` |
 
 **Status UI**
 
 | Function | Description |
 |---|---|
-| `updateSyncStatus(status, message?)` | Updates the sync status indicator element in the settings panel (`idle` / `syncing` / `error` / `offline`) |
+| `updateSyncStatus(status, message?)` | Updates the sync status indicator in the settings panel (`idle` / `syncing` / `error` / `offline`); calls `updateHeaderSyncIcon()` |
+| `updateHeaderSyncIcon()` | Updates the `#headerSyncBtn` in the app header: `idle` → indigo `cloud-check` + `triggerManualSync()`; `syncing` → spinning `refresh-cw`; `error`/`offline` → slate `cloud-off` + `switchScreen('settings')`; hidden when sync disabled |
 
-**Conflict Resolution**
+**Conflict Resolution (legacy — retained, no longer called by syncFromDrive)**
 
 | Function | Description |
 |---|---|
-| `showConflictModal(remoteState)` | Shows a modal when both local and remote have diverged; user chooses "Keep Local" or "Use Remote" |
+| `showConflictModal(remoteState)` | Legacy full-screen conflict modal; no longer invoked by the sync engine; retained for potential manual use |
+| `createConflictModalUI()` | Injects the conflict modal HTML into the DOM |
 
 **Settings Controls**
 
 | Function | Description |
 |---|---|
-| `connectGoogleSync()` | Entry point for enabling sync — shows migration modal if local data exists, then starts OAuth, then pushes or pulls based on user choice |
+| `connectGoogleSync()` | OAuth entry point: obtains token → fetches user email → checks for existing Drive file → silent upload if no file (no migration modal) → migration modal if file + local data exist; caches `syncDriveFileId`; calls `renderSyncMetaBadge()` |
 | `disconnectGoogleSync()` | Confirms then disables sync, clears token, resets sync state fields |
 | `triggerManualSync()` | Runs a full `syncFromDrive()` cycle on demand from the Settings panel |
 | `saveCustomClientId()` | Applies or clears a custom OAuth Client ID from the settings form |
-| `renderSyncControls()` | Renders the Connect / Sync Now / Disconnect / Reset Sync button set based on current `state.syncEnabled` |
+| `renderSyncControls()` | Renders the Connect / Sync Now / Disconnect / Reset Sync button set based on `state.syncEnabled`; calls `renderSyncMetaBadge()` |
 
 **Onboarding, Migration & Reset**
 
 | Function | Description |
 |---|---|
 | `showOnboardingModal()` | Injects the bottom-sheet onboarding modal warning about local-only data risk |
-| `checkAndShowOnboardingModal()` | Gate function called from `window.onload`; fires `showOnboardingModal()` after 1.2 s if sync is off and `sessionStorage` key is absent (re-triggers in incognito) |
-| `showMigrationModal()` | Promise-based modal shown before OAuth when local data exists; resolves to `"merge"`, `"fresh"`, or `null` (cancelled) |
+| `checkAndShowOnboardingModal()` | Gate function called from `window.onload`; fires `showOnboardingModal()` after 1.2 s if sync is off and `sessionStorage` key is absent |
+| `showMigrationModal()` | Promise-based modal shown in `connectGoogleSync()` only when a Drive file already exists and local data is present; resolves to `"merge"`, `"fresh"`, or `null` |
 | `resetSyncData()` | Deletes `dabbux_sync_v4.json` from Drive and resets all local sync state; local app data is preserved |

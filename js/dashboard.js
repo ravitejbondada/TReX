@@ -189,7 +189,15 @@ function renderForecastCard(metrics) {
     const card = document.getElementById("forecastCard");
     const sym = state.currencySymbol;
 
-    if (metrics.totalSpent <= 0 || !state.monthlyBudget || state.monthlyBudget === 0) { card.classList.add("hidden"); return; }
+    if (metrics.totalSpent <= 0 || !state.monthlyBudget || state.monthlyBudget === 0) {
+        // Explicitly overwrite all forecast card fields to "No data available"
+        const noDataFields = ["forecastProjectedTotal","forecastSpentLabel","forecastBudgetLabel","forecastBurnRate","forecastDaysLeft"];
+        noDataFields.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = "No data available"; });
+        const surplusEl = document.getElementById("forecastSurplusGap");
+        if (surplusEl) { surplusEl.textContent = "No data available"; surplusEl.className = "text-[11px] font-black mt-0.5 block text-slate-500"; }
+        card.classList.add("hidden");
+        return;
+    }
     card.classList.remove("hidden");
 
     const today = new Date();

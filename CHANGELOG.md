@@ -5,6 +5,27 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ---
 
+## [v2.4] 2026-05-30 — Silent sync engine, header status icon & account metadata
+
+**What changed:** Replaced intrusive conflict modals with a fully silent background sync engine. Added a live cloud status icon to the app header. Added connected account and Drive file metadata display in the Settings panel. Hardcoded fallback OAuth Client ID. Extracted user email via userinfo endpoint post-OAuth.
+
+**Files modified:**
+- `js/sync.js` — rewritten `syncFromDrive()`: silent background engine; ongoing sync → remote overwrites arrays; initial linkage → deduplicate-merge by `id`; budget discrepancy → scoped `_showBudgetConflictModal()` only. Rewritten `applyRemoteState()`: preserves `googleClientId`, `syncUserEmail`, `syncDriveFileId`; forces `syncEnabled=true`; immediate UI re-render (no `window.location.reload()`). Rewritten `connectGoogleSync()`: obtains token first, checks `findSyncFileId()`, bypasses migration modal if no cloud file exists. Added `fetchGoogleUserEmail()`, `renderSyncMetaBadge()`, `updateHeaderSyncIcon()`, `_applyRemoteSilent()`, `_showBudgetConflictModal()`. Replaced `window.focus` listener with `visibilitychange` listener. Updated `DEFAULT_CLIENT_ID` to `219866394954-pg9187uvcq3gu0c4l51728m1u1hojt0c.apps.googleusercontent.com`.
+- `js/core.js` — added `DEFAULT_CLIENT_ID` constant; added `syncUserEmail`, `syncDriveFileId`, `googleClientId` to default `state` and boot guards; added `updateHeaderSyncIcon()` call in `window.onload` after sync boot.
+- `index.html` — added `#headerSyncBtn` cloud icon button in the app header navbar; added `#syncMetaBadge` account + file metadata panel inside Cloud Sync settings block.
+
+**Features shipped:**
+- **Silent sync engine** — no conflict modals; remote is source of truth on ongoing sync; deduplication merge on initial linkage.
+- **Budget conflict modal** — scoped two-button modal for budget-only discrepancy (no full-screen takeover).
+- **Header sync icon** — live `#headerSyncBtn` reflects `syncStatus`; taps trigger sync (idle) or open settings (error/offline).
+- **Account metadata badge** — `#syncMetaBadge` shows connected Google email and Drive file ID in Settings.
+- **Email fetch** — `fetchGoogleUserEmail()` hits `/oauth2/v3/userinfo` after OAuth; email persisted in `state.syncUserEmail`.
+- **Tab visibility auto-sync** — `visibilitychange` listener replaces `window.focus`; syncs on every tab switch-back.
+- **Silent upload on first connect** — if no Drive file exists, migration modal is bypassed entirely.
+- **Connection config preservation** — `applyRemoteState()` never overwrites `googleClientId`, `syncUserEmail`, or `syncDriveFileId` from remote.
+
+---
+
 ## [v2.3] 2026-05-30 — Google Drive Cloud Sync
 
 **What changed:** Implemented full Google Drive `appDataFolder` sync engine with onboarding, migration, and reset capabilities.

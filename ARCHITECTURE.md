@@ -131,7 +131,9 @@ let state = {
   updatedAt: "",               // ISO timestamp set on every saveStateToLocalStorage()
   lastSyncedAt: "",            // ISO timestamp of the most recent successful Drive push
   syncStatus: "idle",          // "idle" | "syncing" | "error" | "offline"
-  googleClientId: ""           // custom OAuth Client ID (falls back to DEFAULT_CLIENT_ID)
+  googleClientId: "",          // custom OAuth Client ID (falls back to DEFAULT_CLIENT_ID)
+  syncUserEmail: "",           // email of the authenticated Google account (fetched post-OAuth)
+  syncDriveFileId: ""          // cached Drive file ID of dabbux_sync_v4.json
 }
 ```
 
@@ -265,12 +267,20 @@ No backend — all auth happens via Google Identity Services (GIS) in-browser.
 ### Drive File
 `dabbux_sync_v4.json` stored in `appDataFolder` (private, not visible in user's Drive UI).
 
+### Hardcoded Default Client ID
+`DEFAULT_CLIENT_ID` is defined in both `core.js` and `sync.js`:
+```
+219866394954-pg9187uvcq3gu0c4l51728m1u1hojt0c.apps.googleusercontent.com
+```
+Used as fallback whenever `state.googleClientId` is empty or uninitialized.
+
 ### Boot Sequence
 ```
 window.onload (core.js):
   1. Load state from localStorage            ← instant, works offline
-  2. syncFromDrive()  (if syncEnabled)       ← pull remote, apply if newer
+  2. syncFromDrive()  (if syncEnabled)       ← pull remote, silent background apply
   3. checkAndShowOnboardingModal()           ← prompt if sync still disabled
+  4. updateHeaderSyncIcon()                  ← render header cloud icon on cold start
 ```
 
 ### On State Change
@@ -278,18 +288,62 @@ window.onload (core.js):
 saveStateToLocalStorage() → sets state.updatedAt = now → debounced pushToDrive() (3 s)
 ```
 
-### Conflict Resolution
+### Tab Visibility Auto-Sync
+A `visibilitychange` event listener fires `syncFromDrive()` whenever
+`document.visibilityState === 'visible'` and sync is enabled — ensures the device
+syncs the moment the user switches back to the app tab.
+
+### Silent Conflict Resolution (no intrusive modals)
 Last-write-wins using `state.updatedAt` ISO timestamp:
 - `remoteTime === localTime` → already in sync, no-op
-- `remoteTime > localTime` AND local is empty → apply remote (new device)
-- `remoteTime > localTime` AND local has data → show **Conflict Modal** (keep local / use remote)
+- `remoteTime > localTime` + **ongoing sync** (device already connected) → remote arrays overwrite local (`transactions`, `trips`, `savingGoals`)
+- `remoteTime > localTime` + **initial linkage** (data on both sides) → deduplicate-merge arrays by unique `id`; merged result pushed back to Drive
+- `local.monthlyBudget !== remote.monthlyBudget` → scoped **Budget Conflict Modal** (two-button: "This device" / "Cloud"); no full-page modal
 - `localTime > remoteTime` → push local to Drive
+
+> ⚠️ The old `showConflictModal()` full-screen modal is retained in the codebase but is no longer called by `syncFromDrive()`.
+
+### `applyRemoteState(remoteState, silent?)`
+Before overwriting local state with remote data, the following local-device fields
+are **always preserved** (never overwritten from remote):
+- `state.googleClientId`
+- `state.syncUserEmail`
+- `state.syncDriveFileId`
+- `state.syncEnabled` (forced to `true`)
+
+UI is re-rendered immediately via `updateAppDashboardView()` + `renderSyncControls()`.
+No `window.location.reload()`.
+
+### Connect Flow (`connectGoogleSync`)
+1. Call `getValidToken(true)` — triggers OAuth popup
+2. Call `fetchGoogleUserEmail(token)` — hits `/oauth2/v3/userinfo`, stores `state.syncUserEmail`
+3. Call `findSyncFileId(token)`:
+   - **No cloud file** → silent upload via `pushToDrive()`; cache new file ID in `state.syncDriveFileId`; no migration modal
+   - **Cloud file exists + local data** → show **Migration Modal** (Merge / Fresh Start / Cancel)
+4. Cache `state.syncDriveFileId` from the looked-up file ID
+5. Call `renderSyncMetaBadge()` to display account + file info
 
 ### Auth Flow
 - GIS `initTokenClient` with `drive.appdata` scope
 - `getValidToken(forceInteractive?)` — returns cached token if valid (1-min grace), else requests silently or interactively
 - Token refreshed on 401 inside `fetchWithRetry()`
 - `fetchWithRetry()` implements exponential backoff: `[2s, 5s, 15s]` retries
+
+### Header Sync Icon (`#headerSyncBtn`)
+Rendered in the main app header bar. Hidden when `!state.syncEnabled`.
+
+| `syncStatus` | Icon | Color | Click action |
+|---|---|---|---|
+| `idle` | `cloud-check` | indigo | `triggerManualSync()` |
+| `syncing` | `refresh-cw` + `animate-spin` | indigo | none |
+| `error` / `offline` | `cloud-off` | slate | `switchScreen('settings')` |
+
+Updated by `updateHeaderSyncIcon()` — called at the end of every `updateSyncStatus()` invocation and on `window.onload`.
+
+### Account & File Metadata Badge (`#syncMetaBadge`)
+Rendered inside the Cloud Sync settings panel when `syncEnabled=true`.
+Displays: Connected Account email (`state.syncUserEmail`) and Drive File ID (`state.syncDriveFileId`).
+Populated by `renderSyncMetaBadge()`, called from `renderSyncControls()` and `connectGoogleSync()`.
 
 ### Onboarding Modal
 - `checkAndShowOnboardingModal()` called from `window.onload` after sync attempt
@@ -298,10 +352,11 @@ Last-write-wins using `state.updatedAt` ISO timestamp:
 - "Enable Sync" CTA navigates to Settings and calls `connectGoogleSync()`
 
 ### Migration Modal (Merge / Fresh Start)
-- Shown inside `connectGoogleSync()` before OAuth when local data exists
+- Shown inside `connectGoogleSync()` **only when** a cloud file already exists AND local data is present
 - **Merge:** `pushToDrive()` after auth — local state wins, overwrites cloud
 - **Fresh Start:** `syncFromDrive()` after auth — cloud state overwrites local
-- Cancel aborts the entire auth flow
+- Cancel aborts; no state changes committed
+- If **no cloud file exists**, migration modal is bypassed entirely (silent upload)
 
 ### Reset Sync
 - `resetSyncData()` — finds and DELETEs `dabbux_sync_v4.json` from Drive

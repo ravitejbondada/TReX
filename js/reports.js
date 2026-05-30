@@ -309,54 +309,74 @@ function toggleReportMode(mode) {
 }
 
 function renderHistoricalMonthReport() {
-    const selectorVal = document.getElementById("reportCycleSelector").value;
     const symbol = state.currencySymbol;
+    const chartsEmptyEl = document.getElementById("reportChartsEmptyState");
+    const chartsBodyEl = document.getElementById("reportChartsBody");
 
-    let cycleTransactions = [];
-    let currentLimit = state.monthlyBudget;
+    // Guard: no transactions — prevent all Chart.js execution
+    if (!state.transactions || state.transactions.length === 0) {
+        reportsCategoryChartInstance = destroyReportChart(reportsCategoryChartInstance);
+        reportsPaymentChartInstance = destroyReportChart(reportsPaymentChartInstance);
+        reportsBarChartInstance = destroyReportChart(reportsBarChartInstance);
+        reportGaugeChartInstance = destroyReportChart(reportGaugeChartInstance);
+        if (chartsEmptyEl) chartsEmptyEl.classList.remove("hidden");
+        if (chartsBodyEl) chartsBodyEl.classList.add("hidden");
+        document.getElementById("reportAllocatedSpan").textContent = `${symbol}0`;
+        document.getElementById("reportSpentSpan").textContent = `${symbol}0`;
+        document.getElementById("reportLeftoverSpan").textContent = `${symbol}0`;
+        document.getElementById("reportSummaryText").innerHTML = `<span class="text-slate-500 italic">No data available for displaying graphs.</span>`;
+        return;
+    }
 
-    if (selectorVal === "May 2026") {
+    // Dynamic cycle selector: derive key from selector value
+    const selectorVal = document.getElementById("reportCycleSelector").value;
+    let cycleKey = null;
+
+    // Parse "Month YYYY" label → "YYYY-MM" key
+    if (selectorVal) {
+        const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+        const parts = selectorVal.trim().split(" ");
+        if (parts.length === 2) {
+            const moIdx = months.indexOf(parts[0]);
+            if (moIdx !== -1) cycleKey = `${parts[1]}-${String(moIdx + 1).padStart(2, "0")}`;
+        }
+    }
+
+    // Fallback: current month
+    if (!cycleKey) {
+        const now = new Date();
+        cycleKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    const cycleTransactions = state.transactions.filter(t => t.date && t.date.startsWith(cycleKey));
+    const currentLimit = state.monthlyBudget || 0;
+    const totalSpent = cycleTransactions.reduce((s, t) => s + parseFloat(t.amount || 0), 0);
+    const surplus = Math.max(0, currentLimit - totalSpent);
+
+    document.getElementById("reportAllocatedSpan").textContent = `${symbol}${currentLimit.toLocaleString()}`;
+    document.getElementById("reportSpentSpan").textContent = `${symbol}${totalSpent.toLocaleString()}`;
+    document.getElementById("reportLeftoverSpan").textContent = `${symbol}${surplus.toLocaleString()}`;
+
+    // Cycle-specific summary text
+    const isCurrentMonth = (() => {
+        const now = new Date();
+        return cycleKey === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    })();
+
+    if (isCurrentMonth) {
         const metrics = calculateCycleMetrics();
-        cycleTransactions = state.transactions.filter(t => t.date.startsWith("2026-05"));
-        currentLimit = state.monthlyBudget;
-
-        document.getElementById("reportAllocatedSpan").textContent = `${symbol}${currentLimit.toLocaleString()}`;
-        document.getElementById("reportSpentSpan").textContent = `${symbol}${metrics.totalSpent.toLocaleString()}`;
-        document.getElementById("reportLeftoverSpan").textContent = `${symbol}${metrics.remainingBudget.toLocaleString()}`;
-
-        document.getElementById("reportSummaryText").innerHTML = 
-            `Currently tracking May statement. Safe remaining balance is <strong class="text-emerald-400 font-bold">${symbol}${metrics.remainingBudget.toLocaleString()}</strong>. Ensure your burn velocity remains in line with projections.`;
-
-    } else if (selectorVal === "April 2026") {
-        cycleTransactions = state.transactions.filter(t => t.date.startsWith("2026-04"));
-        currentLimit = 50000;
-        const spent = cycleTransactions.reduce((s, t) => s + parseFloat(t.amount || 0), 0);
-        const surplus = Math.max(0, currentLimit - spent);
-
-        document.getElementById("reportAllocatedSpan").textContent = `${symbol}${currentLimit.toLocaleString()}`;
-        document.getElementById("reportSpentSpan").textContent = `${symbol}${spent.toLocaleString()}`;
-        document.getElementById("reportLeftoverSpan").textContent = `${symbol}${surplus.toLocaleString()}`;
-
-        document.getElementById("reportSummaryText").innerHTML = 
-            `In April, you completed the cycle successfully with a savings surplus of <strong class="text-emerald-400 font-bold">${symbol}${surplus.toLocaleString()}</strong> over a total target pool of <strong class="text-white">${symbol}50,000</strong>.`;
-
-    } else if (selectorVal === "March 2026") {
-        cycleTransactions = state.transactions.filter(t => t.date.startsWith("2026-03"));
-        currentLimit = 50000;
-        const spent = cycleTransactions.reduce((s, t) => s + parseFloat(t.amount || 0), 0);
-        const surplus = Math.max(0, currentLimit - spent);
-
-        document.getElementById("reportAllocatedSpan").textContent = `${symbol}${currentLimit.toLocaleString()}`;
-        document.getElementById("reportSpentSpan").textContent = `${symbol}${spent.toLocaleString()}`;
-        document.getElementById("reportLeftoverSpan").textContent = `${symbol}${surplus.toLocaleString()}`;
-
-        document.getElementById("reportSummaryText").innerHTML = 
-            `March spending finished at <strong class="text-rose-400 font-bold">${symbol}${spent.toLocaleString()}</strong>. Remaining balance compiled to a surplus of <strong class="text-emerald-400 font-bold">${symbol}${surplus.toLocaleString()}</strong>.`;
+        document.getElementById("reportSummaryText").innerHTML =
+            `Currently tracking this cycle. Safe remaining balance is <strong class="text-emerald-400 font-bold">${symbol}${metrics.remainingBudget.toLocaleString()}</strong>. Ensure your burn velocity remains in line with projections.`;
+    } else if (cycleTransactions.length === 0) {
+        document.getElementById("reportSummaryText").innerHTML =
+            `<span class="text-slate-500 italic">No transactions recorded for this cycle.</span>`;
+    } else {
+        document.getElementById("reportSummaryText").innerHTML =
+            `Cycle completed with <strong class="text-white">${symbol}${totalSpent.toLocaleString()}</strong> spent${currentLimit > 0 ? ` out of <strong class="text-slate-300">${symbol}${currentLimit.toLocaleString()}</strong> budget` : ""}. Surplus: <strong class="text-emerald-400 font-bold">${symbol}${surplus.toLocaleString()}</strong>.`;
     }
 
     const catSums = {};
     state.categories.forEach(c => { catSums[c.name] = { sum: 0, color: c.color }; });
-
     cycleTransactions.forEach(t => {
         const categoryObj = state.categories.find(c => c.id === t.categoryId);
         if (categoryObj && catSums[categoryObj.name]) {
@@ -364,10 +384,7 @@ function renderHistoricalMonthReport() {
         }
     });
 
-    const catLabels = [];
-    const catValues = [];
-    const catColors = [];
-
+    const catLabels = [], catValues = [], catColors = [];
     Object.keys(catSums).forEach(k => {
         if (catSums[k].sum > 0) {
             catLabels.push(k);
@@ -384,9 +401,7 @@ function renderHistoricalMonthReport() {
             paySums[paymentObj.name].sum += parseFloat(t.amount || 0);
         }
     });
-    const payLabels = [];
-    const payValues = [];
-    const payColors = [];
+    const payLabels = [], payValues = [], payColors = [];
     Object.keys(paySums).forEach(k => {
         if (paySums[k].sum > 0) {
             payLabels.push(k);
@@ -395,7 +410,6 @@ function renderHistoricalMonthReport() {
         }
     });
 
-    const totalSpent = cycleTransactions.reduce((s, t) => s + parseFloat(t.amount || 0), 0);
     renderReportGauge(totalSpent, currentLimit);
 
     if (activeReportViewMode === "charts") {
@@ -403,7 +417,7 @@ function renderHistoricalMonthReport() {
         setTimeout(resizeReportCharts, 100);
     }
 
-    if (activeReportViewMode === 'accordion') {
+    if (activeReportViewMode === "accordion") {
         renderAccordionReportList();
     }
 }
@@ -413,14 +427,24 @@ function renderAccordionReportList() {
     const accordionView = document.getElementById("accordionListView");
     accordionView.innerHTML = "";
 
-    let cycleTransactions = [];
-    if (selectorVal === "May 2026") {
-        cycleTransactions = state.transactions.filter(t => t.date.startsWith("2026-05"));
-    } else if (selectorVal === "April 2026") {
-        cycleTransactions = state.transactions.filter(t => t.date.startsWith("2026-04"));
-    } else if (selectorVal === "March 2026") {
-        cycleTransactions = state.transactions.filter(t => t.date.startsWith("2026-03"));
+    // Dynamic cycle key from selector label
+    let cycleKey = null;
+    if (selectorVal) {
+        const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+        const parts = selectorVal.trim().split(" ");
+        if (parts.length === 2) {
+            const moIdx = months.indexOf(parts[0]);
+            if (moIdx !== -1) cycleKey = `${parts[1]}-${String(moIdx + 1).padStart(2, "0")}`;
+        }
     }
+    if (!cycleKey) {
+        const now = new Date();
+        cycleKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    const cycleTransactions = (!state.transactions || state.transactions.length === 0)
+        ? []
+        : state.transactions.filter(t => t.date && t.date.startsWith(cycleKey));
 
     state.categories.forEach(cat => {
         const catTxs = cycleTransactions.filter(t => t.categoryId === cat.id);
@@ -495,14 +519,13 @@ let momTrendLineInstance = null;
 
 // Returns sorted array of { key: "2026-05", label: "May 2026" } from all transactions
 function getMomAvailableCycles() {
+    // Guard: if no transactions, return empty list (no phantom months)
+    if (!state.transactions || state.transactions.length === 0) return [];
+
     const seen = new Set();
     state.transactions.forEach(t => {
         if (t.date && t.date.length >= 7) seen.add(t.date.substring(0, 7));
     });
-    // Also include current month even if no transactions yet
-    const now = new Date();
-    const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    seen.add(currentKey);
 
     const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     return Array.from(seen)
@@ -515,6 +538,16 @@ function getMomAvailableCycles() {
 
 function populateMomCycleSelectors() {
     const cycles = getMomAvailableCycles();
+
+    // Guard: no data — clear all selectors
+    if (cycles.length === 0) {
+        ["momCycleA", "momCycleB", "momCycleC"].forEach(selId => {
+            const sel = document.getElementById(selId);
+            if (sel) sel.innerHTML = "";
+        });
+        return;
+    }
+
     ["momCycleA", "momCycleB", "momCycleC"].forEach((selId, idx) => {
         const sel = document.getElementById(selId);
         const prev = sel.value;
@@ -831,3 +864,236 @@ function renderMomReport() {
 
 /* ── END MONTH-OVER-MONTH ENGINE ─────────────────────────────────── */
 
+/* ── PDF SUMMARY REPORT ENGINE ───────────────────────────────────── */
+
+/**
+ * Generates and downloads a beautifully structured multi-page PDF financial
+ * summary report using html2canvas + jsPDF.
+ * File name: DabbuX_Financial_Report_[Month].pdf
+ */
+async function generatePDFReport() {
+    if (typeof window.jspdf === "undefined" || typeof html2canvas === "undefined") {
+        showNotification("PDF libraries loading. Please try again in a moment.");
+        return;
+    }
+
+    if (!state.transactions || state.transactions.length === 0) {
+        showNotification("No transaction data available to generate a report.");
+        return;
+    }
+
+    showNotification("Generating PDF report…");
+
+    const { jsPDF } = window.jspdf;
+    const sym = state.currencySymbol;
+    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+    // Determine active cycle
+    const selectorVal = document.getElementById("reportCycleSelector") ? document.getElementById("reportCycleSelector").value : "";
+    let cycleKey = null;
+    if (selectorVal) {
+        const parts = selectorVal.trim().split(" ");
+        if (parts.length === 2) {
+            const moIdx = months.indexOf(parts[0]);
+            if (moIdx !== -1) cycleKey = `${parts[1]}-${String(moIdx + 1).padStart(2, "0")}`;
+        }
+    }
+    if (!cycleKey) {
+        const now = new Date();
+        cycleKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    const [cycleYear, cycleMoNum] = cycleKey.split("-");
+    const cycleMonthName = months[parseInt(cycleMoNum, 10) - 1];
+    const cycleLabel = `${cycleMonthName} ${cycleYear}`;
+
+    const cycleTxs = state.transactions.filter(t => t.date && t.date.startsWith(cycleKey));
+    const totalSpent = cycleTxs.reduce((s, t) => s + parseFloat(t.amount || 0), 0);
+    const budget = state.monthlyBudget || 0;
+    const savings = Math.max(0, budget - totalSpent);
+    const inflow = budget;
+
+    // Category breakdown
+    const catMap = {};
+    state.categories.forEach(c => { catMap[c.id] = { name: c.name, color: c.color, sum: 0 }; });
+    cycleTxs.forEach(t => { if (catMap[t.categoryId]) catMap[t.categoryId].sum += parseFloat(t.amount || 0); });
+    const catRows = Object.values(catMap).filter(c => c.sum > 0).sort((a, b) => b.sum - a.sum);
+
+    // Payment breakdown
+    const payMap = {};
+    state.payments.forEach(p => { payMap[p.id] = { name: p.name, sum: 0 }; });
+    cycleTxs.forEach(t => { if (payMap[t.paymentId]) payMap[t.paymentId].sum += parseFloat(t.amount || 0); });
+    const payRows = Object.values(payMap).filter(p => p.sum > 0).sort((a, b) => b.sum - a.sum);
+
+    // Build off-screen report container
+    const container = document.createElement("div");
+    container.id = "__pdfReportSnapshot";
+    container.style.cssText = "position:fixed;left:-9999px;top:0;width:750px;background:#020617;color:#f8fafc;font-family:'Plus Jakarta Sans',sans-serif;padding:48px;box-sizing:border-box;";
+
+    const kpiColor = (v) => v > 0 ? "#34d399" : "#f43f5e";
+
+    container.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:36px;padding-bottom:24px;border-bottom:1px solid #1e293b;">
+            <div>
+                <div style="font-size:22px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;">DabbuX Financial Report</div>
+                <div style="font-size:13px;color:#64748b;margin-top:4px;font-weight:600;">${cycleLabel} · Generated ${new Date().toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"})}</div>
+            </div>
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:10px 18px;text-align:right;">
+                <div style="font-size:9px;color:#64748b;font-weight:700;letter-spacing:1px;text-transform:uppercase;">Cycle Budget</div>
+                <div style="font-size:18px;font-weight:900;color:#6366f1;">${sym}${budget.toLocaleString()}</div>
+            </div>
+        </div>
+
+        <!-- KPI Row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:36px;">
+            <div style="background:#0f172a;border:1px solid #1e293b;border-radius:14px;padding:20px;">
+                <div style="font-size:9px;font-weight:800;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Total Inflow (Budget)</div>
+                <div style="font-size:20px;font-weight:900;color:#6366f1;">${sym}${inflow.toLocaleString()}</div>
+            </div>
+            <div style="background:#0f172a;border:1px solid #1e293b;border-radius:14px;padding:20px;">
+                <div style="font-size:9px;font-weight:800;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Total Outflow (Spent)</div>
+                <div style="font-size:20px;font-weight:900;color:#f43f5e;">${sym}${totalSpent.toLocaleString()}</div>
+            </div>
+            <div style="background:#0f172a;border:1px solid #1e293b;border-radius:14px;padding:20px;">
+                <div style="font-size:9px;font-weight:800;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Net Savings / Surplus</div>
+                <div style="font-size:20px;font-weight:900;color:${kpiColor(savings)};">${sym}${savings.toLocaleString()}</div>
+            </div>
+        </div>
+
+        <!-- Category Breakdown -->
+        <div style="margin-bottom:36px;">
+            <div style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;">Category Breakdown</div>
+            ${catRows.length === 0
+                ? `<div style="color:#475569;font-size:12px;font-style:italic;">No spending recorded for this cycle.</div>`
+                : catRows.map(c => {
+                    const pct = totalSpent > 0 ? Math.round((c.sum / totalSpent) * 100) : 0;
+                    const barW = Math.max(2, pct);
+                    return `
+                    <div style="margin-bottom:12px;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="width:8px;height:8px;border-radius:50%;background:${c.color};display:inline-block;"></span>
+                                <span style="font-size:12px;font-weight:700;color:#e2e8f0;">${c.name}</span>
+                            </div>
+                            <div style="text-align:right;">
+                                <span style="font-size:12px;font-weight:900;color:#ffffff;">${sym}${c.sum.toLocaleString()}</span>
+                                <span style="font-size:10px;color:#64748b;margin-left:6px;">${pct}%</span>
+                            </div>
+                        </div>
+                        <div style="height:5px;background:#1e293b;border-radius:3px;overflow:hidden;">
+                            <div style="height:100%;width:${barW}%;background:${c.color};border-radius:3px;"></div>
+                        </div>
+                    </div>`;
+                }).join("")
+            }
+        </div>
+
+        <!-- Payment Method Breakdown -->
+        <div style="margin-bottom:36px;">
+            <div style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;">Payment Method Split</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
+                ${payRows.length === 0
+                    ? `<div style="color:#475569;font-size:12px;font-style:italic;">No payment data.</div>`
+                    : payRows.map(p => `
+                    <div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;">
+                        <div style="font-size:10px;font-weight:700;color:#64748b;">${p.name}</div>
+                        <div style="font-size:15px;font-weight:900;color:#ffffff;margin-top:4px;">${sym}${p.sum.toLocaleString()}</div>
+                    </div>`).join("")
+                }
+            </div>
+        </div>
+
+        <!-- Transaction Ledger Table -->
+        <div>
+            <div style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;">
+                Transaction Ledger — ${cycleLabel} (${cycleTxs.length} records)
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:11px;">
+                <thead>
+                    <tr style="background:#0f172a;border-bottom:1px solid #1e293b;">
+                        <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;font-size:9px;">Date</th>
+                        <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;font-size:9px;">Note</th>
+                        <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;font-size:9px;">Category</th>
+                        <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;font-size:9px;">Payment</th>
+                        <th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;font-size:9px;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${cycleTxs.length === 0
+                        ? `<tr><td colspan="5" style="text-align:center;padding:20px;color:#475569;font-style:italic;">No transactions for this cycle.</td></tr>`
+                        : [...cycleTxs].sort((a, b) => new Date(b.date) - new Date(a.date)).map((t, i) => {
+                            const cat = state.categories.find(c => c.id === t.categoryId) || { name: "—", color: "#64748b" };
+                            const pay = state.payments.find(p => p.id === t.paymentId) || { name: "—" };
+                            const rowBg = i % 2 === 0 ? "#0f172a" : "#020617";
+                            return `
+                            <tr style="background:${rowBg};border-bottom:1px solid #1e293b;">
+                                <td style="padding:9px 12px;color:#94a3b8;">${t.date}</td>
+                                <td style="padding:9px 12px;color:#e2e8f0;font-weight:600;">${t.note || "—"}</td>
+                                <td style="padding:9px 12px;">
+                                    <span style="background:${cat.color}22;color:${cat.color};padding:2px 8px;border-radius:6px;font-size:9px;font-weight:700;">${cat.name}</span>
+                                </td>
+                                <td style="padding:9px 12px;color:#94a3b8;">${pay.name}</td>
+                                <td style="padding:9px 12px;text-align:right;font-weight:900;color:#ffffff;">${sym}${parseFloat(t.amount || 0).toLocaleString()}</td>
+                            </tr>`;
+                        }).join("")
+                    }
+                </tbody>
+                <tfoot>
+                    <tr style="background:#0f172a;border-top:2px solid #6366f1;">
+                        <td colspan="4" style="padding:12px;font-weight:800;color:#94a3b8;font-size:11px;letter-spacing:0.5px;text-transform:uppercase;">TOTAL OUTFLOW</td>
+                        <td style="padding:12px;text-align:right;font-weight:900;color:#f43f5e;font-size:14px;">${sym}${totalSpent.toLocaleString()}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div style="margin-top:40px;padding-top:20px;border-top:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:10px;color:#334155;font-weight:600;">DabbuX — Personal Finance Made Personal</div>
+            <div style="font-size:10px;color:#334155;font-weight:600;">Confidential — ${new Date().toISOString().split("T")[0]}</div>
+        </div>
+    `;
+
+    document.body.appendChild(container);
+
+    try {
+        const canvas = await html2canvas(container, {
+            backgroundColor: "#020617",
+            scale: 2,
+            useCORS: true,
+            logging: false
+        });
+
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+        const pdfW = pdf.internal.pageSize.getWidth();
+        const pdfH = pdf.internal.pageSize.getHeight();
+        const imgW = canvas.width;
+        const imgH = canvas.height;
+
+        const ratio = pdfW / imgW;
+        const scaledH = imgH * ratio;
+
+        let yOffset = 0;
+        let pageCount = 0;
+
+        while (yOffset < scaledH) {
+            if (pageCount > 0) pdf.addPage();
+            pdf.addImage(imgData, "PNG", 0, -yOffset, pdfW, scaledH);
+            yOffset += pdfH;
+            pageCount++;
+        }
+
+        const fileName = `DabbuX_Financial_Report_${cycleMonthName}_${cycleYear}.pdf`;
+        pdf.save(fileName);
+        showNotification(`Report downloaded: ${fileName}`);
+    } catch (err) {
+        console.error("PDF generation error:", err);
+        showNotification("PDF generation failed. Please try again.");
+    } finally {
+        document.body.removeChild(container);
+    }
+}
+
+/* ── END PDF REPORT ENGINE ───────────────────────────────────────── */

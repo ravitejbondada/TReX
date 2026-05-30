@@ -14,7 +14,7 @@ let accessToken = null;
 let tokenExpiry = 0;
 
 // Default client ID can be overridden via state.googleClientId in UI
-const DEFAULT_CLIENT_ID = "524956321287-k57fkvb1q1sc4s28o9c6p9o1j3p0l4h2.apps.googleusercontent.com";
+const DEFAULT_CLIENT_ID = "219866394954-pg9187uvcq3gu0c4l51728m1u1hojt0c.apps.googleusercontent.com";
 
 /**
  * Initialize Google Identity Services token client
@@ -228,7 +228,12 @@ async function pushToDrive() {
 }
 
 /**
- * Pulls and synchronizes data from Google Drive
+ * Pulls and synchronizes data from Google Drive.
+ * Silent background engine: no intrusive conflict modals.
+ * - remoteTime > localTime + already connected → remote is source of truth (overwrite arrays)
+ * - remoteTime > localTime + initial linkage (both sides have data) → deduplicate-merge arrays
+ * - Budget discrepancy → scoped minimalist confirmation modal only
+ * - localTime > remoteTime → push local up
  */
 async function syncFromDrive() {
     if (!state.syncEnabled) return;
@@ -261,23 +266,39 @@ async function syncFromDrive() {
         const remoteTime = new Date(remoteState.updatedAt).getTime();
 
         if (remoteTime === localTime) {
-            console.log("Local and remote state are in sync.");
+            // Already in sync
             state.lastSyncedAt = new Date().toISOString();
             localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
             updateSyncStatus("idle");
-        } else if (remoteTime > localTime) {
-            // New Device / First Run scenario
-            const isLocalEmpty = state.transactions.length === 0 && state.savingGoals.length === 0;
-            if (isLocalEmpty) {
-                console.log("New device detected. Merging remote state onto empty local device.");
-                applyRemoteState(remoteState);
+            return;
+        }
+
+        if (remoteTime > localTime) {
+            // Determine if this is an ongoing sync cycle or initial account linkage
+            const localHasData = state.transactions.length > 0 || state.savingGoals.length > 0;
+            const remoteHasData = (remoteState.transactions || []).length > 0 || (remoteState.savingGoals || []).length > 0;
+            const isInitialLinkage = localHasData && remoteHasData;
+
+            // Check budget discrepancy before applying
+            const budgetChanged = remoteState.monthlyBudget !== undefined &&
+                                  state.monthlyBudget !== remoteState.monthlyBudget &&
+                                  state.monthlyBudget !== 0;
+
+            if (budgetChanged) {
+                // Scoped budget-only confirmation — non-blocking for the rest of sync
+                _showBudgetConflictModal(state.monthlyBudget, remoteState.monthlyBudget, (keepRemoteBudget) => {
+                    if (!keepRemoteBudget) {
+                        // Preserve local budget in the incoming remote state before applying
+                        remoteState.monthlyBudget = state.monthlyBudget;
+                    }
+                    _applyRemoteSilent(remoteState, isInitialLinkage, token, fileId);
+                });
             } else {
-                // Real conflict
-                showConflictModal(remoteState);
+                _applyRemoteSilent(remoteState, isInitialLinkage, token, fileId);
             }
         } else {
             // Local is newer: push to cloud
-            console.log("Local state is newer. Uploading local state to Google Drive.");
+            console.log("Local state is newer. Uploading to Google Drive.");
             await updateSyncFile(token, fileId, JSON.stringify(state));
             state.lastSyncedAt = new Date().toISOString();
             localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
@@ -290,22 +311,113 @@ async function syncFromDrive() {
 }
 
 /**
- * Replaces local state with remote state
+ * Internal: applies remote state after conflict resolution decisions are made.
+ * isInitialLinkage=true → deduplicate-merge arrays; false → remote overwrites arrays.
  */
-function applyRemoteState(remoteState) {
+async function _applyRemoteSilent(remoteState, isInitialLinkage, token, fileId) {
+    if (isInitialLinkage) {
+        // Deduplicate merge: combine local + remote arrays by unique id
+        const mergeById = (local, remote) => {
+            const map = new Map();
+            (local || []).forEach(item => map.set(item.id, item));
+            (remote || []).forEach(item => { if (!map.has(item.id)) map.set(item.id, item); });
+            return Array.from(map.values());
+        };
+        remoteState.transactions   = mergeById(state.transactions, remoteState.transactions);
+        remoteState.savingGoals    = mergeById(state.savingGoals, remoteState.savingGoals);
+        remoteState.trips          = mergeById(state.trips, remoteState.trips);
+        console.log("Initial linkage: deduplication merge complete.");
+    } else {
+        console.log("Ongoing sync: remote is source of truth. Overwriting local arrays.");
+    }
+
+    applyRemoteState(remoteState, true);
+
+    // Push merged result back to Drive so both sides converge
+    if (isInitialLinkage && token && fileId) {
+        try {
+            await updateSyncFile(token, fileId, JSON.stringify(state));
+            state.lastSyncedAt = new Date().toISOString();
+            localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
+        } catch (e) {
+            console.warn("Post-merge push failed:", e);
+        }
+    }
+}
+
+/**
+ * Minimalist budget conflict modal — only surfaces budget discrepancy.
+ * Calls onResolved(keepRemoteBudget: boolean) when user decides.
+ */
+function _showBudgetConflictModal(localBudget, remoteBudget, onResolved) {
+    const fmt = (v) => (state.currencySymbol || "₹") + Number(v).toLocaleString();
+    const div = document.createElement("div");
+    div.id = "budgetConflictModal";
+    div.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[115] flex items-center justify-center p-4";
+    div.innerHTML = `
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 max-w-xs w-full shadow-2xl space-y-4">
+            <div class="flex items-center gap-2">
+                <div class="w-9 h-9 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                    <i data-lucide="wallet" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h3 class="text-xs font-extrabold text-white">Budget Mismatch</h3>
+                    <p class="text-[10px] text-slate-400">Which monthly budget should apply?</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-center text-[10px]">
+                <button id="_budgetKeepLocal" class="p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:bg-slate-700 transition-all active:scale-95">
+                    <div class="text-slate-400 mb-0.5">This device</div>
+                    <div class="text-white font-extrabold text-xs">${fmt(localBudget)}</div>
+                </button>
+                <button id="_budgetUseRemote" class="p-2.5 bg-indigo-950/50 border border-indigo-500/30 rounded-xl hover:bg-indigo-900/50 transition-all active:scale-95">
+                    <div class="text-slate-400 mb-0.5">Cloud</div>
+                    <div class="text-white font-extrabold text-xs">${fmt(remoteBudget)}</div>
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(div);
+    if (typeof initLucideIcons === "function") initLucideIcons(div);
+
+    const cleanup = (keepRemote) => { div.remove(); onResolved(keepRemote); };
+    document.getElementById("_budgetKeepLocal").onclick = () => cleanup(false);
+    document.getElementById("_budgetUseRemote").onclick = () => cleanup(true);
+}
+
+/**
+ * Replaces local state with remote state, preserving device connection config.
+ * Pass silent=true to suppress the notification toast (e.g. background auto-sync).
+ */
+function applyRemoteState(remoteState, silent = false) {
+    // Preserve local connection config before overwriting
+    const preservedClientId = state.googleClientId || DEFAULT_CLIENT_ID;
+    const preservedEmail = state.syncUserEmail || "";
+    const preservedFileId = state.syncDriveFileId || "";
+
     if (typeof normalizeImportedState === "function") {
         state = normalizeImportedState(remoteState);
     } else {
         state = remoteState;
     }
+
+    // Restore local device connection config — never inherit from remote
+    state.googleClientId = preservedClientId;
+    state.syncUserEmail = preservedEmail;
+    state.syncDriveFileId = preservedFileId;
+    state.syncEnabled = true;
     state.lastSyncedAt = new Date().toISOString();
     state.syncStatus = "idle";
     localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
 
-    showNotification("Data synchronized from Google Drive successfully!");
-    setTimeout(() => {
-        window.location.reload();
-    }, 1500);
+    if (!silent) {
+        showNotification("Data synchronized from Google Drive.");
+    }
+
+    // Re-render UI immediately without a full page reload
+    try { updateAppDashboardView(); } catch (e) {}
+    try { renderSyncControls(); } catch (e) {}
+    updateSyncStatus("idle");
 }
 
 /**
@@ -421,9 +533,124 @@ function createConflictModalUI() {
 }
 
 /**
- * Updates UI displays representing sync status
+ * Fetches the authenticated user's email via Google userinfo endpoint.
+ * Stores in state.syncUserEmail and persists to localStorage.
  */
-function updateSyncStatus(status, detail = "") {
+async function fetchGoogleUserEmail(token) {
+    try {
+        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const info = await res.json();
+        if (info.email) {
+            state.syncUserEmail = info.email;
+            localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
+        }
+    } catch (e) {
+        console.warn("fetchGoogleUserEmail failed:", e);
+    }
+}
+
+/**
+ * Renders (or hides) the account + Drive file metadata badge in the sync panel.
+ * Shows when syncEnabled=true and email/fileId are known.
+ */
+async function renderSyncMetaBadge() {
+    const badge = document.getElementById("syncMetaBadge");
+    if (!badge) return;
+
+    if (!state.syncEnabled) {
+        badge.classList.add("hidden");
+        return;
+    }
+
+    // Populate email
+    const emailEl = document.getElementById("syncMetaEmail");
+    if (emailEl) emailEl.textContent = state.syncUserEmail || "—";
+
+    // Populate file ID — fetch live if not cached
+    const fileIdEl = document.getElementById("syncMetaFileId");
+    if (fileIdEl) {
+        if (state.syncDriveFileId) {
+            fileIdEl.textContent = state.syncDriveFileId;
+        } else {
+            fileIdEl.textContent = "Resolving…";
+            try {
+                const token = await getValidToken(false);
+                const fid = await findSyncFileId(token);
+                if (fid) {
+                    state.syncDriveFileId = fid;
+                    localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
+                    fileIdEl.textContent = fid;
+                } else {
+                    fileIdEl.textContent = "Not yet created";
+                }
+            } catch (e) {
+                fileIdEl.textContent = "Unavailable";
+            }
+        }
+    }
+
+    badge.classList.remove("hidden");
+    if (typeof initLucideIcons === "function") initLucideIcons(badge);
+}
+
+
+ * - idle (connected): indigo cloud-check, triggers triggerManualSync()
+ * - syncing: spinning refresh-cw icon
+ * - offline / error: slate cloud-off, routes to settings
+ * Hidden entirely when sync is disabled.
+ */
+function updateHeaderSyncIcon() {
+    const btn = document.getElementById("headerSyncBtn");
+    if (!btn) return;
+
+    if (!state.syncEnabled) {
+        btn.classList.add("hidden");
+        return;
+    }
+
+    btn.classList.remove("hidden");
+
+    const status = state.syncStatus || "idle";
+    const iconEl = document.getElementById("headerSyncIcon");
+
+    // Reset classes
+    btn.onclick = null;
+    btn.className = "w-9 h-9 rounded-xl bg-slate-900/90 hover:bg-slate-800 border flex items-center justify-center shadow-lg transition-all";
+
+    if (status === "idle") {
+        btn.classList.add("border-indigo-500/40", "text-indigo-400", "hover:text-indigo-300");
+        btn.title = "Synced — tap to sync now";
+        btn.onclick = () => triggerManualSync();
+        if (iconEl) {
+            iconEl.setAttribute("data-lucide", "cloud-check");
+            iconEl.className = "w-4 h-4";
+        }
+    } else if (status === "syncing") {
+        btn.classList.add("border-indigo-500/40", "text-indigo-400");
+        btn.title = "Syncing…";
+        btn.onclick = null;
+        if (iconEl) {
+            iconEl.setAttribute("data-lucide", "refresh-cw");
+            iconEl.className = "w-4 h-4 animate-spin";
+        }
+    } else {
+        // error or offline
+        btn.classList.add("border-slate-700", "text-slate-500", "hover:text-slate-400");
+        btn.title = status === "error" ? "Sync error — tap to open settings" : "Offline — tap to open settings";
+        btn.onclick = () => switchScreen("settings");
+        if (iconEl) {
+            iconEl.setAttribute("data-lucide", "cloud-off");
+            iconEl.className = "w-4 h-4";
+        }
+    }
+
+    if (typeof initLucideIcons === "function") initLucideIcons(btn);
+}
+
+
     state.syncStatus = status;
     const targets = document.querySelectorAll(".sync-status-text");
     targets.forEach(el => {
@@ -451,6 +678,7 @@ function updateSyncStatus(status, detail = "") {
     if (typeof initLucideIcons === "function") {
         initLucideIcons();
     }
+    updateHeaderSyncIcon();
 }
 
 /**
@@ -470,9 +698,9 @@ function formatTimeAgo(isoString) {
     return new Date(isoString).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-// Window focus synchronization listener
-window.addEventListener("focus", () => {
-    if (state.syncEnabled && navigator.onLine) {
+// Tab visibility synchronization — fires when user switches back to the app tab
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && state.syncEnabled && navigator.onLine) {
         syncFromDrive();
     }
 });
@@ -488,49 +716,79 @@ window.addEventListener("offline", () => {
 });
 
 /**
- * Initiates the Google OAuth authorization flow manually.
- * If local data exists, prompts user to Merge or Fresh Start before OAuth.
+ * Initiates the Google OAuth authorization flow.
+ * If no cloud file exists yet → silent upload (no migration modal).
+ * If cloud file exists AND local data exists → show migration modal.
  */
 async function connectGoogleSync() {
+    initGoogleAuth(true);
+
+    let token;
+    try {
+        token = await getValidToken(true);
+    } catch (err) {
+        console.error("Connection failed:", err);
+        updateSyncStatus("error", err.message || "Auth error");
+        return;
+    }
+
+    // Fetch + cache user email
+    await fetchGoogleUserEmail(token);
+
+    // Check whether a cloud file already exists
+    let existingFileId = null;
+    try {
+        existingFileId = await findSyncFileId(token);
+    } catch (e) {
+        console.warn("findSyncFileId check failed:", e);
+    }
+
     const hasLocalData = (state.transactions && state.transactions.length > 0) ||
                          (state.savingGoals && state.savingGoals.length > 0) ||
                          (state.recurringExpenses && state.recurringExpenses.length > 0);
 
-    let migrationChoice = "merge"; // default
+    if (!existingFileId) {
+        // No cloud file → silent upload, no modal needed
+        state.syncEnabled = true;
+        saveStateToLocalStorage();
+        updateSyncStatus("idle");
+        showNotification("Google Drive connected!");
+        renderSyncControls();
+        await pushToDrive();
+        // Resolve and cache the newly created file ID
+        try {
+            const newToken = await getValidToken(false);
+            const newFid = await findSyncFileId(newToken);
+            if (newFid) state.syncDriveFileId = newFid;
+            localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
+        } catch (e) {}
+        renderSyncControls();
+        renderSyncMetaBadge();
+        return;
+    }
+
+    // Cloud file exists — ask user how to handle if local data present
+    let migrationChoice = "merge";
     if (hasLocalData) {
         migrationChoice = await showMigrationModal();
         if (!migrationChoice) return; // user cancelled
     }
 
-    initGoogleAuth(true);
+    // Cache the file ID we already looked up
+    state.syncDriveFileId = existingFileId;
+    state.syncEnabled = true;
+    saveStateToLocalStorage();
+    updateSyncStatus("idle");
+    showNotification("Google Drive connected!");
+    renderSyncControls();
 
-    // Store choice so the callback in initGoogleAuth can act on it
-    window._pendingSyncMigration = migrationChoice;
-
-    getValidToken(true)
-        .then(async () => {
-            // Token obtained — now safe to commit sync as enabled
-            state.syncEnabled = true;
-            saveStateToLocalStorage();
-            updateSyncStatus("idle");
-            showNotification("Google Drive connected!");
-            renderSyncControls();
-
-            if (window._pendingSyncMigration === "fresh") {
-                // Fresh Start: pull remote data and overwrite local
-                await syncFromDrive();
-            } else {
-                // Merge: push local data up to Drive (syncFromDrive handles if remote newer)
-                await pushToDrive();
-            }
-            window._pendingSyncMigration = null;
-            renderSyncControls();
-        })
-        .catch(err => {
-            window._pendingSyncMigration = null;
-            console.error("Connection failed:", err);
-            updateSyncStatus("error", err.message || "Auth error");
-        });
+    if (migrationChoice === "fresh") {
+        await syncFromDrive();
+    } else {
+        await pushToDrive();
+    }
+    renderSyncControls();
+    renderSyncMetaBadge();
 }
 
 /**
@@ -614,6 +872,7 @@ function renderSyncControls() {
     if (typeof initLucideIcons === "function") {
         initLucideIcons(container);
     }
+    renderSyncMetaBadge();
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -648,8 +907,13 @@ function showOnboardingModal() {
             <p class="text-[10px] text-slate-500 leading-relaxed border-t border-slate-800 pt-3">
                 Connect Google Drive to keep a private, encrypted backup that syncs across your devices — no server required.
             </p>
+            <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                <input type="checkbox" id="onboardingDontShowChk"
+                    class="w-3.5 h-3.5 rounded accent-indigo-500 cursor-pointer">
+                <span class="text-[10px] text-slate-500 font-semibold">Don't show this reminder again</span>
+            </label>
             <div class="flex gap-2">
-                <button onclick="document._dismissOnboarding()" 
+                <button onclick="document._dismissOnboarding()"
                     class="flex-1 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition-all active:scale-95">
                     Not now
                 </button>
@@ -662,6 +926,11 @@ function showOnboardingModal() {
     `;
 
     document._dismissOnboarding = () => {
+        const chk = document.getElementById("onboardingDontShowChk");
+        if (chk && chk.checked) {
+            state.hideCloudPrompt = true;
+            localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
+        }
         const el = document.getElementById("syncOnboardingModal");
         if (el) el.remove();
         try { sessionStorage.setItem("dabbux_onboarding_seen", "1"); } catch (e) {}
@@ -678,6 +947,7 @@ function showOnboardingModal() {
  */
 function checkAndShowOnboardingModal() {
     if (state.syncEnabled) return;
+    if (state.hideCloudPrompt === true) return;
     try {
         if (sessionStorage.getItem("dabbux_onboarding_seen")) return;
     } catch (e) { /* sessionStorage blocked — show anyway */ }
