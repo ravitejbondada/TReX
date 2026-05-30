@@ -10,7 +10,7 @@ Files listed are the ones modified. Always update this on any meaningful change.
 **What changed:** Added a destructive **Full Reset: Cloud + Local** action for clearing test data completely.
 
 **Files modified:**
-- `js/sync.js` - added `resetAllData()` and surfaced the button under Cloud Sync controls when sync is enabled.
+- `js/sync.js` - added `resetAllData()` and surfaced the button under Cloud Sync controls whether sync is connected or disconnected.
 - `README.md`, `ARCHITECTURE.md`, `FUNCTIONS.md` - documented the difference between Reset Sync and Full Reset.
 
 **Behavior:** Full reset deletes `trex_sync_v4.json` from Drive when possible, removes `androidWalletState_v4` from localStorage, clears `trex_onboarding_seen` from sessionStorage, and reloads the app to defaults.

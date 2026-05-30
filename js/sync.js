@@ -974,7 +974,13 @@ function saveCustomClientId() {
 function renderSyncControls() {
     const container = document.getElementById("syncControlsContainer");
     if (!container) return;
-    container.innerHTML = "";
+
+    const fullResetButton = `
+        <button onclick="resetAllData()"
+            class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-rose-950/30">
+            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Full Reset: Cloud + Local
+        </button>
+    `;
 
     if (state.syncEnabled) {
         container.innerHTML = `
@@ -992,10 +998,7 @@ function renderSyncControls() {
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Reset Sync
                 </button>
             </div>
-                    <button onclick="resetAllData()"
-                class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-rose-950/30">
-                <i data-lucide="alert-triangle" class="w-4 h-4"></i> Full Reset: Cloud + Local
-            </button>
+            ${fullResetButton}
         `;
     } else {
         container.innerHTML = `
@@ -1003,6 +1006,7 @@ function renderSyncControls() {
                 class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95">
                 <i data-lucide="cloud-upload" class="w-4 h-4"></i> Connect Google Drive
             </button>
+            ${fullResetButton}
         `;
     }
 
