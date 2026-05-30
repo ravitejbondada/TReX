@@ -166,7 +166,6 @@ window.onload = function () {
     }
     try { renderNewTripEmojiPicker(); } catch (e) { }
     if (state.syncEnabled && typeof syncFromDrive === "function") {
-        // syncFromDrive internally guards for GIS readiness; _dabbuxGISReady will re-trigger it if SDK not ready yet
         syncFromDrive();
     } else if (typeof updateSyncStatus === "function") {
         updateSyncStatus("offline");
@@ -388,6 +387,10 @@ function switchScreen(viewName) {
         renderCreditCardsView();
     } else if (viewName === "settings") {
         renderSettingsLists();
+        if (typeof renderSyncControls === "function") renderSyncControls();
+        if (typeof updateSyncStatus === "function") {
+            updateSyncStatus(state.syncEnabled ? (state.syncStatus || "idle") : "offline");
+        }
     }
 
     document.getElementById("screenContainer").scrollTop = 0;
