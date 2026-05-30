@@ -122,6 +122,55 @@ function syncBiometricLockUI() {
     btn.classList.toggle("hover:bg-indigo-900/60", ready);
 }
 
+// ── Locked Expense Sheet ────────────────────────────────────────────────────
+
+function openLockedExpenseSheet() {
+    const sheet = document.getElementById("lockedExpenseSheet");
+    if (!sheet) return;
+
+    // Populate selects
+    populateLockedQuickExpenseForm();
+
+    // Pre-fill today's date
+    const dateEl = document.getElementById("lockedExpenseDate");
+    if (dateEl) dateEl.value = getTodayISO();
+
+    // Reset amount + note
+    const amountEl = document.getElementById("lockedExpenseAmount");
+    const noteEl   = document.getElementById("lockedExpenseNote");
+    if (amountEl) amountEl.value = "";
+    if (noteEl)   noteEl.value   = "";
+
+    // Show active trip badge if applicable
+    const activeTrip = typeof getActiveTrip === "function" ? getActiveTrip() : null;
+    const badge    = document.getElementById("lockedExpenseTripBadge");
+    const tripName = document.getElementById("lockedExpenseTripName");
+    if (badge && tripName) {
+        if (activeTrip) {
+            tripName.textContent = `Will be saved to: ${activeTrip.name}`;
+            badge.classList.remove("hidden");
+        } else {
+            badge.classList.add("hidden");
+        }
+    }
+
+    sheet.classList.remove("hidden");
+    if (typeof initLucideIcons === "function") initLucideIcons(sheet);
+    setTimeout(() => { if (amountEl) amountEl.focus(); }, 150);
+}
+
+function closeLockedExpenseSheet() {
+    const sheet = document.getElementById("lockedExpenseSheet");
+    if (sheet) sheet.classList.add("hidden");
+}
+
+function closeLockedExpenseSheetOutside(event) {
+    // Close only when tapping the backdrop (not the panel itself)
+    if (event.target === document.getElementById("lockedExpenseSheet")) {
+        closeLockedExpenseSheet();
+    }
+}
+
 function populateLockedQuickExpenseForm() {
     const catSelect = document.getElementById("lockedExpenseCategory");
     const paySelect = document.getElementById("lockedExpensePayment");
@@ -131,7 +180,7 @@ function populateLockedQuickExpenseForm() {
     paySelect.innerHTML = "";
 
     const categories = [...(state.categories || [])].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
-    const payments = (state.payments || [])
+    const payments   = (state.payments || [])
         .filter(pay => !pay.archived)
         .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
@@ -153,10 +202,7 @@ function populateLockedQuickExpenseForm() {
     catSelect.disabled = disabled;
     paySelect.disabled = disabled;
 
-    catSelect.onchange = applyLockedCategoryDefaultPayment;
     applyLockedCategoryDefaultPayment();
-
-    if (typeof initLucideIcons === "function") initLucideIcons(document.getElementById("lockedQuickExpenseForm"));
 }
 
 function applyLockedCategoryDefaultPayment() {
@@ -169,62 +215,74 @@ function applyLockedCategoryDefaultPayment() {
     if (targetPay) paySelect.value = targetPay.id;
 }
 
-function clearLockedQuickExpenseForm() {
-    const amount = document.getElementById("lockedExpenseAmount");
-    const note = document.getElementById("lockedExpenseNote");
-    if (amount) amount.value = "";
-    if (note) note.value = "";
-}
-
 function submitLockedQuickExpense(event) {
     if (event) event.preventDefault();
 
-    const amountEl = document.getElementById("lockedExpenseAmount");
-    const noteEl = document.getElementById("lockedExpenseNote");
+    const amountEl  = document.getElementById("lockedExpenseAmount");
+    const noteEl    = document.getElementById("lockedExpenseNote");
     const catSelect = document.getElementById("lockedExpenseCategory");
     const paySelect = document.getElementById("lockedExpensePayment");
+    const dateEl    = document.getElementById("lockedExpenseDate");
     if (!amountEl || !noteEl || !catSelect || !paySelect) return;
 
-    const amount = parseFloat(amountEl.value);
+    const amount     = parseFloat(amountEl.value);
     const categoryId = catSelect.value;
-    const paymentId = paySelect.value;
-    const note = noteEl.value.trim();
+    const paymentId  = paySelect.value;
+    const note       = noteEl.value.trim();
+    const date       = (dateEl && dateEl.value) ? dateEl.value : getTodayISO();
 
     if (isNaN(amount) || amount <= 0) {
         showNotification("Please enter a valid amount.");
         return;
     }
     if (!categoryId || !paymentId) {
-        showNotification("Choose an existing category and payment method.");
+        showNotification("Choose a category and payment method.");
         return;
     }
 
     const activeTrip = typeof getActiveTrip === "function" ? getActiveTrip() : null;
-    if (!activeTrip) {
-        showNotification("Unlock to add normal expenses. Locked quick add is only for active trip days.");
-        return;
+    if (activeTrip) {
+        // Save as trip expense
+        if (!activeTrip.expenses) activeTrip.expenses = [];
+        activeTrip.expenses.push({
+            id: "te_lock_" + Date.now(),
+            desc: note || "Quick expense",
+            amount,
+            date,
+            categoryId,
+            paymentId,
+            type: "on",
+            ledgerTxId: null,
+            createdAt: getTodayISO(),
+            lockedQuickAdd: true
+        });
+        saveStateToLocalStorage();
+        closeLockedExpenseSheet();
+        try { renderActiveTripBanner(); } catch (e) {}
+        try { renderTripDetailStats(); } catch (e) {}
+        try { renderTripExpenses(); } catch (e) {}
+        showNotification(`Added to ${activeTrip.name}.`);
+    } else {
+        // Save as normal ledger expense
+        const tx = {
+            id: "tx_lock_" + Date.now(),
+            desc: note || "Quick expense",
+            amount,
+            date,
+            categoryId,
+            paymentId,
+            type: "expense",
+            createdAt: getTodayISO(),
+            lockedQuickAdd: true
+        };
+        if (!state.transactions) state.transactions = [];
+        state.transactions.push(tx);
+        saveStateToLocalStorage();
+        closeLockedExpenseSheet();
+        try { renderDashboard(); } catch (e) {}
+        try { renderHistory(); } catch (e) {}
+        showNotification("Expense saved.");
     }
-
-    if (!activeTrip.expenses) activeTrip.expenses = [];
-    activeTrip.expenses.push({
-        id: "te_lock_" + Date.now(),
-        desc: note || "Quick expense",
-        amount,
-        date: getTodayISO(),
-        categoryId,
-        paymentId,
-        type: "on",
-        ledgerTxId: null,
-        createdAt: getTodayISO(),
-        lockedQuickAdd: true
-    });
-
-    saveStateToLocalStorage();
-    clearLockedQuickExpenseForm();
-    try { renderActiveTripBanner(); } catch (e) {}
-    try { renderTripDetailStats(); } catch (e) {}
-    try { renderTripExpenses(); } catch (e) {}
-    showNotification(`Added to ${activeTrip.name}.`);
 }
 
 function lockApp() {
@@ -239,7 +297,9 @@ function lockApp() {
     const lock = document.getElementById("simulatedLockScreen");
     lock.classList.remove("hidden", "opacity-0", "pointer-events-none");
     syncBiometricLockUI();
-    populateLockedQuickExpenseForm();
+
+    // Close the expense sheet if it was open before locking
+    closeLockedExpenseSheet();
 
     document.querySelectorAll("#recurringModal, #pinSuccessModal, #inlineCategoryModal, #inlinePaymentModal, #editCategoryModal, #editPaymentModal")
         .forEach(el => el.classList.add("hidden"));
@@ -253,6 +313,7 @@ function unlockApp() {
     setTimeout(() => {
         document.getElementById("simulatedLockScreen").classList.add("hidden");
     }, 500);
+    closeLockedExpenseSheet();
     pinAttemptBuffer = "";
     updatePinVisualDots();
 }
