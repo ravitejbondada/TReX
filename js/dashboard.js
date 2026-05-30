@@ -1,5 +1,5 @@
-﻿/**
- * dashboard.js â€” Dashboard & Budget Widgets
+/**
+ * dashboard.js – Dashboard & Budget Widgets
  * TReX — Devour Your Expenses
  *
  * Budget cycle calculations, dashboard view renderer, forecast card,
@@ -92,7 +92,7 @@ function formatDateTime(dateObj) {
     const mm = String(dateObj.getMinutes()).padStart(2, "0");
     const ampm = hh >= 12 ? "PM" : "AM";
     const h12 = hh % 12 || 12;
-    return `${d} ${m}, ${yy} Â· ${h12}:${mm} ${ampm}`;
+    return `${d} ${m}, ${yy} · ${h12}:${mm} ${ampm}`;
 }
 
 /* UPDATE DOM DASHBOARD VIEW */
@@ -102,21 +102,21 @@ function updateAppDashboardView() {
     const symbol = state.currencySymbol;
 
     document.getElementById("currentCycleLabel").textContent = `${formatDateReadable(metrics.startDate)} - ${formatDateReadable(metrics.endDate)}`;
-    document.getElementById("activeBudgetSubTitle").textContent = `${state.cycleType === 'salary' ? 'PAYDAY CYCLE' : 'MONTHLY CYCLE'} Â· BUDGET RESET`;
+    document.getElementById("activeBudgetSubTitle").textContent = `${state.cycleType === 'salary' ? 'PAYDAY CYCLE' : 'MONTHLY CYCLE'} · BUDGET RESET`;
 
     const noBudget = !state.monthlyBudget || state.monthlyBudget === 0;
 
     if (noBudget) {
         document.getElementById("budgetTotalDisplay").textContent = `Set budget`;
         document.getElementById("budgetRemainingDisplay").innerHTML =
-            `<span class="text-indigo-400 text-xs font-bold cursor-pointer underline underline-offset-2" onclick="switchScreen('settings')">Tap to set your budget â†’</span>`;
+            `<span class="text-indigo-400 text-xs font-bold cursor-pointer underline underline-offset-2" onclick="switchScreen('settings')">Tap to set your budget →</span>`;
         document.getElementById("budgetProgressBar").style.width = "0%";
         document.getElementById("budgetProgressBar").className = "bg-slate-700 h-full rounded-full transition-all duration-700";
         const emojiEl = document.getElementById("budgetHealthEmoji");
         if (emojiEl) emojiEl.textContent = "🎯";
         const overAlert = document.getElementById("overBudgetAlert");
         if (overAlert) { overAlert.classList.add("hidden"); overAlert.classList.remove("flex"); }
-        document.getElementById("safeToSpendDisplay").textContent = `â€” / day`;
+        document.getElementById("safeToSpendDisplay").textContent = `– / day`;
     } else {
         document.getElementById("budgetTotalDisplay").textContent = `${symbol}${state.monthlyBudget.toLocaleString()}`;
         document.getElementById("budgetRemainingDisplay").textContent = `${symbol}${metrics.remainingBudget.toLocaleString()}`;
@@ -184,7 +184,7 @@ function updateAppDashboardView() {
     renderSpendHeatmap();
 }
 
-/* â”€â”€ FORECAST CARD (Feature 5) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ──── FORECAST CARD (Feature 5) ────────────────────────────────────────────────────────────────────────── */
 function renderForecastCard(metrics) {
     const card = document.getElementById("forecastCard");
     const sym = state.currencySymbol;
@@ -235,7 +235,7 @@ function renderForecastCard(metrics) {
             icon: "bg-emerald-600/15 border-emerald-500/25 text-emerald-400",
             lucide: "shield-check",
             title: "text-emerald-300",
-            titleTxt: "On Track â€” Cycle Looking Good",
+            titleTxt: "On Track – Cycle Looking Good",
             bar: "bg-gradient-to-r from-emerald-500 to-teal-400",
         },
     };
@@ -265,16 +265,16 @@ function renderForecastCard(metrics) {
     if (isOverrun) {
         narrativeEl.innerHTML = `At current pace, you'll exceed your budget by <strong class="text-rose-400">${sym}${Math.abs(gap).toLocaleString()}</strong> with ${metrics.daysRemaining} days left. Cut daily spend to <strong class="text-white">${sym}${Math.round(metrics.safeToSpend).toLocaleString()}/day</strong> to break even.`;
     } else if (isWarning) {
-        narrativeEl.innerHTML = `You're projected to finish at <strong class="text-amber-300">${sym}${projected.toLocaleString()}</strong> â€” close to your limit. Keep daily spend under <strong class="text-white">${sym}${Math.round(metrics.safeToSpend).toLocaleString()}/day</strong> to stay safe.`;
+        narrativeEl.innerHTML = `You're projected to finish at <strong class="text-amber-300">${sym}${projected.toLocaleString()}</strong> – close to your limit. Keep daily spend under <strong class="text-white">${sym}${Math.round(metrics.safeToSpend).toLocaleString()}/day</strong> to stay safe.`;
     } else {
         narrativeEl.innerHTML = `Looking great! Projected to finish with a surplus of <strong class="text-emerald-400">${sym}${Math.abs(gap).toLocaleString()}</strong>. Current allowance is <strong class="text-white">${sym}${Math.round(metrics.safeToSpend).toLocaleString()}/day</strong>.`;
     }
 
     initLucideIcons(card);
 }
-/* â”€â”€ END FORECAST CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ──── END FORECAST CARD ────────────────────────────────────────────────────────────────────────────────────────── */
 
-/* â”€â”€ SPEND HEATMAP CALENDAR (Feature 4) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ──── SPEND HEATMAP CALENDAR (Feature 4) ────────────────────────────────────────────────────── */
 function renderSpendHeatmap() {
     const grid = document.getElementById("spendHeatmapGrid");
     const tooltip = document.getElementById("heatmapTooltip");
@@ -344,29 +344,29 @@ function renderSpendHeatmap() {
             if (isFuture) { tooltip.textContent = ""; return; }
             const dateStr = formatDateReadable(new Date(year, month, d), { weekday: true });
             tooltip.textContent = spend > 0
-                ? `${dateStr} â€” ${sym}${spend.toLocaleString()} spent`
-                : `${dateStr} â€” No spend logged`;
+                ? `${dateStr} – ${sym}${spend.toLocaleString()} spent`
+                : `${dateStr} – No spend logged`;
         });
         cell.addEventListener("mouseleave", () => { tooltip.textContent = ""; });
 
-        // Tap â†’ open Ledger filtered to this exact date
+        // Tap → open Ledger filtered to this exact date
         cell.addEventListener("click", () => {
             if (isFuture) return;
             const pad = n => String(n).padStart(2, "0");
             const dateISO = `${year}-${pad(month + 1)}-${pad(d)}`;
             const dateStr = formatDateReadable(new Date(year, month, d), { weekday: true });
             tooltip.textContent = spend > 0
-                ? `${dateStr} â€” ${sym}${spend.toLocaleString()} spent`
-                : `${dateStr} â€” No spend logged`;
+                ? `${dateStr} – ${sym}${spend.toLocaleString()} spent`
+                : `${dateStr} – No spend logged`;
             openLedgerWithDate(dateISO);
         });
 
         grid.appendChild(cell);
     }
 }
-/* â”€â”€ END SPEND HEATMAP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ──── END SPEND HEATMAP ────────────────────────────────────────────────────────────────────────────────────────── */
 
-/* â”€â”€ FEATURE 6: CUSTOMIZABLE QUICK-LOG BUTTONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ──── FEATURE 6: CUSTOMIZABLE QUICK-LOG BUTTONS ──────────────────────────────────────── */
 
 const DEFAULT_QUICK_LOGS = [];
 
@@ -384,14 +384,14 @@ function renderQuickLogButtons() {
         return;
     }
     grid.innerHTML = logs.map(q => {
-        const cat = state.categories.find(c => c.id === q.categoryId) || { name: "â€”", color: "#6366f1" };
-        const pay = state.payments.find(p => p.id === q.paymentId) || { name: "â€”" };
+        const cat = state.categories.find(c => c.id === q.categoryId) || { name: "–", color: "#6366f1" };
+        const pay = state.payments.find(p => p.id === q.paymentId) || { name: "–" };
         return `
         <button onclick="triggerQuickLog(${q.amount}, '${q.categoryId}', '${q.label}', '${q.paymentId}')"
             class="bg-slate-950 hover:bg-slate-900 p-3 border border-slate-850 rounded-xl text-left flex justify-between items-center transition-all active:scale-95 gap-2">
             <div class="min-w-0 flex flex-col gap-0.5">
                 <span class="text-[11px] text-slate-200 font-bold truncate">${q.label}</span>
-                <span class="text-[8px] font-semibold uppercase" style="color:${cat.color}">${cat.name} Â· ${pay.name}</span>
+                <span class="text-[8px] font-semibold uppercase" style="color:${cat.color}">${cat.name} · ${pay.name}</span>
             </div>
             <span class="text-sm font-black text-indigo-400 shrink-0">${state.currencySymbol}${parseFloat(q.amount).toLocaleString()}</span>
         </button>`;
@@ -483,7 +483,7 @@ function closeQuickLogEditor() {
     document.getElementById("quickLogEditorModal").classList.add("hidden");
 }
 
-/* â”€â”€ FEATURE 13: BUDGET SPEND ALERTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ──── FEATURE 13: BUDGET SPEND ALERTS ──────────────────────────────────────────────────────────── */
 
 const ALERT_THRESHOLDS = [50, 75, 90];
 
@@ -509,7 +509,7 @@ function checkBudgetAlerts(metrics) {
         const key = `${threshold}_${new Date().getMonth()}_${new Date().getFullYear()}`;
         if (pct >= threshold && !fired.includes(key)) {
             fired.push(key);
-            new Notification("TReX â€” Budget Alert ðŸ””", {
+            new Notification("TReX – Budget Alert 🔔", {
                 body: `You've used ${threshold}% of your monthly budget (${state.currencySymbol}${metrics.totalSpent.toLocaleString()} of ${state.currencySymbol}${state.monthlyBudget.toLocaleString()}).`,
                 icon: document.getElementById("dynamicAppleIcon")?.href || ""
             });
@@ -520,7 +520,7 @@ function checkBudgetAlerts(metrics) {
     saveStateToLocalStorage();
 }
 
-/* â”€â”€ FEATURE 14: DAILY EXPENSE REMINDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ──── FEATURE 14: DAILY EXPENSE REMINDER ────────────────────────────────────────────────────── */
 
 let _reminderTimer = null;
 
@@ -709,7 +709,7 @@ function syncNotificationSettings() {
     if (permBtn) permBtn.style.display = needsPerm ? "flex" : "none";
     if (testBtn) testBtn.style.display = (typeof Notification !== "undefined" && Notification.permission === "granted") ? "flex" : "none";
 }
-/* â”€â”€ END NOTIFICATION FEATURES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ──── END NOTIFICATION FEATURES ────────────────────────────────────────────────────────────────────────── */
 
 /* 1-TAP INSTANT ADD TRANSACTIONS */
 function triggerQuickLog(amount, categoryId, note, paymentId) {
