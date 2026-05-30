@@ -62,7 +62,12 @@ let state = {
     syncUserEmail: "",
     syncDriveFileId: "",
     googleClientId: "",
-    hideCloudPrompt: false
+    hideCloudPrompt: false,
+    deviceId: `trex_device_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+    syncEpoch: `trex_epoch_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+    syncResetLineage: null,
+    syncResetHistory: [],
+    pendingCloudResetEpoch: ""
 };
 
 let trendChartInstance = null;
@@ -125,6 +130,11 @@ window.onload = function () {
     if (state.syncUserEmail === undefined) state.syncUserEmail = "";
     if (state.syncDriveFileId === undefined) state.syncDriveFileId = "";
     if (state.hideCloudPrompt === undefined) state.hideCloudPrompt = false;
+    if (!state.deviceId) state.deviceId = `trex_device_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    if (!state.syncEpoch) state.syncEpoch = `trex_epoch_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    if (state.syncResetLineage === undefined) state.syncResetLineage = null;
+    if (!Array.isArray(state.syncResetHistory)) state.syncResetHistory = [];
+    if (state.pendingCloudResetEpoch === undefined) state.pendingCloudResetEpoch = "";
 
     /* ── v1.01 MIGRATION ─────────────────────────────────────
        Ensure every trip expense has categoryId + paymentId.
@@ -396,4 +406,3 @@ function switchScreen(viewName) {
     document.getElementById("screenContainer").scrollTop = 0;
     initLucideIcons();
 }
-

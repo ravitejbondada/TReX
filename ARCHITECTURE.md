@@ -373,14 +373,15 @@ Populated by `renderSyncMetaBadge()`, called from `renderSyncControls()` and `co
 - If **no cloud file exists**, migration modal is bypassed entirely (silent upload)
 
 ### Reset Sync
-- `resetSyncData()` — finds and DELETEs `trex_sync_v4.json` from Drive
+- `resetSyncData()` — replaces `trex_sync_v4.json` with a reset marker in Drive
 - Resets `state.syncEnabled`, `lastSyncedAt`, `syncStatus`; clears in-memory token
-- Local data is **never** touched — only the Drive file is deleted
-- Surfaced as "Reset Sync" button in the Cloud Sync settings panel
+- Local data is **never** touched — other devices must explicitly choose how to handle the reset marker before syncing
+- Surfaced as "Reset Cloud Sync Only" in the Settings Danger Zone and disabled unless Google Drive sync is connected
 
 ### Full Reset: Cloud + Local
-- `resetAllData()` confirms destructive reset, deletes `trex_sync_v4.json` from Drive when a token is available, removes `androidWalletState_v4` from localStorage, clears `trex_onboarding_seen` from sessionStorage, and reloads the app.
-- Surfaced as "Full Reset: Cloud + Local" under the Cloud Sync controls whether sync is connected or disconnected.
+- `resetAllData()` confirms destructive reset, replaces `trex_sync_v4.json` with a reset marker when a token is available, removes `androidWalletState_v4` from localStorage, clears `trex_onboarding_seen` from sessionStorage, and reloads the app.
+- Surfaced as "Full Reset: Cloud + Local" in the Settings Danger Zone whether sync is connected or disconnected.
+- Reset markers advance `syncEpoch` and preserve reset lineage so stale devices cannot silently merge pre-reset data into newer post-reset cloud data.
 
 ---
 

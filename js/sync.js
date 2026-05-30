@@ -17,6 +17,68 @@ let tokenExpiry = 0;
 // the global script scope, and redeclaring that const prevents this file from
 // loading in browsers.
 const SYNC_DEFAULT_CLIENT_ID = "219866394954-pg9187uvcq3gu0c4l51728m1u1hojt0c.apps.googleusercontent.com";
+const SYNC_RESET_MARKER_TYPE = "trex_reset_marker";
+
+function createSyncId(prefix) {
+    return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function ensureSyncIdentity(target = state) {
+    if (!target.deviceId) target.deviceId = createSyncId("trex_device");
+    if (!target.syncEpoch) target.syncEpoch = createSyncId("trex_epoch");
+    if (!Array.isArray(target.syncResetHistory)) target.syncResetHistory = [];
+    if (target.syncResetLineage === undefined) target.syncResetLineage = null;
+    if (target.pendingCloudResetEpoch === undefined) target.pendingCloudResetEpoch = "";
+    return target;
+}
+
+function hasMeaningfulLocalData(target = state) {
+    return ["transactions", "savingGoals", "trips", "recurringExpenses", "emis"].some(key => Array.isArray(target[key]) && target[key].length > 0);
+}
+
+function isResetMarker(remoteState) {
+    return remoteState && remoteState.trexSyncType === SYNC_RESET_MARKER_TYPE;
+}
+
+function getResetHistory(remoteState) {
+    const history = Array.isArray(remoteState.syncResetHistory) ? remoteState.syncResetHistory : [];
+    const previous = remoteState.syncResetLineage && remoteState.syncResetLineage.previousEpoch;
+    return previous ? Array.from(new Set([...history, previous])) : history;
+}
+
+function isAcrossResetBoundary(localState, remoteState) {
+    if (!remoteState || isResetMarker(remoteState)) return false;
+    ensureSyncIdentity(localState);
+    ensureSyncIdentity(remoteState);
+    if (localState.syncEpoch === remoteState.syncEpoch) return false;
+
+    const history = getResetHistory(remoteState);
+    if (history.includes(localState.syncEpoch)) return true;
+
+    const resetAt = remoteState.syncResetLineage && remoteState.syncResetLineage.resetAt;
+    const lastSeen = localState.lastSyncedAt || localState.updatedAt || "";
+    return !!resetAt && hasMeaningfulLocalData(localState) && (!lastSeen || new Date(lastSeen).getTime() < new Date(resetAt).getTime());
+}
+
+function buildResetMarker(previousEpoch) {
+    const resetAt = new Date().toISOString();
+    const nextEpoch = createSyncId("trex_epoch");
+    const previousHistory = Array.isArray(state.syncResetHistory) ? state.syncResetHistory : [];
+    return {
+        trexSyncType: SYNC_RESET_MARKER_TYPE,
+        syncEpoch: nextEpoch,
+        previousSyncEpoch: previousEpoch || state.syncEpoch || "",
+        syncResetLineage: {
+            previousEpoch: previousEpoch || state.syncEpoch || "",
+            resetAt,
+            resetByDeviceId: state.deviceId || ""
+        },
+        syncResetHistory: Array.from(new Set([...previousHistory, previousEpoch || state.syncEpoch || ""])).filter(Boolean),
+        resetAt,
+        resetByDeviceId: state.deviceId || "",
+        updatedAt: resetAt
+    };
+}
 
 // Initialize GIS as soon as the SDK script finishes loading.
 // The GIS script tag uses async defer, so this callback fires once it's ready.
@@ -215,10 +277,26 @@ async function downloadSyncFile(token, fileId) {
  */
 async function pushToDrive() {
     if (!state.syncEnabled) return;
+    ensureSyncIdentity(state);
+    if (state.pendingCloudResetEpoch) {
+        updateSyncStatus("offline", "Reset pending");
+        return;
+    }
     updateSyncStatus("syncing");
     try {
         const token = await getValidToken(false);
         const fileId = await findSyncFileId(token);
+        if (fileId) {
+            const remoteState = await downloadSyncFile(token, fileId);
+            if (isResetMarker(remoteState)) {
+                await showCloudResetMarkerModal(remoteState, token, fileId);
+                return;
+            }
+            if (remoteState && isAcrossResetBoundary(state, remoteState)) {
+                await showResetBoundaryConflictModal(remoteState, token, fileId);
+                return;
+            }
+        }
         const content = JSON.stringify(state);
 
         if (fileId) {
@@ -251,6 +329,11 @@ async function syncFromDrive() {
         updateSyncStatus("offline");
         return;
     }
+    ensureSyncIdentity(state);
+    if (state.pendingCloudResetEpoch) {
+        updateSyncStatus("offline", "Reset pending");
+        return;
+    }
     if (!navigator.onLine) {
         updateSyncStatus("offline");
         return;
@@ -276,12 +359,22 @@ async function syncFromDrive() {
         }
 
         const remoteState = await downloadSyncFile(token, fileId);
+        if (isResetMarker(remoteState)) {
+            await showCloudResetMarkerModal(remoteState, token, fileId);
+            return;
+        }
         if (!remoteState || !remoteState.updatedAt) {
             console.warn("Remote state corrupted or invalid. Overwriting remote with local data.");
             await updateSyncFile(token, fileId, JSON.stringify(state));
             state.lastSyncedAt = new Date().toISOString();
             localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
             updateSyncStatus("idle");
+            return;
+        }
+
+        ensureSyncIdentity(remoteState);
+        if (isAcrossResetBoundary(state, remoteState)) {
+            await showResetBoundaryConflictModal(remoteState, token, fileId);
             return;
         }
 
@@ -355,6 +448,8 @@ async function syncFromDrive() {
  * Drive file converge instead of endlessly preferring one timestamp.
  */
 function buildMergedSyncState(localState, remoteState) {
+    ensureSyncIdentity(localState);
+    ensureSyncIdentity(remoteState);
     const localTime = new Date(localState.updatedAt || 0).getTime();
     const remoteTime = new Date(remoteState.updatedAt || 0).getTime();
     const preferLocal = Number.isFinite(localTime) && Number.isFinite(remoteTime)
@@ -399,6 +494,12 @@ function buildMergedSyncState(localState, remoteState) {
     // Treat enabling cards as a shared capability. This avoids a stale device
     // with false overwriting a device that has already enabled card mode.
     merged.creditCardsEnabled = !!localState.creditCardsEnabled || !!remoteState.creditCardsEnabled;
+    merged.syncEpoch = remoteState.syncEpoch || localState.syncEpoch;
+    merged.syncResetLineage = remoteState.syncResetLineage || localState.syncResetLineage || null;
+    merged.syncResetHistory = Array.from(new Set([
+        ...(Array.isArray(localState.syncResetHistory) ? localState.syncResetHistory : []),
+        ...(Array.isArray(remoteState.syncResetHistory) ? remoteState.syncResetHistory : [])
+    ]));
     return merged;
 }
 
@@ -490,6 +591,9 @@ function _showBudgetConflictModal(localBudget, remoteBudget, onResolved) {
  */
 function applyRemoteState(remoteState, silent = false) {
     // Preserve local connection config before overwriting
+    ensureSyncIdentity(state);
+    ensureSyncIdentity(remoteState);
+    const preservedDeviceId = state.deviceId;
     const preservedClientId = state.googleClientId || SYNC_DEFAULT_CLIENT_ID;
     const preservedEmail = state.syncUserEmail || remoteState.syncUserEmail || "";
     const preservedFileId = state.syncDriveFileId || "";
@@ -497,10 +601,12 @@ function applyRemoteState(remoteState, silent = false) {
     state = normalizeSyncState(remoteState);
 
     // Restore local device connection config — never inherit from remote
+    state.deviceId = preservedDeviceId;
     state.googleClientId = preservedClientId;
     state.syncUserEmail = preservedEmail;
     state.syncDriveFileId = preservedFileId;
     state.syncEnabled = true;
+    state.pendingCloudResetEpoch = "";
     state.lastSyncedAt = new Date().toISOString();
     state.syncStatus = "idle";
     localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
@@ -547,7 +653,206 @@ function normalizeSyncState(remoteState) {
     if (next.syncStatus === undefined) next.syncStatus = "idle";
     if (next.syncUserEmail === undefined) next.syncUserEmail = "";
     if (next.syncDriveFileId === undefined) next.syncDriveFileId = "";
+    ensureSyncIdentity(next);
     return next;
+}
+
+function summarizeSyncState(target) {
+    const count = key => Array.isArray(target && target[key]) ? target[key].length : 0;
+    return `${count("transactions")} transactions, ${count("savingGoals")} goals, ${count("trips")} trips, ${count("recurringExpenses")} recurring, ${count("emis")} EMIs`;
+}
+
+async function uploadLocalAsSyncSource(token, fileId, epoch, lineage, history) {
+    ensureSyncIdentity(state);
+    state.syncEpoch = epoch || state.syncEpoch || createSyncId("trex_epoch");
+    state.syncResetLineage = lineage || state.syncResetLineage || null;
+    state.syncResetHistory = Array.isArray(history) ? history : (state.syncResetHistory || []);
+    state.pendingCloudResetEpoch = "";
+    state.syncEnabled = true;
+    state.updatedAt = new Date().toISOString();
+    const content = JSON.stringify(state);
+    if (fileId) {
+        await updateSyncFile(token, fileId, content);
+    } else {
+        await createSyncFile(token, content);
+    }
+    state.lastSyncedAt = new Date().toISOString();
+    localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
+    updateSyncStatus("idle");
+}
+
+function pauseSyncForReset(epoch) {
+    state.syncEnabled = false;
+    state.pendingCloudResetEpoch = epoch || "";
+    state.syncStatus = "offline";
+    localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
+    renderSyncControls();
+    updateSyncStatus("offline", "Reset pending");
+}
+
+function resetLocalDeviceNow() {
+    accessToken = null;
+    tokenExpiry = 0;
+    localStorage.removeItem("androidWalletState_v4");
+    try { sessionStorage.removeItem("trex_onboarding_seen"); } catch (e) {}
+    window.location.reload();
+}
+
+function showCloudResetMarkerModal(marker, token, fileId) {
+    return new Promise(resolve => {
+        if (document.getElementById("cloudResetMarkerModal")) {
+            document.getElementById("cloudResetMarkerModal").remove();
+        }
+        const resetAt = marker.resetAt ? new Date(marker.resetAt).toLocaleString() : "recently";
+        const div = document.createElement("div");
+        div.id = "cloudResetMarkerModal";
+        div.className = "fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[120] flex items-center justify-center p-4";
+        div.innerHTML = `
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                        <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-extrabold text-white">Cloud Was Reset</h3>
+                        <p class="text-[10px] text-slate-400 mt-0.5">Another device reset TReX ${resetAt}.</p>
+                    </div>
+                </div>
+                <div class="p-3 bg-slate-950/60 rounded-2xl border border-slate-800 text-[10px] text-slate-400 leading-relaxed">
+                    This device still has local data: <strong class="text-white">${summarizeSyncState(state)}</strong>. Choose before sync continues.
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button id="btnResetThisDevice" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3 px-4 rounded-xl text-xs transition-all active:scale-95">
+                        Reset This Device Too
+                    </button>
+                    <button id="btnMakeLocalMain" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3 px-4 rounded-xl text-xs transition-all active:scale-95">
+                        Make This Device Main
+                    </button>
+                    <button id="btnDecideResetLater" class="w-full bg-slate-800 hover:bg-slate-750 border border-slate-750 text-slate-300 font-extrabold py-3 px-4 rounded-xl text-xs transition-all active:scale-95">
+                        Decide Later
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(div);
+        if (typeof initLucideIcons === "function") initLucideIcons(div);
+
+        document.getElementById("btnResetThisDevice").onclick = () => {
+            div.remove();
+            resetLocalDeviceNow();
+            resolve("reset");
+        };
+        document.getElementById("btnMakeLocalMain").onclick = async () => {
+            try {
+                await uploadLocalAsSyncSource(token, fileId, marker.syncEpoch, marker.syncResetLineage, marker.syncResetHistory);
+                showNotification("This device is now the cloud source.");
+            } catch (e) {
+                updateSyncStatus("error", e.message || "Failed to update cloud");
+            }
+            div.remove();
+            resolve("local");
+        };
+        document.getElementById("btnDecideResetLater").onclick = () => {
+            pauseSyncForReset(marker.syncEpoch);
+            showNotification("Sync paused until you choose how to handle the reset.");
+            div.remove();
+            resolve("later");
+        };
+    });
+}
+
+function showResetBoundaryConflictModal(remoteState, token, fileId) {
+    return new Promise(resolve => {
+        if (document.getElementById("resetBoundaryConflictModal")) {
+            document.getElementById("resetBoundaryConflictModal").remove();
+        }
+        const resetAt = remoteState.syncResetLineage && remoteState.syncResetLineage.resetAt
+            ? new Date(remoteState.syncResetLineage.resetAt).toLocaleString()
+            : "a previous reset";
+        const div = document.createElement("div");
+        div.id = "resetBoundaryConflictModal";
+        div.className = "fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[120] flex items-center justify-center p-4";
+        div.innerHTML = `
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                        <i data-lucide="git-compare" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-extrabold text-white">Reset Conflict</h3>
+                        <p class="text-[10px] text-slate-400 mt-0.5">Cloud has data created after ${resetAt}.</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 gap-2 text-[10px]">
+                    <div class="p-3 bg-slate-950/60 rounded-2xl border border-slate-800">
+                        <div class="text-slate-500 uppercase font-black">This Device</div>
+                        <div class="text-slate-200 font-bold mt-1">${summarizeSyncState(state)}</div>
+                    </div>
+                    <div class="p-3 bg-slate-950/60 rounded-2xl border border-slate-800">
+                        <div class="text-slate-500 uppercase font-black">Cloud</div>
+                        <div class="text-slate-200 font-bold mt-1">${summarizeSyncState(remoteState)}</div>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button id="btnUseCloudAfterReset" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 px-4 rounded-xl text-xs transition-all active:scale-95">
+                        Force Cloud
+                    </button>
+                    <button id="btnUseLocalAfterReset" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3 px-4 rounded-xl text-xs transition-all active:scale-95">
+                        Force Local
+                    </button>
+                    <button id="btnMergeAfterReset" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-extrabold py-3 px-4 rounded-xl text-xs transition-all active:scale-95">
+                        Force Merge
+                    </button>
+                    <button id="btnPauseAfterReset" class="w-full bg-slate-800 hover:bg-slate-750 border border-slate-750 text-slate-300 font-extrabold py-3 px-4 rounded-xl text-xs transition-all active:scale-95">
+                        Keep Sync Paused
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(div);
+        if (typeof initLucideIcons === "function") initLucideIcons(div);
+
+        document.getElementById("btnUseCloudAfterReset").onclick = () => {
+            applyRemoteState(remoteState);
+            div.remove();
+            resolve("cloud");
+        };
+        document.getElementById("btnUseLocalAfterReset").onclick = async () => {
+            try {
+                await uploadLocalAsSyncSource(token, fileId, remoteState.syncEpoch, remoteState.syncResetLineage, remoteState.syncResetHistory);
+                showNotification("Cloud replaced with this device's data.");
+            } catch (e) {
+                updateSyncStatus("error", e.message || "Failed to update cloud");
+            }
+            div.remove();
+            resolve("local");
+        };
+        document.getElementById("btnMergeAfterReset").onclick = async () => {
+            try {
+                const mergedState = buildMergedSyncState(state, remoteState);
+                mergedState.syncEpoch = remoteState.syncEpoch;
+                mergedState.syncResetLineage = remoteState.syncResetLineage || null;
+                mergedState.syncResetHistory = remoteState.syncResetHistory || [];
+                mergedState.updatedAt = new Date().toISOString();
+                applyRemoteState(mergedState, true);
+                await updateSyncFile(token, fileId, JSON.stringify(state));
+                state.lastSyncedAt = new Date().toISOString();
+                localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
+                updateSyncStatus("idle");
+                showNotification("Local and cloud data force-merged.");
+            } catch (e) {
+                updateSyncStatus("error", e.message || "Failed to merge");
+            }
+            div.remove();
+            resolve("merge");
+        };
+        document.getElementById("btnPauseAfterReset").onclick = () => {
+            pauseSyncForReset(remoteState.syncEpoch);
+            showNotification("Sync paused. Reconnect sync to choose later.");
+            div.remove();
+            resolve("pause");
+        };
+    });
 }
 
 /**
@@ -853,6 +1158,7 @@ window.addEventListener("offline", () => {
  * If cloud file exists AND local data exists → show migration modal.
  */
 async function connectGoogleSync() {
+    ensureSyncIdentity(state);
     initGoogleAuth(true);
 
     let token;
@@ -875,9 +1181,7 @@ async function connectGoogleSync() {
         console.warn("findSyncFileId check failed:", e);
     }
 
-    const hasLocalData = (state.transactions && state.transactions.length > 0) ||
-                         (state.savingGoals && state.savingGoals.length > 0) ||
-                         (state.recurringExpenses && state.recurringExpenses.length > 0);
+    const hasLocalData = hasMeaningfulLocalData(state);
 
     if (!existingFileId) {
         // No cloud file → silent upload, no modal needed
@@ -896,10 +1200,35 @@ async function connectGoogleSync() {
         } catch (e) {}
         renderSyncControls();
         renderSyncMetaBadge();
+        renderResetDangerZone();
         return;
     }
 
     // Cloud file exists — ask user how to handle if local data present
+    state.syncDriveFileId = existingFileId;
+    let remoteState = null;
+    try {
+        remoteState = await downloadSyncFile(token, existingFileId);
+    } catch (e) {
+        console.warn("downloadSyncFile check failed:", e);
+    }
+
+    if (isResetMarker(remoteState)) {
+        await showCloudResetMarkerModal(remoteState, token, existingFileId);
+        renderSyncControls();
+        renderSyncMetaBadge();
+        renderResetDangerZone();
+        return;
+    }
+
+    if (remoteState && isAcrossResetBoundary(state, remoteState)) {
+        await showResetBoundaryConflictModal(remoteState, token, existingFileId);
+        renderSyncControls();
+        renderSyncMetaBadge();
+        renderResetDangerZone();
+        return;
+    }
+
     let migrationChoice = "merge";
     if (hasLocalData) {
         migrationChoice = await showMigrationModal();
@@ -907,7 +1236,6 @@ async function connectGoogleSync() {
     }
 
     // Cache the file ID we already looked up
-    state.syncDriveFileId = existingFileId;
     state.syncEnabled = true;
     saveStateToLocalStorage();
     updateSyncStatus("idle");
@@ -915,13 +1243,13 @@ async function connectGoogleSync() {
     renderSyncControls();
 
     if (migrationChoice === "fresh") {
-        const remoteState = await downloadSyncFile(token, existingFileId);
-        applyRemoteState(remoteState, false);
+        applyRemoteState(remoteState || await downloadSyncFile(token, existingFileId), false);
     } else {
         await syncFromDrive();
     }
     renderSyncControls();
     renderSyncMetaBadge();
+    renderResetDangerZone();
 }
 
 /**
@@ -975,30 +1303,18 @@ function renderSyncControls() {
     const container = document.getElementById("syncControlsContainer");
     if (!container) return;
 
-    const fullResetButton = `
-        <button onclick="resetAllData()"
-            class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-rose-950/30">
-            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Full Reset: Cloud + Local
-        </button>
-    `;
-
     if (state.syncEnabled) {
         container.innerHTML = `
             <button onclick="triggerManualSync()"
                 class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95">
                 <i data-lucide="refresh-cw" class="w-4 h-4"></i> Sync Now
             </button>
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-1 gap-2">
                 <button onclick="disconnectGoogleSync()"
                     class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-bold py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95">
                     <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Disconnect
                 </button>
-                <button onclick="resetSyncData()"
-                    class="bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/50 text-rose-400 font-bold py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95">
-                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Reset Sync
-                </button>
             </div>
-            ${fullResetButton}
         `;
     } else {
         container.innerHTML = `
@@ -1006,7 +1322,6 @@ function renderSyncControls() {
                 class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95">
                 <i data-lucide="cloud-upload" class="w-4 h-4"></i> Connect Google Drive
             </button>
-            ${fullResetButton}
         `;
     }
 
@@ -1014,9 +1329,44 @@ function renderSyncControls() {
         initLucideIcons(container);
     }
     renderSyncMetaBadge();
+    renderResetDangerZone();
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
+/**
+ * Renders the dedicated destructive reset section in Settings.
+ */
+function renderResetDangerZone() {
+    const container = document.getElementById("resetDangerZoneContainer");
+    if (!container) return;
+
+    const cloudResetDisabled = !state.syncEnabled;
+    container.innerHTML = `
+        <div class="border-t border-rose-900/40 pt-4 space-y-3">
+            <div class="flex items-start gap-2">
+                <div class="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center shrink-0">
+                    <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h3 class="text-[10px] font-extrabold text-rose-300 uppercase tracking-widest">Danger Zone</h3>
+                    <p class="text-[10px] text-slate-500 leading-relaxed mt-1">These actions are destructive. Export a backup first if you need to keep anything.</p>
+                </div>
+            </div>
+            <button onclick="resetSyncData()" ${cloudResetDisabled ? "disabled" : ""}
+                class="w-full border border-rose-800/50 text-rose-300 font-bold py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 ${cloudResetDisabled ? "bg-slate-900/50 opacity-45 cursor-not-allowed" : "bg-rose-950/40 hover:bg-rose-900/50 active:scale-95"}">
+                <i data-lucide="cloud-off" class="w-3.5 h-3.5"></i> Reset Cloud Sync Only
+            </button>
+            <p class="text-[9px] text-slate-600 leading-relaxed -mt-1">Clears the cloud backup, leaves a reset marker for other devices, and disconnects this device. Local browser data stays untouched. ${cloudResetDisabled ? "Available after connecting Google Drive." : ""}</p>
+            <button onclick="resetAllData()"
+                class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-rose-950/30">
+                <i data-lucide="trash-2" class="w-4 h-4"></i> Full Reset: Cloud + Local
+            </button>
+            <p class="text-[9px] text-rose-200/70 leading-relaxed -mt-1">Clears cloud sync when connected, warns other devices with a reset marker, clears this browser's local app data, clears onboarding state, and reloads fresh.</p>
+        </div>
+    `;
+    if (typeof initLucideIcons === "function") initLucideIcons(container);
+}
+
+/* ------------------------------------------------------------------------
    ONBOARDING MODAL — shown once per session when sync is not enabled.
    Uses sessionStorage so it reappears in every incognito/private session.
 ───────────────────────────────────────────────────────────────────────── */
@@ -1183,19 +1533,19 @@ async function resetAllData() {
     updateSyncStatus("syncing", "Full reset...");
     try {
         if (state.syncEnabled || tokenClient || accessToken) {
+            ensureSyncIdentity(state);
+            const marker = buildResetMarker(state.syncEpoch);
             const token = await getValidToken(false);
             const fileId = await findSyncFileId(token);
             if (fileId) {
-                const delUrl = `https://www.googleapis.com/drive/v3/files/${fileId}`;
-                await fetchWithRetry(delUrl, {
-                    method: "DELETE",
-                    headers: { "Authorization": `Bearer ${token}` }
-                });
-                console.log("TReX Drive sync file deleted during full reset.");
+                await updateSyncFile(token, fileId, JSON.stringify(marker));
+            } else {
+                await createSyncFile(token, JSON.stringify(marker));
             }
+            console.log("TReX Drive sync file replaced with reset marker during full reset.");
         }
     } catch (e) {
-        console.error("resetAllData Drive delete failed:", e);
+        console.error("resetAllData Drive reset marker failed:", e);
     }
 
     accessToken = null;
@@ -1223,18 +1573,18 @@ async function resetSyncData() {
 
     updateSyncStatus("syncing");
     try {
+        ensureSyncIdentity(state);
+        const marker = buildResetMarker(state.syncEpoch);
         const token = await getValidToken(false);
         const fileId = await findSyncFileId(token);
         if (fileId) {
-            const delUrl = `https://www.googleapis.com/drive/v3/files/${fileId}`;
-            await fetchWithRetry(delUrl, {
-                method: "DELETE",
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            console.log("TReX Drive sync file deleted.");
+            await updateSyncFile(token, fileId, JSON.stringify(marker));
+        } else {
+            await createSyncFile(token, JSON.stringify(marker));
         }
+        console.log("TReX Drive sync file replaced with reset marker.");
     } catch (e) {
-        console.error("resetSyncData Drive delete failed:", e);
+        console.error("resetSyncData Drive reset marker failed:", e);
         // Still reset local state even if Drive call fails
     }
 
@@ -1242,11 +1592,12 @@ async function resetSyncData() {
     state.syncEnabled = false;
     state.lastSyncedAt = "";
     state.syncStatus = "idle";
+    state.pendingCloudResetEpoch = "";
     accessToken = null;
     tokenExpiry = 0;
     localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
 
     renderSyncControls();
     updateSyncStatus("offline");
-    showNotification("Sync data reset. Google Drive backup deleted.");
+    showNotification("Sync data reset. Other devices will be asked how to proceed.");
 }

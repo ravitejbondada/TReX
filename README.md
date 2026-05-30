@@ -110,8 +110,9 @@ Cloud sync is **live** via `js/sync.js`. It uses the Google Identity Services (G
 - **Budget discrepancy:** a scoped two-button modal asks which budget to keep; all other data syncs silently.
 - A **Migration modal** (Merge / Fresh Start) is shown only when an existing Drive file is found and local data is present.
 - An **Onboarding modal** warns new users about local-only data loss risks. Uses `sessionStorage` so it re-triggers in incognito.
-- **Reset Sync** deletes the `trex_sync_v4.json` file from `appDataFolder` and disconnects the device cleanly while keeping local data.
-- **Full Reset: Cloud + Local** deletes the cloud sync file, clears `androidWalletState_v4` from this browser, clears the onboarding session marker, and reloads to a fresh default state.
+- **Reset Cloud Sync Only** appears in the Danger Zone when Google Drive is connected; it clears the cloud backup, leaves a reset marker for other devices, and disconnects the device while keeping local data.
+- **Full Reset: Cloud + Local** is always visible in the Danger Zone; it clears the cloud backup when connected, leaves a reset marker for other devices, clears `androidWalletState_v4` from this browser, clears the onboarding session marker, and reloads to a fresh default state.
+- **Cross-device reset handling** uses `syncEpoch` plus reset lineage. Devices with stale pre-reset local data must choose: reset local too / make local the source when the cloud is only a reset marker, or force cloud / force local / force merge when newer post-reset cloud data already exists.
 - **Header sync icon** (`#headerSyncBtn`) — always visible in the app header; shows live status (`cloud-check` / spinning `refresh-cw` / `cloud-off`) and provides one-tap access to manual sync or settings.
 - **Account metadata badge** in the Settings panel shows the connected Google email and the Drive file ID once authenticated.
 
