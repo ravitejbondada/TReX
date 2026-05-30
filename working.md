@@ -4,7 +4,19 @@
 May 30, 2026
 
 ## [Current Phase]
-Phase 4 — Duplicate Client ID Boot Crash Fix — Complete ✅
+Phase 5 — Multi-device Sync Convergence — Complete ✅
+
+---
+
+## [Phase 5 Fix — May 30, 2026]
+
+| # | Fix | Status | Files |
+|---|---|---|---|
+| 1 | Added reconciliation merge for same Drive file across devices | ✅ | `sync.js` |
+| 2 | `Sync Now` now combines missing transactions/goals/trips/recurring/EMI records by `id` and pushes the converged file back to Drive | ✅ | `sync.js` |
+| 3 | Existing-file "Merge" connection no longer blindly overwrites cloud with the current device | ✅ | `sync.js` |
+| 4 | Added `openid email profile` scopes and email retry in metadata badge | ✅ | `sync.js` |
+| 5 | Verified clean browser boot still shows `Offline` + `Connect Google Drive` | ✅ | local browser test |
 
 ---
 

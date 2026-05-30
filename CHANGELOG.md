@@ -5,6 +5,21 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ---
 
+## [v2.7] 2026-05-30 — Multi-device sync convergence and account email fix
+
+**What changed:** Fixed a multi-device sync flaw where two devices could point at the same Google Drive file but keep different local data after repeated manual syncs.
+
+**Files modified:**
+- `js/sync.js` — added a reconciliation pass in `syncFromDrive()` that merges missing `transactions`, `savingGoals`, `trips`, `recurringExpenses`, and `emis` by stable `id`, applies the merged state locally, and pushes the converged state back to Drive.
+- `js/sync.js` — changed existing-file "Merge" connection flow to run reconciliation instead of overwriting the cloud file with only the current device's local state.
+- `js/sync.js` — added `openid email profile` OAuth scopes and retries user email fetch from the metadata badge when `syncUserEmail` is blank.
+- `CHANGELOG.md`, `working.md` — documented the multi-device sync fix.
+
+**Verification:**
+- `sync.js` syntax check passes.
+- Clean browser load still renders Cloud Sync status as `Offline` with `Connect Google Drive`.
+- Reconciliation helper functions are registered in the browser.
+
 ## [v2.6] 2026-05-30 — Fix sync module boot crash from duplicate Client ID constant
 
 **What changed:** Fixed a browser-fatal script parse error that prevented `sync.js` from loading at all, leaving Cloud Sync stuck on the hardcoded "Checking..." status in both normal and incognito sessions.

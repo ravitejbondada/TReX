@@ -40,7 +40,7 @@ function initGoogleAuth(forceInteractive = false) {
     const clientId = state.googleClientId || SYNC_DEFAULT_CLIENT_ID;
     tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: clientId,
-        scope: "https://www.googleapis.com/auth/drive.appdata",
+        scope: "https://www.googleapis.com/auth/drive.appdata openid email profile",
         callback: (response) => {
             // NOTE: When called via connectGoogleSync → getValidToken, this
             // callback is temporarily replaced by getValidToken's own wrapper.
@@ -288,6 +288,28 @@ async function syncFromDrive() {
         const localTime = new Date(state.updatedAt).getTime();
         const remoteTime = new Date(remoteState.updatedAt).getTime();
 
+        const mergedState = buildMergedSyncState(state, remoteState);
+        const mergeChangedLocal = !sameSyncArrays(state, mergedState);
+        const mergeChangedRemote = !sameSyncArrays(remoteState, mergedState);
+
+        if (mergeChangedLocal || mergeChangedRemote) {
+            console.log("Sync reconciliation: merged missing records across devices.");
+            const newestTime = Math.max(
+                Number.isFinite(localTime) ? localTime : 0,
+                Number.isFinite(remoteTime) ? remoteTime : 0,
+                Date.now()
+            );
+            mergedState.updatedAt = new Date(newestTime).toISOString();
+            applyRemoteState(mergedState, true);
+            if (fileId) {
+                await updateSyncFile(token, fileId, JSON.stringify(state));
+                state.lastSyncedAt = new Date().toISOString();
+                localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
+            }
+            updateSyncStatus("idle");
+            return;
+        }
+
         if (remoteTime === localTime) {
             // Already in sync
             state.lastSyncedAt = new Date().toISOString();
@@ -297,11 +319,6 @@ async function syncFromDrive() {
         }
 
         if (remoteTime > localTime) {
-            // Determine if this is an ongoing sync cycle or initial account linkage
-            const localHasData = state.transactions.length > 0 || state.savingGoals.length > 0;
-            const remoteHasData = (remoteState.transactions || []).length > 0 || (remoteState.savingGoals || []).length > 0;
-            const isInitialLinkage = localHasData && remoteHasData;
-
             // Check budget discrepancy before applying
             const budgetChanged = remoteState.monthlyBudget !== undefined &&
                                   state.monthlyBudget !== remoteState.monthlyBudget &&
@@ -314,10 +331,10 @@ async function syncFromDrive() {
                         // Preserve local budget in the incoming remote state before applying
                         remoteState.monthlyBudget = state.monthlyBudget;
                     }
-                    _applyRemoteSilent(remoteState, isInitialLinkage, token, fileId);
+                    _applyRemoteSilent(remoteState, false, token, fileId);
                 });
             } else {
-                _applyRemoteSilent(remoteState, isInitialLinkage, token, fileId);
+                _applyRemoteSilent(remoteState, false, token, fileId);
             }
         } else {
             // Local is newer: push to cloud
@@ -331,6 +348,36 @@ async function syncFromDrive() {
         console.error("syncFromDrive error:", e);
         updateSyncStatus("error", e.message || "Failed to pull");
     }
+}
+
+/**
+ * Merges device-owned sync collections by stable item id so two devices using
+ * the same Drive file converge instead of endlessly preferring one timestamp.
+ */
+function buildMergedSyncState(localState, remoteState) {
+    const merged = { ...remoteState };
+    const mergeById = (local, remote) => {
+        const map = new Map();
+        (remote || []).forEach(item => {
+            if (item && item.id) map.set(item.id, item);
+        });
+        (local || []).forEach(item => {
+            if (item && item.id && !map.has(item.id)) map.set(item.id, item);
+        });
+        return Array.from(map.values());
+    };
+
+    merged.transactions = mergeById(localState.transactions, remoteState.transactions);
+    merged.savingGoals = mergeById(localState.savingGoals, remoteState.savingGoals);
+    merged.trips = mergeById(localState.trips, remoteState.trips);
+    merged.recurringExpenses = mergeById(localState.recurringExpenses, remoteState.recurringExpenses);
+    merged.emis = mergeById(localState.emis, remoteState.emis);
+    return merged;
+}
+
+function sameSyncArrays(a, b) {
+    const keys = ["transactions", "savingGoals", "trips", "recurringExpenses", "emis"];
+    return keys.every(key => JSON.stringify(a[key] || []) === JSON.stringify(b[key] || []));
 }
 
 /**
@@ -415,7 +462,7 @@ function _showBudgetConflictModal(localBudget, remoteBudget, onResolved) {
 function applyRemoteState(remoteState, silent = false) {
     // Preserve local connection config before overwriting
     const preservedClientId = state.googleClientId || SYNC_DEFAULT_CLIENT_ID;
-    const preservedEmail = state.syncUserEmail || "";
+    const preservedEmail = state.syncUserEmail || remoteState.syncUserEmail || "";
     const preservedFileId = state.syncDriveFileId || "";
 
     if (typeof normalizeImportedState === "function") {
@@ -586,6 +633,13 @@ async function renderSyncMetaBadge() {
     if (!state.syncEnabled) {
         badge.classList.add("hidden");
         return;
+    }
+
+    if (!state.syncUserEmail) {
+        try {
+            const token = await getValidToken(false);
+            await fetchGoogleUserEmail(token);
+        } catch (e) {}
     }
 
     // Populate email
@@ -801,9 +855,10 @@ async function connectGoogleSync() {
     renderSyncControls();
 
     if (migrationChoice === "fresh") {
-        await syncFromDrive();
+        const remoteState = await downloadSyncFile(token, existingFileId);
+        applyRemoteState(remoteState, false);
     } else {
-        await pushToDrive();
+        await syncFromDrive();
     }
     renderSyncControls();
     renderSyncMetaBadge();

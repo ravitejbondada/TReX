@@ -297,9 +297,12 @@ syncs the moment the user switches back to the app tab.
 
 ### Silent Conflict Resolution (no intrusive modals)
 Last-write-wins using `state.updatedAt` ISO timestamp:
+- Before timestamp decisions, `syncFromDrive()` reconciles missing device-owned
+  records by stable `id` across `transactions`, `savingGoals`, `trips`,
+  `recurringExpenses`, and `emis`; if either side was missing records, the
+  merged state is applied locally and pushed back to Drive so devices converge.
 - `remoteTime === localTime` → already in sync, no-op
 - `remoteTime > localTime` + **ongoing sync** (device already connected) → remote arrays overwrite local (`transactions`, `trips`, `savingGoals`)
-- `remoteTime > localTime` + **initial linkage** (data on both sides) → deduplicate-merge arrays by unique `id`; merged result pushed back to Drive
 - `local.monthlyBudget !== remote.monthlyBudget` → scoped **Budget Conflict Modal** (two-button: "This device" / "Cloud"); no full-page modal
 - `localTime > remoteTime` → push local to Drive
 
