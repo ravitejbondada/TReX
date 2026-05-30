@@ -63,6 +63,11 @@ let state = {
     syncDriveFileId: "",
     googleClientId: "",
     hideCloudPrompt: false,
+    biometricEnabled: false,
+    biometricCredentialId: "",
+    biometricUserId: "",
+    biometricLabel: "",
+    biometricRegisteredAt: "",
     deviceId: `trex_device_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
     syncEpoch: `trex_epoch_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
     syncResetLineage: null,
@@ -130,6 +135,11 @@ window.onload = function () {
     if (state.syncUserEmail === undefined) state.syncUserEmail = "";
     if (state.syncDriveFileId === undefined) state.syncDriveFileId = "";
     if (state.hideCloudPrompt === undefined) state.hideCloudPrompt = false;
+    if (state.biometricEnabled === undefined) state.biometricEnabled = false;
+    if (state.biometricCredentialId === undefined) state.biometricCredentialId = "";
+    if (state.biometricUserId === undefined) state.biometricUserId = "";
+    if (state.biometricLabel === undefined) state.biometricLabel = "";
+    if (state.biometricRegisteredAt === undefined) state.biometricRegisteredAt = "";
     if (!state.deviceId) state.deviceId = `trex_device_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
     if (!state.syncEpoch) state.syncEpoch = `trex_epoch_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
     if (state.syncResetLineage === undefined) state.syncResetLineage = null;
@@ -187,6 +197,9 @@ window.onload = function () {
     initLucideIcons();
     if (typeof updateHeaderSyncIcon === "function") {
         updateHeaderSyncIcon();
+    }
+    if (typeof syncBiometricSettingsUI === "function") {
+        syncBiometricSettingsUI();
     }
 };
 
@@ -397,6 +410,7 @@ function switchScreen(viewName) {
         renderCreditCardsView();
     } else if (viewName === "settings") {
         renderSettingsLists();
+        if (typeof syncBiometricSettingsUI === "function") syncBiometricSettingsUI();
         if (typeof renderSyncControls === "function") renderSyncControls();
         if (typeof updateSyncStatus === "function") {
             updateSyncStatus(state.syncEnabled ? (state.syncStatus || "idle") : "offline");

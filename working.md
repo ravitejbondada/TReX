@@ -1,5 +1,37 @@
 # Active Work Log - TReX Cloud Sync Updates
 
+## [Phase 9 Plan - May 30, 2026]
+
+| # | Workstream | Status | Notes |
+|---|---|---|---|
+| 1 | Move reset controls to standalone final Settings panel | Complete | Moved reset panel out of Cloud Sync and placed at the absolute end of Settings |
+| 2 | Properly enable biometric unlock | In progress | Use WebAuthn/passkeys on hosted origin; PIN remains fallback |
+| 3 | Properly enable reminders | Pending | Use Notification API/service worker where possible; document browser/PWA limits |
+| 4 | Add locked-screen quick expense | Pending | Add-only form with existing category/payment selectors; no add-new controls |
+| 5 | Route locked quick expenses to active trips | Pending | During active trip days, save locked quick expense into trip flow; normal expense still requires login |
+
+### Phase 9 Point 1 Checklist
+
+| # | Task | Status | Files |
+|---|---|---|---|
+| 1 | Record implementation plan in `working.md` | Complete | `working.md` |
+| 2 | Move `resetDangerZoneContainer` out of Cloud Sync and to absolute end of Settings | Complete | `index.html` |
+| 3 | Render reset controls as a standalone destructive app panel | Complete | `js/sync.js` |
+| 4 | Verify syntax and reset panel placement | Complete | `node --check js/sync.js`; placement check confirms reset panel is after portability and before Goals view |
+
+### Phase 9 Point 2 Checklist
+
+| # | Task | Status | Files |
+|---|---|---|---|
+| 1 | Inspect current PIN lock and simulated biometric flow | Complete | `index.html`, `js/auth.js`, `js/core.js`, `js/settings.js` |
+| 2 | Add local biometric state defaults and migration fields | Complete | `js/core.js` |
+| 3 | Add Settings toggle/status for biometric unlock | Complete | `index.html`, `js/core.js` |
+| 4 | Replace simulated biometric unlock with WebAuthn registration/authentication | Complete | `js/auth.js` |
+| 5 | Preserve biometric metadata as device-local during cloud sync apply | Complete | `js/sync.js` |
+| 6 | Verify syntax and browser UI smoke path | In progress | local check |
+
+---
+
 ## [Session Date]
 May 30, 2026
 

@@ -113,9 +113,9 @@
                 <button onclick="pressPin('9')"
                     class="h-12 bg-slate-900 hover:bg-slate-850 rounded-2xl text-white active:scale-95 transition-all">9</button>
 
-                <button onclick="simulateBiometrics()"
+                <button id="biometricUnlockBtn" onclick="simulateBiometrics()"
                     class="h-12 bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-900/40 text-indigo-400 rounded-2xl flex items-center justify-center active:scale-95 transition-all"
-                    title="Simulate Biometric Unlock">
+                    title="Biometric Unlock">
                     <i data-lucide="scan-face" class="w-6 h-6"></i>
                 </button>
                 <button onclick="pressPin('0')"
@@ -968,6 +968,17 @@
 
                     <div class="flex justify-between items-center text-xs">
                         <div>
+                            <span class="text-slate-300 font-medium flex items-center gap-1.5">
+                                <i data-lucide="fingerprint" class="w-4 h-4 text-indigo-400"></i> Biometric Unlock
+                            </span>
+                            <p id="biometricStatusText" class="text-[9px] text-slate-500 mt-0.5">Checking device support...</p>
+                        </div>
+                        <input type="checkbox" id="settingBiometricEnabled" onchange="toggleBiometricSetting()"
+                            class="w-5 h-5 accent-indigo-500 bg-slate-900 border-slate-800 rounded shrink-0 ml-3" />
+                    </div>
+
+                    <div class="flex justify-between items-center text-xs">
+                        <div>
                             <span class="text-slate-300 font-medium">Credit Card Mode</span>
                             <p class="text-[9px] text-slate-500 mt-0.5">Enable the credit card tab and related controls
                             </p>
@@ -1067,8 +1078,6 @@
                     <div id="syncControlsContainer" class="flex flex-col gap-2">
                         <!-- Controls will be populated by JS based on state.syncEnabled -->
                     </div>
-
-                    <div id="resetDangerZoneContainer"></div>
 
                     <div class="border-t border-slate-800 pt-3">
                         <details class="group cursor-pointer">
@@ -1274,6 +1283,8 @@
                         </button>
                     </div>
                 </div>
+
+                <div id="resetDangerZoneContainer"></div>
             </div>
 
             <!-- VIEW 6: GOALS + TRIPS TABBED VIEW -->

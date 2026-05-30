@@ -594,6 +594,11 @@ function applyRemoteState(remoteState, silent = false) {
     ensureSyncIdentity(state);
     ensureSyncIdentity(remoteState);
     const preservedDeviceId = state.deviceId;
+    const preservedBiometricEnabled = !!state.biometricEnabled;
+    const preservedBiometricCredentialId = state.biometricCredentialId || "";
+    const preservedBiometricUserId = state.biometricUserId || "";
+    const preservedBiometricLabel = state.biometricLabel || "";
+    const preservedBiometricRegisteredAt = state.biometricRegisteredAt || "";
     const preservedClientId = state.googleClientId || SYNC_DEFAULT_CLIENT_ID;
     const preservedEmail = state.syncUserEmail || remoteState.syncUserEmail || "";
     const preservedFileId = state.syncDriveFileId || "";
@@ -602,6 +607,11 @@ function applyRemoteState(remoteState, silent = false) {
 
     // Restore local device connection config — never inherit from remote
     state.deviceId = preservedDeviceId;
+    state.biometricEnabled = preservedBiometricEnabled;
+    state.biometricCredentialId = preservedBiometricCredentialId;
+    state.biometricUserId = preservedBiometricUserId;
+    state.biometricLabel = preservedBiometricLabel;
+    state.biometricRegisteredAt = preservedBiometricRegisteredAt;
     state.googleClientId = preservedClientId;
     state.syncUserEmail = preservedEmail;
     state.syncDriveFileId = preservedFileId;
@@ -621,6 +631,7 @@ function applyRemoteState(remoteState, silent = false) {
     try { renderSettingsLists(); } catch (e) {}
     try { renderCreditCardsView(); } catch (e) {}
     try { renderSyncControls(); } catch (e) {}
+    try { syncBiometricSettingsUI(); } catch (e) {}
     updateSyncStatus("idle");
 }
 
@@ -1341,14 +1352,14 @@ function renderResetDangerZone() {
 
     const cloudResetDisabled = !state.syncEnabled;
     container.innerHTML = `
-        <div class="border-t border-rose-900/40 pt-4 space-y-3">
+        <div class="bg-rose-950/15 p-4 rounded-2xl border border-rose-900/50 space-y-3.5">
             <div class="flex items-start gap-2">
                 <div class="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center shrink-0">
                     <i data-lucide="alert-triangle" class="w-4 h-4"></i>
                 </div>
                 <div>
-                    <h3 class="text-[10px] font-extrabold text-rose-300 uppercase tracking-widest">Danger Zone</h3>
-                    <p class="text-[10px] text-slate-500 leading-relaxed mt-1">These actions are destructive. Export a backup first if you need to keep anything.</p>
+                    <h3 class="text-[10px] font-extrabold text-rose-300 uppercase tracking-widest">Destructive Reset Controls</h3>
+                    <p class="text-[10px] text-slate-500 leading-relaxed mt-1">Final app-level reset actions. Export a backup first if you need to keep anything.</p>
                 </div>
             </div>
             <button onclick="resetSyncData()" ${cloudResetDisabled ? "disabled" : ""}
