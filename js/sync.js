@@ -992,6 +992,10 @@ function renderSyncControls() {
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Reset Sync
                 </button>
             </div>
+                    <button onclick="resetAllData()"
+                class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-rose-950/30">
+                <i data-lucide="alert-triangle" class="w-4 h-4"></i> Full Reset: Cloud + Local
+            </button>
         `;
     } else {
         container.innerHTML = `
@@ -1160,7 +1164,44 @@ function showMigrationModal() {
     });
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
+/**
+ * Deletes the cloud sync file, clears local browser data, and reloads to a
+ * fresh default state. Intended for test data / factory reset only.
+ */
+async function resetAllData() {
+    const confirmed = await customConfirm(
+        "This will permanently delete your TReX cloud backup and erase all local data on this device, including transactions, settings, trips, goals, recurring expenses, EMIs, and PIN settings. This cannot be undone.",
+        "Full Reset: Cloud + Local",
+        "Delete Everything"
+    );
+    if (!confirmed) return;
+
+    updateSyncStatus("syncing", "Full reset...");
+    try {
+        if (state.syncEnabled || tokenClient || accessToken) {
+            const token = await getValidToken(false);
+            const fileId = await findSyncFileId(token);
+            if (fileId) {
+                const delUrl = `https://www.googleapis.com/drive/v3/files/${fileId}`;
+                await fetchWithRetry(delUrl, {
+                    method: "DELETE",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                console.log("TReX Drive sync file deleted during full reset.");
+            }
+        }
+    } catch (e) {
+        console.error("resetAllData Drive delete failed:", e);
+    }
+
+    accessToken = null;
+    tokenExpiry = 0;
+    localStorage.removeItem("androidWalletState_v4");
+    try { sessionStorage.removeItem("trex_onboarding_seen"); } catch (e) {}
+    window.location.reload();
+}
+
+/* ------------------------------------------------------------------------
    RESET SYNC — deletes the appDataFolder file from Drive, resets local flags.
 ───────────────────────────────────────────────────────────────────────── */
 

@@ -378,6 +378,10 @@ Populated by `renderSyncMetaBadge()`, called from `renderSyncControls()` and `co
 - Local data is **never** touched — only the Drive file is deleted
 - Surfaced as "Reset Sync" button in the Cloud Sync settings panel
 
+### Full Reset: Cloud + Local
+- `resetAllData()` confirms destructive reset, deletes `trex_sync_v4.json` from Drive when a token is available, removes `androidWalletState_v4` from localStorage, clears `trex_onboarding_seen` from sessionStorage, and reloads the app.
+- Surfaced as "Full Reset: Cloud + Local" under the Cloud Sync controls when sync is enabled.
+
 ---
 
 ## CSS Themes

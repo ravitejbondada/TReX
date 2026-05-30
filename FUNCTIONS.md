@@ -386,7 +386,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `disconnectGoogleSync()` | Confirms then disables sync, clears token, resets sync state fields |
 | `triggerManualSync()` | Runs a full `syncFromDrive()` cycle on demand from the Settings panel |
 | `saveCustomClientId()` | Applies or clears a custom OAuth Client ID from the settings form |
-| `renderSyncControls()` | Renders the Connect / Sync Now / Disconnect / Reset Sync button set based on `state.syncEnabled`; calls `renderSyncMetaBadge()` |
+| `renderSyncControls()` | Renders the Connect / Sync Now / Disconnect / Reset Sync / Full Reset button set based on `state.syncEnabled`; calls `renderSyncMetaBadge()` |
 
 **Onboarding, Migration & Reset**
 
@@ -395,4 +395,5 @@ To find where to add/edit something, scan the relevant section header then go to
 | `showOnboardingModal()` | Injects the bottom-sheet onboarding modal warning about local-only data risk |
 | `checkAndShowOnboardingModal()` | Gate function called from `window.onload`; fires `showOnboardingModal()` after 1.2 s if sync is off and `sessionStorage` key is absent |
 | `showMigrationModal()` | Promise-based modal shown in `connectGoogleSync()` only when a Drive file already exists and local data is present; resolves to `"merge"`, `"fresh"`, or `null` |
+| `resetAllData()` | Deletes `trex_sync_v4.json` from Drive when possible, clears local app data, clears onboarding session state, and reloads to a fresh default state |
 | `resetSyncData()` | Deletes `trex_sync_v4.json` from Drive and resets all local sync state; local app data is preserved |
