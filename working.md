@@ -4,7 +4,19 @@
 May 30, 2026
 
 ## [Current Phase]
-Phase 5 — Multi-device Sync Convergence — Complete ✅
+Phase 6 — Settings Sync Convergence — Complete ✅
+
+---
+
+## [Phase 6 Fix — May 30, 2026]
+
+| # | Fix | Status | Files |
+|---|---|---|---|
+| 1 | Added category/payment reconciliation by `id` | ✅ | `sync.js` |
+| 2 | Added shared settings reconciliation for currency, budget cycle, theme, reminders, and budget alerts | ✅ | `sync.js` |
+| 3 | Preserved `creditCardsEnabled=true` across devices so card mode appears after sync | ✅ | `sync.js` |
+| 4 | Re-rendered Settings forms/lists and Credit Cards view immediately after remote apply | ✅ | `sync.js` |
+| 5 | Verified category merge + credit card mode sync in browser probe | ✅ | local browser test |
 
 ---
 

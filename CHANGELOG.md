@@ -5,6 +5,20 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ---
 
+## [v2.8] 2026-05-30 — Sync settings, categories, payments, and credit card mode
+
+**What changed:** Fixed remaining multi-device sync gaps where Settings changes could fail to appear on another device even when both devices pointed at the same Drive file.
+
+**Files modified:**
+- `js/sync.js` — extended reconciliation to merge `categories` and `payments` by stable `id`, not only transaction-style records.
+- `js/sync.js` — added shared-setting reconciliation for currency, budget cycle settings, theme, reminder settings, and budget alert settings using the newer state.
+- `js/sync.js` — treats `creditCardsEnabled=true` as shared across devices so a stale device with `false` cannot hide credit card mode after sync.
+- `js/sync.js` — refreshes Settings lists/forms and Credit Cards view immediately after applying remote/merged state, so synced settings are visible without reload.
+
+**Verification:**
+- `sync.js`, `settings.js`, and `core.js` syntax checks pass.
+- Browser merge probe confirms categories from both devices are retained and `creditCardsEnabled` syncs as `true`.
+
 ## [v2.7] 2026-05-30 — Multi-device sync convergence and account email fix
 
 **What changed:** Fixed a multi-device sync flaw where two devices could point at the same Google Drive file but keep different local data after repeated manual syncs.

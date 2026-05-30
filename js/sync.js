@@ -351,10 +351,16 @@ async function syncFromDrive() {
 }
 
 /**
- * Merges device-owned sync collections by stable item id so two devices using
- * the same Drive file converge instead of endlessly preferring one timestamp.
+ * Merges sync collections and shared settings so two devices using the same
+ * Drive file converge instead of endlessly preferring one timestamp.
  */
 function buildMergedSyncState(localState, remoteState) {
+    const localTime = new Date(localState.updatedAt || 0).getTime();
+    const remoteTime = new Date(remoteState.updatedAt || 0).getTime();
+    const preferLocal = Number.isFinite(localTime) && Number.isFinite(remoteTime)
+        ? localTime > remoteTime
+        : false;
+    const newerState = preferLocal ? localState : remoteState;
     const merged = { ...remoteState };
     const mergeById = (local, remote) => {
         const map = new Map();
@@ -367,17 +373,40 @@ function buildMergedSyncState(localState, remoteState) {
         return Array.from(map.values());
     };
 
+    merged.categories = mergeById(localState.categories, remoteState.categories);
+    merged.payments = mergeById(localState.payments, remoteState.payments);
     merged.transactions = mergeById(localState.transactions, remoteState.transactions);
     merged.savingGoals = mergeById(localState.savingGoals, remoteState.savingGoals);
     merged.trips = mergeById(localState.trips, remoteState.trips);
     merged.recurringExpenses = mergeById(localState.recurringExpenses, remoteState.recurringExpenses);
     merged.emis = mergeById(localState.emis, remoteState.emis);
+
+    [
+        "currency",
+        "currencySymbol",
+        "monthlyBudget",
+        "cycleType",
+        "cycleDay",
+        "theme",
+        "dailyReminderEnabled",
+        "dailyReminderTime",
+        "budgetAlertEnabled",
+        "budgetAlertThreshold"
+    ].forEach(key => {
+        if (newerState[key] !== undefined) merged[key] = newerState[key];
+    });
+
+    // Treat enabling cards as a shared capability. This avoids a stale device
+    // with false overwriting a device that has already enabled card mode.
+    merged.creditCardsEnabled = !!localState.creditCardsEnabled || !!remoteState.creditCardsEnabled;
     return merged;
 }
 
 function sameSyncArrays(a, b) {
-    const keys = ["transactions", "savingGoals", "trips", "recurringExpenses", "emis"];
-    return keys.every(key => JSON.stringify(a[key] || []) === JSON.stringify(b[key] || []));
+    const arrayKeys = ["categories", "payments", "transactions", "savingGoals", "trips", "recurringExpenses", "emis"];
+    const scalarKeys = ["currency", "currencySymbol", "monthlyBudget", "cycleType", "cycleDay", "theme", "creditCardsEnabled"];
+    return arrayKeys.every(key => JSON.stringify(a[key] || []) === JSON.stringify(b[key] || [])) &&
+        scalarKeys.every(key => (a[key] ?? null) === (b[key] ?? null));
 }
 
 /**
@@ -486,6 +515,9 @@ function applyRemoteState(remoteState, silent = false) {
 
     // Re-render UI immediately without a full page reload
     try { updateAppDashboardView(); } catch (e) {}
+    try { syncSettingsFormFields(); } catch (e) {}
+    try { renderSettingsLists(); } catch (e) {}
+    try { renderCreditCardsView(); } catch (e) {}
     try { renderSyncControls(); } catch (e) {}
     updateSyncStatus("idle");
 }
