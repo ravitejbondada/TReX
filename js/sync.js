@@ -530,10 +530,10 @@ function buildMergedSyncState(localState, remoteState) {
     merged.recurringExpenses = mergeById(localState.recurringExpenses, remoteState.recurringExpenses);
     merged.emis = mergeById(localState.emis, remoteState.emis);
 
+    // Prefer newer state for most shared settings
     [
         "currency",
         "currencySymbol",
-        "monthlyBudget",
         "cycleType",
         "cycleDay",
         "theme",
@@ -544,6 +544,12 @@ function buildMergedSyncState(localState, remoteState) {
     ].forEach(key => {
         if (newerState[key] !== undefined) merged[key] = newerState[key];
     });
+
+    // Budget: prefer the non-zero value regardless of timestamp.
+    // A device with monthlyBudget=0 must never overwrite a real budget from another device.
+    merged.monthlyBudget = (localState.monthlyBudget || 0) > (remoteState.monthlyBudget || 0)
+        ? localState.monthlyBudget
+        : remoteState.monthlyBudget || localState.monthlyBudget || 0;
 
     // Treat enabling cards as a shared capability. This avoids a stale device
     // with false overwriting a device that has already enabled card mode.
