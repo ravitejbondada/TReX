@@ -29,42 +29,32 @@ function formatISODate(d) {
     return `${y}-${m}-${day}`;
 }
 
-function getRecurringOccurrenceDates(rec, upToDate) {
-    const start = parseISODate(rec.startDate || getTodayISO());
-    const end = new Date(upToDate);
-    end.setHours(0, 0, 0, 0);
-    start.setHours(0, 0, 0, 0);
-    const dates = [];
-    if (start > end) return dates;
-
-    let current = new Date(start);
-    while (current <= end) {
-        dates.push(formatISODate(current));
-        if (rec.freq === "daily") {
-            current.setDate(current.getDate() + 1);
-        } else if (rec.freq === "weekly") {
-            current.setDate(current.getDate() + 7);
-        } else {
-            current.setMonth(current.getMonth() + 1);
-        }
+function isRecurringDueToday(rec) {
+    const today = getTodayISO();
+    if (rec.paused) return false;
+    if (today < rec.startDate) return false;
+    const anchor = rec.lastPostedDate || rec.startDate;
+    if (today === anchor) return false;
+    const anchorDate = parseISODate(anchor);
+    const todayDate  = parseISODate(today);
+    if (rec.freq === "daily") return true;
+    if (rec.freq === "weekly") {
+        const diffDays = Math.round((todayDate - anchorDate) / 86400000);
+        return diffDays % 7 === 0;
     }
-    return dates;
+    const startDay = parseISODate(rec.startDate).getDate();
+    return todayDate.getDate() === startDay;
 }
 
-function hasRecurringTxOnDate(recurringId, dateStr) {
-    return state.transactions.some(t => t.recurringId === recurringId && t.date === dateStr);
-}
-
-function isRecurringDateSkipped(rec, dateStr) {
-    return Array.isArray(rec.skippedDates) && rec.skippedDates.includes(dateStr);
-}
-
-function removeFutureRecurringTransactions(recurringId) {
-    const todayStr = getTodayISO();
-    state.transactions = state.transactions.filter(t => {
-        if (t.recurringId !== recurringId) return true;
-        return t.date < todayStr;
-    });
+function toggleRecurringPause(id) {
+    const rec = state.recurringExpenses.find(r => r.id === id);
+    if (!rec) return;
+    rec.paused = !rec.paused;
+    rec.updatedAt = new Date().toISOString();
+    saveStateToLocalStorage();
+    renderRecurringExpenses();
+    playSound(S.SYSTEM);
+    showNotification(t(rec.paused ? "Schedule paused." : "Schedule resumed.", rec.paused ? "Stampede paused." : "Stampede resumed."));
 }
 
 function openRecurringModal(editId) {
@@ -124,13 +114,15 @@ function saveRecurring() {
     if (!state.recurringExpenses) state.recurringExpenses = [];
 
     if (editId) {
-        removeFutureRecurringTransactions(editId);
         const idx = state.recurringExpenses.findIndex(r => r.id === editId);
         if (idx !== -1) {
+            const existing = state.recurringExpenses[idx];
+            const startChanged = existing.startDate !== startDate;
             state.recurringExpenses[idx] = {
-                ...state.recurringExpenses[idx],
+                ...existing,
                 name, amount, freq, startDate, categoryId, paymentId, note,
-                skippedDates: state.recurringExpenses[idx].skippedDates || [],
+                paused: existing.paused || false,
+                lastPostedDate: startChanged ? null : (existing.lastPostedDate || null),
                 updatedAt: new Date().toISOString()
             };
             playSound(S.SYSTEM);
@@ -140,7 +132,8 @@ function saveRecurring() {
         const newRec = {
             id: "rec_" + Date.now(),
             name, amount, freq, startDate, categoryId, paymentId, note,
-            skippedDates: [],
+            paused: false,
+            lastPostedDate: null,
             createdAt: new Date().toISOString()
         };
         state.recurringExpenses.push(newRec);
@@ -158,8 +151,7 @@ async function deleteRecurring(id) {
     const rec = state.recurringExpenses.find(r => r.id === id);
     if (!rec) return;
     const label = rec.note ? `"${rec.note}"` : "this recurring schedule";
-    if (!await customConfirm(t(`Delete ${label}? Future scheduled entries will also be removed.`, `Stop ${label}? Future herd tracks will also be removed.`), t("Stop this schedule?", "Stop the stampede?"), t("Stop", "Stop it"))) return;
-    removeFutureRecurringTransactions(id);
+    if (!await customConfirm(t(`Delete ${label}? Past entries remain in ledger.`, `Stop ${label}? Past entries remain in ledger.`), t("Stop this schedule?", "Stop the stampede?"), t("Stop", "Stop it"))) return;
     state.recurringExpenses = state.recurringExpenses.filter(r => r.id !== id);
     saveStateToLocalStorage();
     renderRecurringExpenses();
@@ -198,14 +190,17 @@ function renderRecurringExpenses() {
                 const freqColors = { daily: "text-amber-400", weekly: "text-cyan-400", monthly: "text-violet-400" };
                 const freqColor = freqColors[r.freq] || "text-slate-400";
                 return `
-                <div class="bg-slate-950 border border-slate-850 p-3.5 rounded-xl flex justify-between items-center">
+                <div class="${r.paused ? 'bg-slate-950 border border-slate-800 opacity-60' : 'bg-slate-950 border border-slate-850'} p-3.5 rounded-xl flex justify-between items-center">
                     <div class="min-w-0 pr-2">
-                        <span class="text-xs font-bold text-slate-100 block truncate">${r.name}</span>
+                        <span class="text-xs font-bold text-slate-100 block truncate">${r.name}${r.paused ? ' <span style=\"font-size:8px;color:#f59e0b;font-weight:700\">PAUSED</span>' : ''}</span>
                         <span class="text-[9px] ${freqColor} uppercase font-bold block mt-0.5">${r.freq} &bull; from ${r.startDate || "—"}</span>
                         ${cat ? `<span class="text-[9px] text-slate-500 block mt-0.5">Folder: ${cat.name}</span>` : ""}
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0 ml-2">
                         <span class="text-xs font-extrabold text-indigo-400">${symbol}${r.amount.toLocaleString()}</span>
+                        <button onclick="toggleRecurringPause('${r.id}')" class="p-1 hover:bg-slate-800 rounded-lg transition-all ${r.paused ? 'text-amber-400' : 'text-slate-500'} hover:text-amber-400" title="${r.paused ? 'Resume' : 'Pause'}">
+                            <i data-lucide="${r.paused ? 'play' : 'pause'}" class="w-3.5 h-3.5"></i>
+                        </button>
                         <button onclick="openRecurringModal('${r.id}')" class="p-1 hover:bg-slate-800 rounded-lg transition-all text-slate-500 hover:text-indigo-400">
                             <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                         </button>
@@ -254,6 +249,9 @@ function renderRecurringExpenses() {
                         <span class="text-xs font-extrabold text-indigo-400 shrink-0">${symbol}${r.amount.toLocaleString()}</span>
                     </div>
                     <div class="flex gap-2 pt-0.5">
+                        <button onclick="toggleRecurringPause('${r.id}')" class="flex-1 bg-slate-900 hover:bg-slate-800 text-[10px] ${r.paused ? 'text-amber-400' : 'text-slate-400'} font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1">
+                            <i data-lucide="${r.paused ? 'play' : 'pause'}" class="w-3 h-3"></i> ${r.paused ? 'Resume' : 'Pause'}
+                        </button>
                         <button onclick="openRecurringModal('${r.id}')" class="flex-1 bg-slate-900 hover:bg-slate-800 text-[10px] text-indigo-400 font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1">
                             <i data-lucide="pencil" class="w-3 h-3"></i> Edit
                         </button>
@@ -271,20 +269,14 @@ function renderRecurringExpenses() {
 
 function processRecurringExpenses() {
     if (!state.recurringExpenses || state.recurringExpenses.length === 0) return;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getTodayISO();
     let anyPosted = false;
 
     state.recurringExpenses.forEach(rec => {
-        if (!rec.startDate) rec.startDate = getTodayISO();
-        const dueDates = getRecurringOccurrenceDates(rec, today);
-        dueDates.forEach(dateStr => {
-            if (!hasRecurringTxOnDate(rec.id, dateStr) && !isRecurringDateSkipped(rec, dateStr)) {
-                postRecurringEntry(rec, dateStr);
-                anyPosted = true;
-            }
-        });
+        if (!isRecurringDueToday(rec)) return;
+        postRecurringEntry(rec, today);
+        rec.lastPostedDate = today;
+        anyPosted = true;
     });
 
     if (anyPosted) {
@@ -301,8 +293,6 @@ function postRecurringEntry(rec, dateStr) {
         paymentId: rec.paymentId,
         date: dateStr,
         note: (rec.note ? rec.note + " " : "") + `[Auto: ${rec.name}]`,
-        isRecurring: true,
-        recurringId: rec.id,
         createdAt: new Date().toISOString()
     };
     state.transactions.push(newTx);

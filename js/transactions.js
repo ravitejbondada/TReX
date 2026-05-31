@@ -539,15 +539,6 @@ async function deleteTransaction(id) {
         await new Promise(r => setTimeout(r, 380));
     }
 
-    if (tx && tx.recurringId && tx.date) {
-        const rec = state.recurringExpenses?.find(r => r.id === tx.recurringId);
-        if (rec) {
-            if (!Array.isArray(rec.skippedDates)) rec.skippedDates = [];
-            if (!rec.skippedDates.includes(tx.date)) rec.skippedDates.push(tx.date);
-            rec.updatedAt = new Date().toISOString();
-        }
-    }
-
     state.transactions = state.transactions.filter(t => t.id !== id);
     saveStateToLocalStorage();
     playSound(S.DELETE);
