@@ -117,7 +117,7 @@ function updateAppDashboardView() {
     if (noBudget) {
         document.getElementById("budgetTotalDisplay").textContent = `Set budget`;
         document.getElementById("budgetRemainingDisplay").innerHTML =
-            `<span class="text-indigo-400 text-xs font-bold cursor-pointer underline underline-offset-2" onclick="switchScreen('settings')">Tap to set your budget →</span>`;
+            `<span class="text-indigo-400 text-xs font-bold cursor-pointer underline underline-offset-2" onclick="openDrawer(); openDrawerSection('budget')">Tap to set your budget →</span>`;
         document.getElementById("budgetProgressBar").style.width = "0%";
         document.getElementById("budgetProgressBar").className = "bg-slate-700 h-full rounded-full transition-all duration-700";
         const emojiEl = document.getElementById("budgetHealthEmoji");

@@ -432,7 +432,14 @@ function saveBudgetAndCycleSettings() {
     state.cycleDay = startDay;
     saveStateToLocalStorage();
     playSound(S.SYSTEM);
-    showNotification(t("Settings saved.", "🦖 Stomped it. Settings saved."));
+    customConfirm(
+        t(`Budget set to ${state.currencySymbol}${limit.toLocaleString()}. You're all set!`, `🦖 Budget stomped: ${state.currencySymbol}${limit.toLocaleString()}. Hunt begins now!`),
+        t("Budget Saved", "Budget Stomped"),
+        t("Go to Dashboard", "Let's Hunt")
+    ).then(() => {
+        closeDrawer();
+        switchScreen('dashboard');
+    });
 }
 
 function renderSettingsLists() {

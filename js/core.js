@@ -546,6 +546,8 @@ function switchScreen(viewName) {
     }
 
     document.getElementById("screenContainer").scrollTop = 0;
+    const activePanel = document.getElementById(viewName + "View");
+    if (activePanel) activePanel.scrollTop = 0;
     initLucideIcons();
 
     // Phase 5 — nav icon swap
