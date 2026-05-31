@@ -489,13 +489,27 @@ async function simulateBiometrics() {
     }
 }
 
+const FOOTPRINT_SVG = `<svg viewBox="0 0 16 20" width="14" height="18" fill="currentColor"><ellipse cx="8" cy="14" rx="5" ry="6"/><ellipse cx="4" cy="6" rx="2" ry="2.5"/><ellipse cx="8" cy="4" rx="2" ry="2.5"/><ellipse cx="12" cy="6" rx="2" ry="2.5"/></svg>`;
+const EMPTY_FOOTPRINT = `<div style="width:14px;height:18px;border-radius:50%;border:2px solid currentColor;opacity:0.4"></div>`;
+
 function updatePinVisualDots() {
-    for (let i = 1; i <= 4; i++) {
-        const dot = document.getElementById("pinDot" + i);
-        if (i <= pinAttemptBuffer.length) {
-            dot.className = "w-4 h-4 rounded-full bg-indigo-500 border-2 border-indigo-400 scale-110 transition-all duration-200 shadow-md shadow-indigo-500/30";
-        } else {
-            dot.className = "w-4 h-4 rounded-full border-2 border-slate-800 bg-transparent transition-all duration-200";
+    const filled = pinAttemptBuffer.length;
+    if (dp('dinoMode')) {
+        document.querySelectorAll('.pin-dot').forEach((dot, i) => {
+            dot.innerHTML = i < filled ? FOOTPRINT_SVG : EMPTY_FOOTPRINT;
+            dot.style.color = i < filled ? '#4ade80' : '#475569';
+        });
+    } else {
+        for (let i = 1; i <= 4; i++) {
+            const dot = document.getElementById("pinDot" + i);
+            if (!dot) continue;
+            dot.innerHTML = "";
+            dot.style.color = "";
+            if (i <= filled) {
+                dot.className = "pin-dot w-4 h-4 rounded-full bg-indigo-500 border-2 border-indigo-400 scale-110 transition-all duration-200 shadow-md shadow-indigo-500/30";
+            } else {
+                dot.className = "pin-dot w-4 h-4 rounded-full border-2 border-slate-800 bg-transparent transition-all duration-200";
+            }
         }
     }
 }

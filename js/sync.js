@@ -1176,6 +1176,46 @@ function updateHeaderSyncIcon() {
     const btn = document.getElementById("headerSyncBtn");
     if (!btn) return;
 
+    const status = state.syncStatus || "idle";
+
+    // Phase 5 — Dino Mode: replace cloud icon with animated egg
+    if (dp('dinoMode')) {
+        const eggClass = {
+            idle:    'sync-egg-idle',
+            syncing: 'sync-egg-syncing',
+            offline: 'sync-egg-offline',
+            error:   'sync-egg-error',
+        }[status] || 'sync-egg-offline';
+
+        btn.innerHTML = `<svg class="sync-egg-svg ${eggClass}" viewBox="0 0 18 20" width="18" height="20">
+            <ellipse cx="9" cy="11" rx="7" ry="9" fill="currentColor"/>
+            <path class="sync-egg-crack" d="M9,5 L7,9 L10,11 L8,15"
+                stroke="#1a1a2e" stroke-width="1.2" fill="none" opacity="0" style="transition:opacity 0.2s"/>
+        </svg>`;
+
+        btn.className = "w-9 h-9 rounded-xl bg-slate-900/90 hover:bg-slate-800 border flex items-center justify-center shadow-lg transition-all border-slate-700";
+        btn.onclick = null;
+
+        if (!state.syncEnabled || status === "offline") {
+            btn.title = "Offline — tap to open settings";
+            btn.onclick = () => switchScreen("settings");
+        } else if (status === "error") {
+            btn.title = "Sync error — tap to open settings";
+            btn.onclick = () => switchScreen("settings");
+        } else if (status === "syncing") {
+            btn.title = "Syncing…";
+        } else {
+            btn.title = "Synced — tap to sync now";
+            btn.onclick = () => triggerManualSync();
+        }
+        return;
+    }
+
+    // Normal Mode — existing Lucide icon logic
+    // Restore Lucide icon element if dino egg replaced it
+    if (!document.getElementById("headerSyncIcon")) {
+        btn.innerHTML = `<i id="headerSyncIcon" data-lucide="cloud-off" class="w-4 h-4"></i>`;
+    }
     const iconEl = document.getElementById("headerSyncIcon");
     btn.onclick = null;
     btn.className = "w-9 h-9 rounded-xl bg-slate-900/90 hover:bg-slate-800 border flex items-center justify-center shadow-lg transition-all";
@@ -1189,8 +1229,7 @@ function updateHeaderSyncIcon() {
         return;
     }
 
-    const status = state.syncStatus || "idle";
-
+    // status already declared above
     if (status === "idle") {
         btn.classList.add("border-indigo-500/40", "text-indigo-400", "hover:text-indigo-300");
         btn.title = "Synced — tap to sync now";

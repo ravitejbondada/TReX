@@ -113,7 +113,9 @@ function updateAppDashboardView() {
         document.getElementById("budgetProgressBar").style.width = "0%";
         document.getElementById("budgetProgressBar").className = "bg-slate-700 h-full rounded-full transition-all duration-700";
         const emojiEl = document.getElementById("budgetHealthEmoji");
+        const dinoWrapNoBudget = document.getElementById("budgetDinoWrap");
         if (emojiEl) emojiEl.textContent = "🎯";
+        if (dinoWrapNoBudget) dinoWrapNoBudget.style.display = "none";
         const overAlert = document.getElementById("overBudgetAlert");
         if (overAlert) { overAlert.classList.add("hidden"); overAlert.classList.remove("flex"); }
         document.getElementById("safeToSpendDisplay").textContent = `– / day`;
@@ -137,16 +139,37 @@ function updateAppDashboardView() {
             progressEl.className = "bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-full transition-all duration-700 shadow-sm shadow-emerald-500/20";
         }
 
-        // Health emoji
+        // Health emoji / dino swap
         const emojiEl = document.getElementById("budgetHealthEmoji");
-        if (emojiEl) {
-            let emoji = "😄";
-            if (rawPercent >= 100) emoji = "😱";
-            else if (rawPercent >= 85) emoji = "😰";
-            else if (rawPercent >= 70) emoji = "😟";
-            else if (rawPercent >= 50) emoji = "😐";
-            else if (rawPercent >= 25) emoji = "🙂";
-            emojiEl.textContent = emoji;
+        const dinoWrap = document.getElementById("budgetDinoWrap");
+        if (dp('dinoMode')) {
+            if (emojiEl) emojiEl.style.display = "none";
+            if (dinoWrap) {
+                dinoWrap.style.display = "";
+                const stateClass = getDinoState(rawPercent);
+                dinoWrap.className = `budget-dino-container dino-idle ${stateClass}`;
+                const mouth = dinoWrap.querySelector('.dino-mouth');
+                const mouthPaths = {
+                    'dino-fed':      "M55,40 Q62,38 68,40",
+                    'dino-prowl':    "M55,41 Q62,41 68,41",
+                    'dino-hungry':   "M55,40 Q62,45 68,40",
+                    'dino-ravenous': "M53,38 Q62,48 70,38",
+                    'dino-extinct':  "M53,36 Q62,50 70,36",
+                };
+                if (mouth) mouth.setAttribute('d', mouthPaths[stateClass]);
+            }
+        } else {
+            if (emojiEl) {
+                emojiEl.style.display = "";
+                let emoji = "😄";
+                if (rawPercent >= 100) emoji = "😱";
+                else if (rawPercent >= 85) emoji = "😰";
+                else if (rawPercent >= 70) emoji = "😟";
+                else if (rawPercent >= 50) emoji = "😐";
+                else if (rawPercent >= 25) emoji = "🙂";
+                emojiEl.textContent = emoji;
+            }
+            if (dinoWrap) dinoWrap.style.display = "none";
         }
 
         // Over-budget alert
@@ -185,6 +208,14 @@ function updateAppDashboardView() {
 }
 
 /* ──── FORECAST CARD (Feature 5) ────────────────────────────────────────────────────────────────────────── */
+function getDinoState(pct) {
+    if (pct <= 30)  return 'dino-fed';
+    if (pct <= 60)  return 'dino-prowl';
+    if (pct <= 80)  return 'dino-hungry';
+    if (pct < 100)  return 'dino-ravenous';
+    return 'dino-extinct';
+}
+
 function renderForecastCard(metrics) {
     const card = document.getElementById("forecastCard");
     const sym = state.currencySymbol;

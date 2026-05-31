@@ -462,6 +462,15 @@ function t(neutral, dino) {
     return dp('dinoMode') ? dino : neutral;
 }
 
+// Phase 5 — Dino nav icon SVGs (keyed by data-nav-icon value)
+const DINO_NAV_ICONS = {
+    dashboard:  `<svg data-nav-icon="dashboard" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="display:block"><ellipse cx="12" cy="13" rx="7" ry="6"/><ellipse cx="17" cy="8" rx="5" ry="4"/><path d="M19,10 Q21,11 22,10" stroke="currentColor" stroke-width="1" fill="none"/><circle cx="19" cy="7" r="1" fill="#1a1a2e"/><ellipse cx="7" cy="17" rx="3" ry="2" opacity="0.7"/></svg>`,
+    history:    `<svg data-nav-icon="history" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="display:block"><rect x="4" y="11" width="16" height="3" rx="1.5"/><ellipse cx="6" cy="8" rx="2" ry="2.5"/><ellipse cx="12" cy="7" rx="2" ry="2.5"/><ellipse cx="18" cy="8" rx="2" ry="2.5"/></svg>`,
+    goals:      `<svg data-nav-icon="goals" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="display:block"><ellipse cx="12" cy="13" rx="6" ry="7"/><ellipse cx="9" cy="7" rx="2" ry="2.5"/><ellipse cx="12" cy="5.5" rx="2" ry="2.5"/><ellipse cx="15" cy="7" rx="2" ry="2.5"/></svg>`,
+    reports:    `<svg data-nav-icon="reports" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="display:block"><ellipse cx="7" cy="19" rx="3" ry="4"/><ellipse cx="12" cy="17" rx="3" ry="4"/><ellipse cx="17" cy="19" rx="3" ry="4"/><path d="M4,19 Q7,14 12,13 Q17,12 20,19" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`,
+    cards:      `<svg data-nav-icon="cards" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="display:block"><path d="M4,12 Q6,9 8,12 Q10,15 12,12 Q14,9 16,12 Q18,15 20,12"/><circle cx="12" cy="6" r="2" fill="currentColor" stroke="none"/></svg>`,
+};
+
 function switchScreen(viewName) {
     closeDrawer();
     document.querySelectorAll(".view-panel").forEach(p => p.classList.add("hidden"));
@@ -512,4 +521,12 @@ function switchScreen(viewName) {
 
     document.getElementById("screenContainer").scrollTop = 0;
     initLucideIcons();
+
+    // Phase 5 — nav icon swap
+    if (dp('dinoMode')) {
+        document.querySelectorAll('[data-nav-icon]').forEach(el => {
+            const key = el.dataset.navIcon;
+            if (DINO_NAV_ICONS[key]) el.outerHTML = DINO_NAV_ICONS[key];
+        });
+    }
 }
