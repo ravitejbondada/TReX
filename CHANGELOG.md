@@ -5,21 +5,35 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ---
 
-## [v4.4] 2026-06-01 — Cycle-aware spend heatmap with salary nav
+## [v4.5] 2026-06-01 — Drawer modal z-order fix
 
-**What changed:** The spend heatmap now behaves differently based on `state.cycleType`. Calendar mode renders a rolling current-month grid with no navigation (unchanged UX). Salary mode renders the active payday window (e.g. Jun 10–Jul 9) with `‹ ›` arrows to page through previous cycles; days outside the payday window are shown with a subtle crosshatch tint and are non-interactive.
+**What changed:** Modals opened from the side drawer no longer appear behind it. `closeDrawer()` is now called at the entry point of every modal that can be triggered from a drawer action.
 
 **Files modified:**
-- `js/dashboard.js` — `renderSpendHeatmap()` fully rewritten: branches on `cycleType`; salary mode uses `_heatmapGetCycleWindow(offset)` to compute cycle boundaries, iterates the full calendar range and marks out-of-cycle days with `.heatmap-crosshatch`; spend map re-keyed from day-of-month integer to full ISO date string (fixes cross-month salary cycles). Added `_heatmapCycleOffset` module-level var, `_heatmapGetCycleWindow(offset)` helper, and `heatmapNavigate(delta)` global for nav buttons.
-- `index.html` — heatmap card header updated: added `#heatmapNavWrap` (hidden by default) containing `#heatmapPrevBtn`, `#heatmapMonthLabel`, `#heatmapNextBtn`; hidden for calendar mode, shown for salary mode.
-- `styles.css` — added `.heatmap-crosshatch` (diagonal stripe tint) and `.heatmap-nav-btn` (18 px bare button, disabled state).
-- `CHANGELOG.md`, `FUNCTIONS.md`, `README.md`, `ARCHITECTURE.md` — updated docs.
+- `js/settings.js` — `openEditCategoryModal`, `openEditPaymentModal`: `closeDrawer()` added at top. Add New buttons for categories, payments, recurring, and EMIs in `openDrawerSection` HTML: `closeDrawer();` prepended to each onclick.
+- `js/recurring.js` — `openRecurringModal`, `openEMIModal`: `if (typeof closeDrawer === "function") closeDrawer();` added at top.
+- `js/transactions.js` — `openInlineCategoryModal`, `openInlinePaymentModal`: already had the guard; no change needed.
+- `CHANGELOG.md`, `FUNCTIONS.md`, `ARCHITECTURE.md`, `README.md` — updated docs.
 
 **Behavior:**
-- Calendar cycle: heatmap shows current month as before; no arrows, no crosshatch.
-- Salary cycle: heatmap shows the active payday window; `‹` pages back through previous cycles, `›` is disabled at the current cycle. Header label reads e.g. "Jun 10 – Jul 9".
-- Days outside the payday window in a salary cycle show a subtle crosshatch and have no tap/hover interaction.
-- Navigating to a past salary cycle shows that window's spend data scoped correctly to those dates.
+- Editing or adding a category, payment method, recurring expense, or EMI from the drawer now closes the drawer first, then opens the modal cleanly on top.
+
+---
+
+## [v4.4] 2026-06-01 — Cycle-aware spend heatmap, orphan row pruning, nav removed
+
+**What changed:** Heatmap rewritten to be cycle-aware. Salary mode renders only rows that contain at least one in-cycle day — fully out-of-cycle rows are pruned. Out-of-cycle days within shared rows get crosshatch tint with no interaction. Navigation arrows removed entirely (single active-cycle view only). Calendar mode unchanged.
+
+**Files modified:**
+- `js/dashboard.js` — `renderSpendHeatmap()` rewritten: builds rows-of-7 first, filters out all-crosshatch rows for salary mode, renders remaining rows with per-cell cycle awareness. Removed `_heatmapCycleOffset`, `_heatmapGetCycleWindow()`, `heatmapNavigate()`. Spend map keyed by full ISO date string.
+- `index.html` — nav wrap + prev/next buttons removed from heatmap header; replaced with plain `#heatmapMonthLabel` span.
+- `styles.css` — `.heatmap-nav-btn` removed; `.heatmap-crosshatch` retained.
+- `CHANGELOG.md`, `FUNCTIONS.md`, `ARCHITECTURE.md`, `README.md` — updated docs.
+
+**Behavior:**
+- Salary cycle: grid shows only rows containing in-cycle days. Out-of-cycle days in those rows are crosshatched. No navigation — always the active cycle.
+- Calendar cycle: rolling current month, no change.
+- Header label shows cycle range ("May 11 – Jun 10") for salary, month+year for calendar.
 
 ---
 

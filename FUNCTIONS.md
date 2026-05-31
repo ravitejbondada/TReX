@@ -80,7 +80,7 @@ To find where to add/edit something, scan the relevant section header then go to
 
 ---
 
-## dashboard.js — Dashboard & Budget Widgets (33 functions)
+## dashboard.js — Dashboard & Budget Widgets (30 functions)
 
 | Function | Description |
 |---|---|
@@ -90,9 +90,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `formatDateTime(dateObj)` | Formats a Date as "Today", "Yesterday", or "Mon DD" for activity feed |
 | `updateAppDashboardView()` | Master dashboard refresh — calls all widget renderers; "Tap to set your budget" link opens the drawer budget panel via `openDrawer(); openDrawerSection('budget')` |
 | `renderForecastCard(metrics)` | Renders the projected end-of-cycle forecast card |
-| `_heatmapGetCycleWindow(offset)` | Returns `{ cycleStart, cycleEnd }` for the salary cycle at the given page offset (0 = active, -1 = previous, etc.) |
-| `renderSpendHeatmap()` | Renders the cycle-aware spending heatmap. Calendar mode: rolling current month, no nav. Salary mode: paginated payday window (e.g. Jun 10–Jul 9) with `‹ ›` arrows; out-of-cycle days rendered with crosshatch tint and no interaction. Spend map keyed by full ISO date string. |
-| `heatmapNavigate(delta)` | Increments `_heatmapCycleOffset` by `delta` (clamped to ≤ 0) and re-renders the heatmap; called by the `‹ ›` nav buttons |
+| `renderSpendHeatmap()` | Renders the cycle-aware heatmap. Calendar: rolling current month. Salary: active payday window only — rows with no in-cycle days are pruned; out-of-cycle days in mixed rows get crosshatch tint and no interaction. Spend map keyed by full ISO date string. Label shows cycle range or month/year. |
 | `getQuickLogs()` | Returns quick log config array from state or default seeds |
 | `renderQuickLogButtons()` | Renders the 1-tap quick log button grid on the dashboard |
 | `openQuickLogEditor()` | Opens the quick log customization modal |
@@ -137,10 +135,10 @@ To find where to add/edit something, scan the relevant section header then go to
 | `loadExpenseToFormForEdit(txId, returnCardId?)` | Populates the expense form for editing an existing transaction |
 | `handleExpenseSubmit(e)` | Form submit handler - validates, creates/updates normal transactions, saves state; stamps `createdAt` on create; on edit, preserves `createdAt` if date unchanged and updates it when the date changes |
 | `populateInlineCategoryPaymentOptions()` | Populates dropdowns inside the inline add category/payment modals |
-| `openInlineCategoryModal(mode?)` | Opens the quick-add category modal from the expense form |
+| `openInlineCategoryModal(mode?)` | Calls `closeDrawer()` then opens the quick-add category modal; works from expense form and drawer |
 | `closeInlineCategoryModal()` | Closes the inline category modal |
 | `saveInlineCategory()` | Creates a new category from the inline modal, updates dropdowns |
-| `openInlinePaymentModal(mode?)` | Opens the quick-add payment modal from the expense form |
+| `openInlinePaymentModal(mode?)` | Calls `closeDrawer()` then opens the quick-add payment modal; works from expense form and drawer |
 | `closeInlinePaymentModal()` | Closes the inline payment modal |
 | `saveInlinePayment()` | Creates a new payment method from the inline modal, updates dropdowns |
 | `renderHistoryList()` | Renders the full ledger/history list for the current date range; sorted by `createdAt` desc (falls back to `date` for transactions without `createdAt`) |
@@ -223,11 +221,11 @@ To find where to add/edit something, scan the relevant section header then go to
 | `toggleFossilMode()` | Saves Fossil Mode preference for the future visual phase |
 | `toggleDinoFootprints()` | Saves footprint preference and refreshes the heatmap |
 | `toggleExtinctionWarnings()` | Saves dramatic budget-warning copy preference |
-| `openEditCategoryModal(catId)` | Populates and opens the edit category modal |
+| `openEditCategoryModal(catId)` | Calls `closeDrawer()` then populates and opens the edit category modal |
 | `closeEditCategoryModal()` | Closes the edit category modal |
 | `saveEditCategory()` | Saves edited category fields to state |
 | `deleteCategory(catId)` | Async — confirms then removes a category (blocks if in use) |
-| `openEditPaymentModal(payId)` | Populates and opens the edit payment modal |
+| `openEditPaymentModal(payId)` | Calls `closeDrawer()` then populates and opens the edit payment modal |
 | `closeEditPaymentModal()` | Closes the edit payment modal |
 | `saveEditPayment()` | Saves edited payment fields to state |
 | `deletePaymentMethod(payId)` | Async — confirms, cancels linked recurrings, archives or removes payment |
@@ -271,7 +269,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `getRecurringDueDates(rec, upToDate?)` | Returns every due date from `lastPostedDate + 1` or `startDate` through the target date |
 | `isRecurringDueToday(rec)` | Returns true when there is at least one due recurring date through today |
 | `toggleRecurringPause(id)` | Pauses a recurring schedule; on resume, asks for a resume date and restarts catch-up from that date |
-| `openRecurringModal(editId?)` | Opens the recurring expense create/edit modal |
+| `openRecurringModal(editId?)` | Calls `closeDrawer()` then opens the recurring expense create/edit modal |
 | `closeRecurringModal()` | Closes the recurring modal |
 | `saveRecurring()` | Creates or updates a recurring expense rule in state |
 | `deleteRecurring(id)` | Async - confirms and removes the recurring rule; past inserted transactions remain in the ledger |
@@ -284,7 +282,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | Function | Description |
 |---|---|
 | `openEMIFromCreditCard()` | Opens the EMI modal pre-locked to the active credit card |
-| `openEMIModal(emiId?)` | Opens the EMI create/edit modal |
+| `openEMIModal(emiId?)` | Calls `closeDrawer()` then opens the EMI create/edit modal |
 | `closeEMIModal()` | Closes the EMI modal |
 | `openEMIScheduleModal(emiId)` | Opens the read-only EMI amortization schedule modal |
 | `closeEMIScheduleModal()` | Closes the EMI schedule modal |

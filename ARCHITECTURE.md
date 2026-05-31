@@ -205,7 +205,6 @@ let pendingExpensePaymentLockId   // set before switching to addExpense screen
 let expenseFormReturnCardId       // card to return to after expense save
 let activeCardAnalyticsVisible    // bool, card analytics chart open/closed
 let emiFormPaymentLockId          // paymentId locked on EMI form
-let _heatmapCycleOffset           // int ≤ 0; salary-cycle heatmap page offset (0 = active cycle, -1 = prev, etc.)
 ```
 
 ---
@@ -249,6 +248,7 @@ Key functions:
 - `openDrawer()` / `closeDrawer()` live in `core.js`; `openDrawer()` refreshes drawer sync identity and the drawer Dino Mode toggle
 - `openDrawerSection(sectionName)` / `closeDrawerSection()` live in `settings.js`
 - `switchScreen(viewName)` always calls `closeDrawer()` before navigation
+- **Modal z-order rule:** every function that opens a modal reachable from a drawer action must call `closeDrawer()` (or the `typeof closeDrawer === "function"` guard) at its entry point — `openEditCategoryModal`, `openEditPaymentModal`, `openRecurringModal`, `openEMIModal`, `openInlineCategoryModal`, `openInlinePaymentModal` all conform to this.
 
 Settings now contains only Appearance, Personality, Security, Notifications, Sync, and Danger Zone. Budget/cycle, categories, payment methods, credit cards, recurring expenses, EMIs, and backup actions are reached through the drawer.
 
@@ -314,17 +314,15 @@ Recurring is only a scheduler. Daily and weekly schedules catch up missed due da
 
 ## Spend Heatmap (dashboard.js)
 
-Behaviour is determined by `state.cycleType`:
+Behaviour determined by `state.cycleType`:
 
-**Calendar mode** — renders the current calendar month as a rolling grid. No navigation arrows shown. Out-of-cycle concept does not apply.
+**Calendar mode** — rolling current month, no crosshatch, no nav.
 
-**Salary mode** — renders the active payday window (e.g. Jun 10–Jul 9). The grid covers all calendar days from the first day of `cycleStart`'s month through the last day of `cycleEnd`'s month. Days outside the payday window receive `.heatmap-crosshatch` styling (subtle diagonal stripe, no click/hover). The `‹ ›` arrows page through previous cycles via `_heatmapCycleOffset` (module-level `let`, clamped to ≤ 0). The next-arrow is disabled when already at the active cycle. Header label updates to "Jun 10 – Jul 9" style.
+**Salary mode** — active payday window only (e.g. May 11–Jun 10). Grid is built row-by-row; any row where every cell falls outside the cycle is dropped entirely. Out-of-cycle cells in retained rows receive `.heatmap-crosshatch` (no click/hover). No navigation arrows — always shows the active cycle. Header label updates to "May 11 – Jun 10" style.
 
-Spend data is scoped to `cycleStart`–`cycleEnd` and keyed by full ISO date string `"YYYY-MM-DD"` (previously keyed by day-of-month integer, which broke for salary cycles spanning two calendar months).
+Spend data scoped to `cycleStart`–`cycleEnd`, keyed by full ISO date string `"YYYY-MM-DD"`.
 
-**CSS additions (`styles.css`):**
-- `.heatmap-crosshatch` — `repeating-linear-gradient` diagonal stripe at 6% opacity over near-black bg; number still legible
-- `.heatmap-nav-btn` — 18 px bare button, slate-500 at rest, slate-400 on hover, 25% opacity when disabled
+**CSS:** `.heatmap-crosshatch` — diagonal stripe at 6% opacity over near-black bg.
 
 ---
 
