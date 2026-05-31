@@ -231,7 +231,7 @@ function renderBudgetDinoImage(el, rawPercent) {
     const dinoState = getDinoState(rawPercent);
     const src = DINO_BUDGET_IMAGES[dinoState] || DINO_BUDGET_IMAGES['dino-fed'];
     el.className = '';
-    el.innerHTML = `<img src="${src}" alt="Budget dino" class="budget-dino-img ${dinoState}" draggable="false" />`;
+    el.innerHTML = `<img src="${src}" alt="Budget dino" class="budget-dino-img ${dinoState}" style="width:170px;height:170px;margin:-20px -28px -18px 0;" draggable="false" />`;
 }
 
 function renderForecastCard(metrics) {
@@ -379,7 +379,7 @@ function renderSpendHeatmap() {
         if (ratio < 0.25) return { bg: "bg-emerald-900/70", border: "border-emerald-800/50" };
         if (ratio < 0.55) return { bg: "bg-amber-700/70", border: "border-amber-600/50" };
         if (ratio < 0.80) return { bg: "bg-orange-600/80", border: "border-orange-500/50" };
-        return { bg: "bg-rose-600/85", border: "border-rose-500/60" };
+        return { bg: "bg-yellow-300/80", border: "border-yellow-200/50" };
     }
 
     // Leading blank cells

@@ -55,6 +55,10 @@ function hasRecurringTxOnDate(recurringId, dateStr) {
     return state.transactions.some(t => t.recurringId === recurringId && t.date === dateStr);
 }
 
+function isRecurringDateSkipped(rec, dateStr) {
+    return Array.isArray(rec.skippedDates) && rec.skippedDates.includes(dateStr);
+}
+
 function removeFutureRecurringTransactions(recurringId) {
     const todayStr = getTodayISO();
     state.transactions = state.transactions.filter(t => {
@@ -126,6 +130,7 @@ function saveRecurring() {
             state.recurringExpenses[idx] = {
                 ...state.recurringExpenses[idx],
                 name, amount, freq, startDate, categoryId, paymentId, note,
+                skippedDates: state.recurringExpenses[idx].skippedDates || [],
                 updatedAt: new Date().toISOString()
             };
             showNotification(t(`Recurring schedule "${name}" updated.`, `Stampede "${name}" redirected.`));
@@ -134,6 +139,7 @@ function saveRecurring() {
         const newRec = {
             id: "rec_" + Date.now(),
             name, amount, freq, startDate, categoryId, paymentId, note,
+            skippedDates: [],
             createdAt: new Date().toISOString()
         };
         state.recurringExpenses.push(newRec);
@@ -271,7 +277,7 @@ function processRecurringExpenses() {
         if (!rec.startDate) rec.startDate = getTodayISO();
         const dueDates = getRecurringOccurrenceDates(rec, today);
         dueDates.forEach(dateStr => {
-            if (!hasRecurringTxOnDate(rec.id, dateStr)) {
+            if (!hasRecurringTxOnDate(rec.id, dateStr) && !isRecurringDateSkipped(rec, dateStr)) {
                 postRecurringEntry(rec, dateStr);
                 anyPosted = true;
             }
