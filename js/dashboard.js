@@ -58,6 +58,7 @@ function calculateCycleMetrics() {
     if (daysRemaining <= 0) daysRemaining = 1;
 
     const safeToSpend = remainingBudget / daysRemaining;
+    const daysGone = Math.max(1, Math.ceil((today - startDate) / (1000 * 3600 * 24)));
 
     return {
         startDate,
@@ -65,7 +66,14 @@ function calculateCycleMetrics() {
         totalSpent,
         remainingBudget,
         daysRemaining,
-        safeToSpend
+        safeToSpend,
+        daysGone,
+        // Phase 7 aliases
+        spent: totalSpent,
+        remaining: state.monthlyBudget - totalSpent,
+        budget: state.monthlyBudget,
+        safeDaily: safeToSpend,
+        daysLeft: daysRemaining,
     };
 }
 
@@ -307,6 +315,10 @@ function renderForecastCard(metrics) {
         const rawPct = state.monthlyBudget ? (metrics.totalSpent / state.monthlyBudget) * 100 : 0;
         budgetBar.classList.toggle('budget-danger', rawPct >= 80 && dp('dinoMode'));
     }
+
+    // Phase 7 — attach tap handler to health emoji
+    const emojiEl2 = document.getElementById('budgetHealthEmoji');
+    if (emojiEl2) attachSmileyTapHandler(emojiEl2, metrics);
 }
 /* ──── END FORECAST CARD ────────────────────────────────────────────────────────────────────────────────────────── */
 
@@ -1193,4 +1205,268 @@ function showDinoStatsSheet() {
 function closeStatsSheet() {
     const sheet = document.getElementById('dinoStatsSheet');
     if (sheet) sheet.classList.add('hidden');
+}
+
+/* === PHASE 7 — SMILEY / DINO TAP INTERACTIONS === */
+
+let _smileyTapCount = 0;
+let _smileyTapTimer = null;
+let _smileyAnnoyanceCount = 0;
+let _smileyTurnedAway = false;
+let _smileyTurnedAwayTimer = null;
+
+function attachSmileyTapHandler(el, metrics) {
+    _smileyAnnoyanceCount = 0;
+    _smileyTurnedAway = false;
+    _smileyTapCount = 0;
+    clearTimeout(_smileyTapTimer);
+    clearTimeout(_smileyTurnedAwayTimer);
+
+    el.style.cursor = 'pointer';
+    el.style.userSelect = 'none';
+
+    const pct = metrics.budget > 0 ? (metrics.spent / metrics.budget * 100) : 0;
+    let pressTimer = null;
+
+    const newEl = el.cloneNode(true);
+    el.parentNode.replaceChild(newEl, el);
+
+    newEl.addEventListener('pointerdown', () => {
+        pressTimer = setTimeout(() => {
+            pressTimer = null;
+            showBudgetDeepDive(metrics);
+        }, 600);
+    });
+
+    newEl.addEventListener('pointerup', () => {
+        if (!pressTimer) return;
+        clearTimeout(pressTimer);
+        pressTimer = null;
+        if (_smileyTurnedAway) return;
+
+        _smileyTapCount++;
+        clearTimeout(_smileyTapTimer);
+        _smileyTapTimer = setTimeout(() => {
+            const count = _smileyTapCount;
+            _smileyTapCount = 0;
+            if (count === 1)      handleSmiley1Tap(newEl, pct, metrics);
+            else if (count === 2) handleSmiley2Tap(newEl, pct, metrics);
+            else                  handleSmileyAnnoyance(newEl, pct, metrics, count);
+        }, 350);
+    });
+
+    newEl.addEventListener('pointercancel', () => clearTimeout(pressTimer));
+}
+
+function getPctState(pct) {
+    if (pct <= 30) return 'thriving';
+    if (pct <= 60) return 'cruising';
+    if (pct <= 80) return 'cautious';
+    if (pct < 100) return 'stressed';
+    return 'extinct';
+}
+
+const SMILEY_1TAP = {
+    thriving: ['smiley-thrive',   'All good! Keep it up.',         'Fed and fearless. 🦖'],
+    cruising: ['smiley-cruise',   'Decent. Watch the pace.',       'Hunt is going fine.'],
+    cautious: ['smiley-cautious', 'Bit tight. Be careful.',        'Getting hungry...'],
+    stressed: ['smiley-stressed', 'This is not great.',            'I need to eat. Now.'],
+    extinct:  ['smiley-extinct',  "We don't talk about this.",     '...I may have blacked out.'],
+};
+
+function handleSmiley1Tap(el, pct, metrics) {
+    const s = getPctState(pct);
+    const [anim, normalTxt, dinoTxt] = SMILEY_1TAP[s];
+    el.classList.add(anim);
+    setTimeout(() => el.classList.remove(anim), 500);
+    showSpeechBubble(el, dp('dinoMode') ? dinoTxt : normalTxt, 2000);
+}
+
+function handleSmiley2Tap(el, pct, metrics) {
+    const s = getPctState(pct);
+    const sym = state.currencySymbol;
+    const r = Math.max(0, metrics.remaining);
+    const over = Math.abs(metrics.remaining);
+    const sd = Math.round(Math.max(0, metrics.safeDaily));
+    const dl = metrics.daysLeft;
+    const dr = Math.round(metrics.spent / Math.max(1, metrics.daysGone || 1));
+
+    const texts = {
+        thriving: [
+            `${sym}${r.toLocaleString()} left with ${dl} days to go. You're sailing.`,
+            `🦖 ${sym}${r.toLocaleString()} left in the hunting ground. ${dl} days of feast ahead.`,
+        ],
+        cruising: [
+            `${sym}${dr}/day so far. Safe to spend ${sym}${sd}/day from here.`,
+            `Consuming ${sym}${dr}/day. Safe chomp: ${sym}${sd}.`,
+        ],
+        cautious: [
+            `Only ${sym}${r.toLocaleString()} left. That's ${sym}${sd}/day — tighter than ideal.`,
+            `Only ${sym}${r.toLocaleString()} remains. Ration the hunt — ${sym}${sd}/day max.`,
+        ],
+        stressed: [
+            `${sym}${r.toLocaleString()} for ${dl} days. That's ${sym}${sd}/day. Doable, barely.`,
+            `The herd is thinning. ${sym}${sd}/day is all that's left. Hunt wisely.`,
+        ],
+        extinct: [
+            `Over by ${sym}${over.toLocaleString()}. ${dl} days left in the cycle.`,
+            `☄️ Budget extinct. Over by ${sym}${over.toLocaleString()}. Survive ${dl} more days.`,
+        ],
+    };
+
+    showNotification(texts[s][dp('dinoMode') ? 1 : 0]);
+}
+
+function handleSmileyAnnoyance(el, pct, metrics, tapCount) {
+    _smileyAnnoyanceCount++;
+    const ac = _smileyAnnoyanceCount;
+    const sym = state.currencySymbol;
+    const isDino = dp('dinoMode');
+
+    if (ac === 1) {
+        const msg = isDino ? 'I said what I said. 🦖' : 'I already told you.';
+        el.classList.add('smiley-cautious');
+        setTimeout(() => el.classList.remove('smiley-cautious'), 400);
+        showSpeechBubble(el, msg, 1800);
+    } else if (ac === 2) {
+        const msg = isDino ? 'You are testing a predator.' : 'Seriously.';
+        if (isDino) el.style.filter = 'hue-rotate(20deg)';
+        showSpeechBubble(el, msg, 1800);
+    } else {
+        if (isDino) {
+            el.classList.add('smiley-stressed');
+            setTimeout(() => el.classList.remove('smiley-stressed'), 500);
+            showSpeechBubble(el, `ROARR. ${sym}${metrics.spent.toLocaleString()}. THERE.`, 2200);
+            _smileyTurnedAway = true;
+            el.classList.add('dino-turned-away');
+            clearTimeout(_smileyTurnedAwayTimer);
+            _smileyTurnedAwayTimer = setTimeout(() => {
+                _smileyTurnedAway = false;
+                el.classList.remove('dino-turned-away');
+                el.style.filter = '';
+                _smileyAnnoyanceCount = 0;
+            }, 10000);
+        } else {
+            el.classList.add('smiley-extinct');
+            setTimeout(() => el.classList.remove('smiley-extinct'), 600);
+            showSpeechBubble(el, `FINE. ${sym}${metrics.spent.toLocaleString()} spent. Happy now?`, 2500);
+        }
+    }
+}
+
+function showSpeechBubble(el, text, duration = 2000) {
+    const parent = el.parentElement;
+    if (!parent) return;
+    let bubble = parent.querySelector('.budget-speech-bubble');
+    if (!bubble) {
+        bubble = document.createElement('div');
+        bubble.className = 'budget-speech-bubble';
+        parent.style.position = 'relative';
+        parent.appendChild(bubble);
+    }
+    bubble.textContent = text;
+    bubble.style.display = 'block';
+    clearTimeout(bubble._hideTimer);
+    bubble._hideTimer = setTimeout(() => { bubble.style.display = 'none'; }, duration);
+}
+
+function getBiggestCategory(startDate, endDate) {
+    const sums = {};
+    state.transactions.forEach(t => {
+        const d = new Date(t.date);
+        if (d >= startDate && d <= endDate) {
+            sums[t.categoryId] = (sums[t.categoryId] || 0) + parseFloat(t.amount || 0);
+        }
+    });
+    const top = Object.entries(sums).sort((a, b) => b[1] - a[1])[0];
+    if (!top) return { name: '—', total: 0 };
+    const cat = state.categories.find(c => c.id === top[0]);
+    return { name: cat ? cat.name : '—', total: Math.round(top[1]), color: cat?.color || '#6366f1' };
+}
+
+function getBiggestPayment(startDate, endDate) {
+    const sums = {};
+    state.transactions.forEach(t => {
+        const d = new Date(t.date);
+        if (d >= startDate && d <= endDate) {
+            sums[t.paymentId] = (sums[t.paymentId] || 0) + parseFloat(t.amount || 0);
+        }
+    });
+    const top = Object.entries(sums).sort((a, b) => b[1] - a[1])[0];
+    if (!top) return { name: '—', total: 0 };
+    const pay = state.payments.find(p => p.id === top[0]);
+    return { name: pay ? pay.name : '—', total: Math.round(top[1]), color: pay?.color || '#6366f1' };
+}
+
+function showBudgetDeepDive(metrics) {
+    const pct = metrics.budget > 0 ? (metrics.spent / metrics.budget * 100) : 0;
+    const sym = state.currencySymbol;
+    const isDino = dp('dinoMode');
+    const bigCat = getBiggestCategory(metrics.startDate, metrics.endDate);
+    const bigPay = getBiggestPayment(metrics.startDate, metrics.endDate);
+    const dr = Math.round(metrics.spent / Math.max(1, metrics.daysGone || 1));
+    const s = getPctState(pct);
+
+    const stateColors = { thriving: '#4ade80', cruising: '#a3e635', cautious: '#fb923c', stressed: '#f87171', extinct: '#dc2626' };
+    const color = stateColors[s] || '#6366f1';
+
+    const title = isDino ? '🦖 Hunt Status Report' : 'Budget Health Check';
+
+    let overlay = document.getElementById('budgetDeepDiveOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'budgetDeepDiveOverlay';
+        document.body.appendChild(overlay);
+    }
+
+    overlay.className = 'deep-dive-overlay';
+    overlay.innerHTML = `
+        <div class="deep-dive-panel">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h2 style="font-size:15px;font-weight:900;color:#fff;margin:0;">${title}</h2>
+                <button onclick="document.getElementById('budgetDeepDiveOverlay').classList.remove('open')"
+                    style="background:none;border:none;color:#64748b;cursor:pointer;font-size:18px;line-height:1;">×</button>
+            </div>
+            <div class="deep-dive-stat-row">
+                <span class="deep-dive-label">${isDino ? '🍖 Devoured' : 'Spent'}</span>
+                <span class="deep-dive-value" style="color:${color};">${sym}${metrics.spent.toLocaleString()}</span>
+            </div>
+            <div class="deep-dive-stat-row">
+                <span class="deep-dive-label">${isDino ? '🏕️ Territory Left' : 'Remaining'}</span>
+                <span class="deep-dive-value">${sym}${Math.max(0, metrics.remaining).toLocaleString()}</span>
+            </div>
+            <div class="deep-dive-stat-row">
+                <span class="deep-dive-label">${isDino ? '⚡ Burn Rate' : 'Daily Avg'}</span>
+                <span class="deep-dive-value">${sym}${dr.toLocaleString()}/day</span>
+            </div>
+            <div class="deep-dive-stat-row">
+                <span class="deep-dive-label">${isDino ? '🗓️ Days Left' : 'Days Left'}</span>
+                <span class="deep-dive-value">${metrics.daysLeft}</span>
+            </div>
+            <div class="deep-dive-stat-row">
+                <span class="deep-dive-label">${isDino ? '🦴 Safe Chomp' : 'Safe/Day'}</span>
+                <span class="deep-dive-value">${sym}${Math.round(Math.max(0, metrics.safeDaily)).toLocaleString()}/day</span>
+            </div>
+            <div class="deep-dive-divider"></div>
+            <div class="deep-dive-stat-row">
+                <span class="deep-dive-label">${isDino ? '🎯 Top Prey' : 'Top Category'}</span>
+                <span class="deep-dive-value" style="color:${bigCat.color};">${bigCat.name}</span>
+            </div>
+            <div class="deep-dive-stat-row">
+                <span class="deep-dive-label">${isDino ? '💳 Weapon Used' : 'Top Payment'}</span>
+                <span class="deep-dive-value" style="color:${bigPay.color};">${bigPay.name}</span>
+            </div>
+            <div class="deep-dive-divider"></div>
+            <div style="display:flex;gap:8px;margin-top:4px;">
+                <button onclick="switchScreen('reports');document.getElementById('budgetDeepDiveOverlay').classList.remove('open')"
+                    class="deep-dive-cta">${isDino ? '📊 See Full Hunt' : 'Go to Reports'}</button>
+                <button onclick="switchScreen('history');document.getElementById('budgetDeepDiveOverlay').classList.remove('open')"
+                    class="deep-dive-cta">${isDino ? '🦴 Fossil Record' : 'See Ledger'}</button>
+            </div>
+        </div>`;
+
+    overlay.classList.add('open');
+    overlay.addEventListener('click', e => {
+        if (e.target === overlay) overlay.classList.remove('open');
+    }, { once: true });
 }
