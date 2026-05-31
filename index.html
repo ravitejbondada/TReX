@@ -92,21 +92,19 @@
     <div id="sideDrawer" role="navigation" aria-label="App menu">
 
         <!-- Drawer Header: avatar + app name + sync status -->
-        <div class="drawer-profile" style="position:relative;">
-            <button type="button" onclick="closeDrawer(); switchScreen('settings')" title="Settings"
-                aria-label="Settings"
-                class="absolute top-0 right-0 text-slate-500 hover:text-indigo-300 transition-colors p-1">
-                <i data-lucide="settings" class="w-6 h-6"></i>
-            </button>
+        <div class="drawer-profile">
             <div class="drawer-avatar">
                 <img src="assets/favicon.png" alt="TReX" style="width:100%;height:100%;object-fit:cover;border-radius:0.75rem;" />
             </div>
             <div class="drawer-profile-info">
-                <div class="flex items-center gap-2">
-                    <span class="drawer-app-name">TReX</span>
-                </div>
+                <span class="drawer-app-name">TReX</span>
                 <span id="drawerSyncPill" class="drawer-sync-pill drawer-sync-offline">&#9679; Offline</span>
             </div>
+            <button type="button" onclick="closeDrawer(); switchScreen('settings')" title="Settings"
+                aria-label="Settings"
+                class="ml-auto text-slate-500 hover:text-indigo-300 transition-colors p-1 flex-shrink-0">
+                <i data-lucide="settings" class="w-7 h-7"></i>
+            </button>
         </div>
 
         <!-- Nav layer (always visible) -->
