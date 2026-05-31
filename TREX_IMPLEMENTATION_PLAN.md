@@ -39,6 +39,7 @@ Update `working.md` before touching any source file and after completing each it
 - **Modals:** inject HTML into `#modalContainer` (or append to `<body>`); remove on close.
 - **Styles:** all new CSS goes in `styles.css` under a clearly labeled comment block.
 - **Light-theme coverage:** any new UI element must have a `html[data-theme="light"]` override if it uses hardcoded dark colors.
+- **Module size guard:** prefer new focused JS files for new feature clusters instead of growing already-large modules. Suggested modules: `js/ledger-gestures.js` for swipe/bulk ledger interactions, `js/ledger-templates.js` for presets, `js/ledger-tags.js` for tags, `js/analytics-extra.js` for extra charts, and `js/offline-queue.js` for offline queue logic. Add any new file to `index.html`, `ARCHITECTURE.md`, and `FUNCTIONS.md`.
 
 ---
 
