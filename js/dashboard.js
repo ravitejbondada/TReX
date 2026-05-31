@@ -139,9 +139,9 @@ function updateAppDashboardView() {
         progressEl.style.width = `${progressPercent}%`;
 
         if (progressPercent > 100 || rawPercent > 100) {
-            progressEl.className = "bg-gradient-to-r from-rose-600 to-red-500 h-full rounded-full transition-all duration-700 shadow-sm shadow-rose-500/20";
+            progressEl.className = "bg-gradient-to-r from-amber-400 via-orange-300 to-yellow-200 h-full rounded-full transition-all duration-700 shadow-sm shadow-amber-400/25";
         } else if (progressPercent > 85) {
-            progressEl.className = "bg-gradient-to-r from-rose-500 to-red-500 h-full rounded-full transition-all duration-700 shadow-sm shadow-rose-500/20";
+            progressEl.className = "bg-gradient-to-r from-amber-500 to-orange-300 h-full rounded-full transition-all duration-700 shadow-sm shadow-amber-500/20";
         } else if (progressPercent > 60) {
             progressEl.className = "bg-gradient-to-r from-amber-500 to-amber-300 h-full rounded-full transition-all duration-700 shadow-sm shadow-amber-500/20";
         } else {
@@ -264,12 +264,12 @@ function renderForecastCard(metrics) {
 
     const toneMap = {
         overrun: {
-            card: "bg-rose-950/40 border-rose-500/30",
-            icon: "bg-rose-600/15 border-rose-500/30 text-rose-400",
+            card: "bg-slate-950/35 border-amber-400/25",
+            icon: "bg-amber-400/10 border-amber-400/25 text-amber-300",
             lucide: "trending-up",
-            title: "text-rose-300",
+            title: "text-amber-200",
             titleTxt: "Budget Overrun Projected",
-            bar: "bg-gradient-to-r from-rose-600 to-red-500",
+            bar: "bg-gradient-to-r from-amber-400 via-orange-300 to-yellow-200",
         },
         warning: {
             card: "bg-amber-950/35 border-amber-500/25",

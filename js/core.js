@@ -548,8 +548,13 @@ function switchScreen(viewName) {
 let _logoTapCount = 0;
 let _logoTapTimer = null;
 let _logoLongPressTimer = null;
+let _logoLongPressTriggered = false;
 
 function handleLogoTap() {
+    if (_logoLongPressTriggered) {
+        _logoLongPressTriggered = false;
+        return;
+    }
     clearTimeout(_logoTapTimer);
     _logoTapCount = 0;
     const logo = document.getElementById('appHeaderLogo');
@@ -564,8 +569,22 @@ function handleLogoTap() {
     if (screen) screen.scrollTop = 0;
 }
 
+function startLogoLongPress(e) {
+    clearTimeout(_logoLongPressTimer);
+    _logoLongPressTriggered = false;
+    _logoLongPressTimer = setTimeout(() => {
+        _logoLongPressTriggered = true;
+        handleLogoLongPress(e);
+    }, 650);
+}
+
+function cancelLogoLongPress() {
+    clearTimeout(_logoLongPressTimer);
+}
+
 function handleLogoLongPress(e) {
     if (e) e.preventDefault();
+    clearTimeout(_logoLongPressTimer);
     _logoTapCount = 0;
     showCinematicOriginStory();
 }

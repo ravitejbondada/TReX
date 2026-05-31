@@ -64,9 +64,9 @@
 
             <img id="appHeaderLogo" src="assets/favicon.png"
                 alt="TReX" class="w-9 h-9 rounded-xl object-cover cursor-pointer"
-                onclick="handleLogoTap()" oncontextmenu="handleLogoLongPress(event)" />
+                onclick="handleLogoTap()" onpointerdown="startLogoLongPress(event)" onpointerup="cancelLogoLongPress()" onpointercancel="cancelLogoLongPress()" onpointerleave="cancelLogoLongPress()" oncontextmenu="handleLogoLongPress(event)" />
 
-            <div class="flex flex-col items-start leading-none cursor-pointer" onclick="handleLogoTap()" oncontextmenu="handleLogoLongPress(event)">
+            <div class="flex flex-col items-start leading-none cursor-pointer" onclick="handleLogoTap()" onpointerdown="startLogoLongPress(event)" onpointerup="cancelLogoLongPress()" onpointercancel="cancelLogoLongPress()" onpointerleave="cancelLogoLongPress()" oncontextmenu="handleLogoLongPress(event)">
                 <span class="text-base font-extrabold text-white tracking-tight">TReX</span>
                 <span class="text-[8px] font-bold text-indigo-400/90 uppercase tracking-[0.14em] mt-0.5">Devour Your Expenses</span>
             </div>

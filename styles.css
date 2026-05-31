@@ -661,12 +661,12 @@
         }
 
         .budget-dino-img {
-          width: clamp(104px, 26vw, 124px);
-          height: clamp(104px, 26vw, 124px);
+          width: clamp(132px, 34vw, 160px);
+          height: clamp(132px, 34vw, 160px);
           object-fit: contain;
           display: block;
-          margin-right: -8px;
-          filter: drop-shadow(0 12px 18px rgba(0,0,0,0.30));
+          margin: -16px -22px -14px 0;
+          filter: drop-shadow(0 14px 20px rgba(0,0,0,0.32));
           transform-origin: center bottom;
         }
         .budget-dino-img.dino-fed,
