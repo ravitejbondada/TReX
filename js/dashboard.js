@@ -421,7 +421,9 @@ function renderSpendHeatmap() {
                 m.className = 'heatmap-egg'; m.textContent = '🥚'; cell.appendChild(m);
             } else if (spend >= topThr && topThr > 0) {
                 const m = document.createElement('span');
-                m.className = 'heatmap-foot'; m.textContent = '🦶'; cell.appendChild(m);
+                m.className = 'heatmap-foot';
+                m.innerHTML = `<svg viewBox="0 0 20 24" width="9" height="11" fill="currentColor" style="opacity:0.9;display:block;"><ellipse cx="10" cy="17" rx="6.5" ry="6"/><ellipse cx="4" cy="8" rx="2.8" ry="3"/><ellipse cx="10" cy="5.5" rx="2.8" ry="3"/><ellipse cx="16" cy="8" rx="2.8" ry="3"/></svg>`;
+                cell.appendChild(m);
             }
         }
     }

@@ -489,7 +489,7 @@ async function simulateBiometrics() {
     }
 }
 
-const FOOTPRINT_SVG = `<svg viewBox="0 0 16 20" width="14" height="18" fill="currentColor"><ellipse cx="8" cy="14" rx="5" ry="6"/><ellipse cx="4" cy="6" rx="2" ry="2.5"/><ellipse cx="8" cy="4" rx="2" ry="2.5"/><ellipse cx="12" cy="6" rx="2" ry="2.5"/></svg>`;
+const FOOTPRINT_SVG = `<svg viewBox="0 0 20 24" width="14" height="18" fill="currentColor"><ellipse cx="10" cy="17" rx="6.5" ry="6"/><ellipse cx="4" cy="8" rx="2.8" ry="3"/><ellipse cx="10" cy="5.5" rx="2.8" ry="3"/><ellipse cx="16" cy="8" rx="2.8" ry="3"/></svg>`;
 const EMPTY_FOOTPRINT = `<div style="width:14px;height:18px;border-radius:50%;border:2px solid currentColor;opacity:0.4"></div>`;
 
 function updatePinVisualDots() {
