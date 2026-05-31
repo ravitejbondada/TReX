@@ -309,10 +309,18 @@ function lockApp() {
 }
 
 function unlockApp() {
-    document.getElementById("simulatedLockScreen").classList.add("opacity-0", "pointer-events-none");
-    setTimeout(() => {
-        document.getElementById("simulatedLockScreen").classList.add("hidden");
-    }, 500);
+    const lockScreen = document.getElementById("simulatedLockScreen");
+    if (dp('dinoMode')) {
+        lockScreen.classList.add('lock-screen-exit');
+        setTimeout(() => {
+            lockScreen.classList.remove('lock-screen-exit');
+            lockScreen.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => lockScreen.classList.add('hidden'), 50);
+        }, 380);
+    } else {
+        lockScreen.classList.add("opacity-0", "pointer-events-none");
+        setTimeout(() => lockScreen.classList.add("hidden"), 500);
+    }
     closeLockedExpenseSheet();
     pinAttemptBuffer = "";
     updatePinVisualDots();
@@ -431,6 +439,13 @@ function pressPin(char) {
                 pinAttemptBuffer = "";
             } else {
                 showNotification(t("Incorrect passcode. Try again.", "Wrong roar. Try the PIN again."));
+                if (dp('dinoMode')) {
+                    const dots = document.getElementById('pinDots');
+                    if (dots) {
+                        dots.classList.add('pin-shake');
+                        setTimeout(() => dots.classList.remove('pin-shake'), 450);
+                    }
+                }
                 clearPin();
             }
         }, 200);

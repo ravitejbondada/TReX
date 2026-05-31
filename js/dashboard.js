@@ -280,6 +280,13 @@ function renderForecastCard(metrics) {
     }
 
     initLucideIcons(card);
+
+    // Phase 4 — danger pulse on budget bar
+    const budgetBar = document.getElementById("budgetProgressBar");
+    if (budgetBar) {
+        const rawPct = state.monthlyBudget ? (metrics.totalSpent / state.monthlyBudget) * 100 : 0;
+        budgetBar.classList.toggle('budget-danger', rawPct >= 80 && dp('dinoMode'));
+    }
 }
 /* ──── END FORECAST CARD ────────────────────────────────────────────────────────────────────────────────────────── */
 
@@ -396,7 +403,7 @@ function renderQuickLogButtons() {
         const cat = state.categories.find(c => c.id === q.categoryId) || { name: "–", color: "#6366f1" };
         const pay = state.payments.find(p => p.id === q.paymentId) || { name: "–" };
         return `
-        <button onclick="triggerQuickLog(${q.amount}, '${q.categoryId}', '${q.label}', '${q.paymentId}')"
+        <button onclick="triggerQuickLog(${q.amount}, '${q.categoryId}', '${q.label}', '${q.paymentId}', event)"
             class="bg-slate-950 hover:bg-slate-900 p-3 border border-slate-850 rounded-xl text-left flex justify-between items-center transition-all active:scale-95 gap-2">
             <div class="min-w-0 flex flex-col gap-0.5">
                 <span class="text-[11px] text-slate-200 font-bold truncate">${q.label}</span>
@@ -742,7 +749,12 @@ function syncNotificationSettings() {
 /* ──── END NOTIFICATION FEATURES ────────────────────────────────────────────────────────────────────────── */
 
 /* 1-TAP INSTANT ADD TRANSACTIONS */
-function triggerQuickLog(amount, categoryId, note, paymentId) {
+function triggerQuickLog(amount, categoryId, note, paymentId, event) {
+    if (dp('dinoMode') && event && event.currentTarget) {
+        const btn = event.currentTarget;
+        btn.classList.add('dino-bite');
+        setTimeout(() => btn.classList.remove('dino-bite'), 300);
+    }
     const today = new Date().toISOString().split('T')[0];
     const category = state.categories.find(c => c.id === categoryId);
     const resolvedPaymentId = paymentId || (category ? (category.defaultPaymentId || state.payments[0].id) : state.payments[0].id);

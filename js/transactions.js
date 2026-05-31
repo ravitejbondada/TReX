@@ -147,13 +147,31 @@ function handleExpenseSubmit(e) {
     refreshCreditCardViews();
     const returnCardId = expenseFormReturnCardId;
     expenseFormReturnCardId = "";
-    if (returnCardId) {
-        activeCreditCardId = returnCardId;
-        switchScreen('cards');
+
+    const doNavigate = () => {
+        if (returnCardId) {
+            activeCreditCardId = returnCardId;
+            switchScreen('cards');
+        } else {
+            switchScreen('dashboard');
+        }
+        updateAppDashboardView();
+    };
+
+    if (!editId && dp('dinoMode')) {
+        const formCard = document.getElementById('addExpenseView');
+        if (formCard) {
+            formCard.classList.add('expense-chomp');
+            setTimeout(() => {
+                formCard.classList.remove('expense-chomp');
+                doNavigate();
+            }, 320);
+        } else {
+            doNavigate();
+        }
     } else {
-        switchScreen('dashboard');
+        doNavigate();
     }
-    updateAppDashboardView();
 }
 
 /* INLINE DIRECTORY POP-UPS */
@@ -433,6 +451,7 @@ function filterHistory() {
             : "";
 
         const card = document.createElement("div");
+        card.id = `tx-row-${t.id}`;
         card.className = "bg-slate-900 border border-slate-850 rounded-2xl px-3 py-3 flex justify-between items-stretch gap-2 transition-all";
 
         const actionButtons = t.tripRef
@@ -489,6 +508,13 @@ async function deleteTransaction(id) {
     if (tx && tx.tripRef) { showNotification(t("Edit this expense inside the Trip.", "This fossil belongs to a trip. Edit it there.")); return; }
     const label = tx ? (tx.note ? `"${tx.note}"` : `₹${tx.amount}`) : "this transaction";
     if (!await customConfirm(t(`Delete ${label}? This cannot be undone.`, `Send ${label} extinct? This cannot be undone.`), t("Delete this?", "Send it extinct?"), t("Delete", "Extinct it"))) return;
+
+    const row = document.getElementById(`tx-row-${id}`);
+    if (row && dp('dinoMode')) {
+        row.classList.add('going-extinct');
+        await new Promise(r => setTimeout(r, 380));
+    }
+
     state.transactions = state.transactions.filter(t => t.id !== id);
     saveStateToLocalStorage();
     showNotification(t("Deleted.", "🦴 Gone extinct."));
