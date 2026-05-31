@@ -530,3 +530,129 @@ function switchScreen(viewName) {
         });
     }
 }
+
+/* === PHASE 6 — LOGO TAP INTERACTIONS === */
+
+let _logoTapCount = 0;
+let _logoTapTimer = null;
+let _logoLongPressTimer = null;
+
+function handleLogoTap() {
+    const logo = document.getElementById('appHeaderLogo');
+    if (logo) {
+        logo.classList.remove('logo-tap-pulse');
+        void logo.offsetWidth;
+        logo.classList.add('logo-tap-pulse');
+        setTimeout(() => logo.classList.remove('logo-tap-pulse'), 350);
+    }
+
+    _logoTapCount++;
+    clearTimeout(_logoTapTimer);
+
+    if (_logoTapCount >= 7) {
+        _logoTapCount = 0;
+        triggerLogoEasterEgg();
+        return;
+    }
+
+    if (_logoTapCount === 3 && typeof showDinoStatsSheet === 'function') {
+        _logoTapTimer = setTimeout(() => {
+            if (_logoTapCount === 3) {
+                _logoTapCount = 0;
+                showDinoStatsSheet();
+            }
+        }, 400);
+        return;
+    }
+
+    _logoTapTimer = setTimeout(() => { _logoTapCount = 0; }, 600);
+}
+
+function handleLogoLongPress(e) {
+    if (e) e.preventDefault();
+    _logoTapCount = 0;
+    showCinematicOriginStory();
+}
+
+function triggerLogoEasterEgg() {
+    if (dp('dinoMode')) {
+        showTerminalEasterEgg();
+    } else {
+        showNotification('🦖 Psst… try Dino Mode in Settings.');
+    }
+}
+
+function showTerminalEasterEgg() {
+    const terminal = document.getElementById('trexTerminal');
+    if (!terminal) return;
+    terminal.classList.remove('hidden');
+    const out = document.getElementById('terminalOutput');
+    out.innerHTML = '';
+
+    const lines = [
+        'TREX OS v3.0.0 — EXPENSE MANAGEMENT KERNEL',
+        '─────────────────────────────────────────',
+        '> boot sequence initiated...',
+        '> loading fossil records... OK',
+        '> mounting prey database... OK',
+        '> syncing herd state... ' + (state.syncEnabled ? 'CONNECTED' : 'OFFLINE'),
+        '> transactions on record: ' + (state.transactions?.length || 0),
+        '> categories: ' + (state.categories?.length || 0),
+        '> current budget: ' + (state.currencySymbol || '₹') + (state.monthlyBudget?.toLocaleString() || '0'),
+        '─────────────────────────────────────────',
+        '> YOU FOUND THE TERMINAL.',
+        '> Short arms. Big brain.',
+        '> TReX never forgets an expense.',
+        '─────────────────────────────────────────',
+        '> type "exit" to return to the lair_',
+    ];
+
+    let i = 0;
+    function printNext() {
+        if (i >= lines.length) return;
+        const div = document.createElement('div');
+        div.className = 'terminal-line';
+        div.textContent = lines[i++];
+        out.appendChild(div);
+        out.scrollTop = out.scrollHeight;
+        setTimeout(printNext, 60);
+    }
+    printNext();
+}
+
+function closeTerminal() {
+    const t = document.getElementById('trexTerminal');
+    if (t) t.classList.add('hidden');
+}
+
+function showCinematicOriginStory() {
+    const el = document.getElementById('trexCinematic');
+    if (!el) return;
+    el.classList.remove('hidden');
+
+    const frames = [
+        { emoji: '🌍', text: '65 million years ago…' },
+        { emoji: '☄️', text: 'A meteor changed everything.' },
+        { emoji: '🦖', text: 'But one dinosaur survived.' },
+        { emoji: '💰', text: 'And became very good with money.' },
+        { emoji: '📱', text: 'TReX.\nDevour Your Expenses.' },
+    ];
+
+    const content = document.getElementById('cinematicContent');
+    let i = 0;
+
+    function showFrame() {
+        if (i >= frames.length) return;
+        const f = frames[i++];
+        content.innerHTML = `
+            <div style="font-size:64px;margin-bottom:16px;">${f.emoji}</div>
+            <div style="font-size:16px;font-weight:700;line-height:1.5;white-space:pre-line;">${f.text}</div>`;
+        if (i < frames.length) setTimeout(showFrame, 1800);
+    }
+    showFrame();
+}
+
+function closeCinematic() {
+    const el = document.getElementById('trexCinematic');
+    if (el) el.classList.add('hidden');
+}

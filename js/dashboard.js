@@ -1137,3 +1137,60 @@ function renderRecentActivityList() {
         container.appendChild(card);
     });
 }
+
+/* === PHASE 6 — DINO STATS SHEET === */
+
+function showDinoStatsSheet() {
+    const sheet = document.getElementById('dinoStatsSheet');
+    if (!sheet) return;
+
+    const metrics = calculateCycleMetrics();
+    const sym = state.currencySymbol;
+    const totalTx = state.transactions?.length || 0;
+    const cycleTx = state.transactions.filter(t => {
+        const d = new Date(t.date);
+        return d >= metrics.startDate && d <= metrics.endDate;
+    }).length;
+    const topCat = (() => {
+        const sums = {};
+        state.transactions.forEach(t => { sums[t.categoryId] = (sums[t.categoryId] || 0) + parseFloat(t.amount || 0); });
+        const top = Object.entries(sums).sort((a,b) => b[1]-a[1])[0];
+        if (!top) return '—';
+        const cat = state.categories.find(c => c.id === top[0]);
+        return cat ? `${cat.name} (${sym}${Math.round(top[1]).toLocaleString()})` : '—';
+    })();
+    const avgDaily = cycleTx > 0
+        ? Math.round(metrics.totalSpent / Math.max(1, (new Date() - metrics.startDate) / 86400000))
+        : 0;
+    const pct = state.monthlyBudget ? Math.round((metrics.totalSpent / state.monthlyBudget) * 100) : 0;
+    const dinoState = getDinoState(pct);
+    const dinoEmoji = DINO_EMOJI_STATES[dinoState] || '🦖';
+
+    const rows = [
+        ['🦖 Dino Status', `${dinoEmoji} ${dinoState.replace('dino-','').toUpperCase()}`],
+        ['💰 Cycle Spend', `${sym}${metrics.totalSpent.toLocaleString()}`],
+        ['📊 Budget Used', `${pct}%`],
+        ['📅 Days Left', `${metrics.daysRemaining}`],
+        ['🔥 Avg / Day', `${sym}${avgDaily.toLocaleString()}`],
+        ['🍖 Top Prey', topCat],
+        ['📜 This Cycle', `${cycleTx} kill${cycleTx !== 1 ? 's' : ''}`],
+        ['🦴 All-Time', `${totalTx} fossil${totalTx !== 1 ? 's' : ''}`],
+        ['🗂️ Categories', `${state.categories?.length || 0}`],
+        ['💳 Payments', `${state.payments?.length || 0}`],
+    ];
+
+    const content = document.getElementById('dinoStatsContent');
+    content.innerHTML = rows.map(([label, val]) => `
+        <div class="flex justify-between items-center py-2.5 border-b border-slate-800/60">
+            <span class="text-[11px] text-slate-400 font-semibold">${label}</span>
+            <span class="text-[11px] text-white font-extrabold">${val}</span>
+        </div>`).join('');
+
+    sheet.classList.remove('hidden');
+    initLucideIcons(sheet);
+}
+
+function closeStatsSheet() {
+    const sheet = document.getElementById('dinoStatsSheet');
+    if (sheet) sheet.classList.add('hidden');
+}
