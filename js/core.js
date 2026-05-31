@@ -412,6 +412,7 @@ function toggleThemeSetting() {
     const isLight = document.getElementById("settingLightTheme").checked;
     applyTheme(isLight ? "light" : "dark");
     saveStateToLocalStorage();
+    playSound(S.SYSTEM);
     showNotification(isLight
         ? t("Light theme applied.", "☀️ Daylight era applied.")
         : t("Dark theme applied.", "🌙 Night hunt applied."));

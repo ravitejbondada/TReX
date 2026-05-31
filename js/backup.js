@@ -364,6 +364,7 @@ function exportDataToJSON() {
         JSON.stringify(payload, null, 2),
         "application/json"
     );
+    playSound(S.SYSTEM);
     showNotification(t("Backup exported.", "🥚 Fossilized! Backup ready."));
 }
 
@@ -446,6 +447,7 @@ function importBackupFile(e) {
                     return;
                 }
                 applyFullStateRestore(parsed);
+                playSound(S.DRIVE_CONNECT);
                 showNotification(t("Data restored.", "🦖 Unearthed! Data restored."));
             } else if (lower.endsWith(".csv")) {
                 const sections = parseBackupCSVSections(text);

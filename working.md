@@ -1,21 +1,22 @@
 # TReX - Active Work Log
 
 **Last updated:** May 31, 2026
-**Current version:** v3.6
-**Changelog:** All completed work from v2.0-v3.6 is documented in `CHANGELOG.md`.
+**Current version:** v3.7
+**Changelog:** All completed work from v2.0-v3.7 is documented in `CHANGELOG.md`.
 
 ---
 
 ## Current Status
 
-TREX_IMPLEMENTATION_PLAN.md Phase 3 (Dino Copy & Micro-text) - **Complete**
-Next up: **TREX_IMPLEMENTATION_PLAN.md - Phase 4 (Dino Animations & CSS)**
+TREX_IMPLEMENTATION_PLAN.md Phase 8 (Sound Engine) - **Complete**
+Next up: **TREX_IMPLEMENTATION_PLAN.md - Phase 9 (Polish)**
 
 Completed implementation-plan phases:
 - Phase 1 - Settings Architecture Revamp: side drawer, drawer sub-panels, clean Settings layout.
 - Phase 2 - State & Preferences Foundation: `dinoPrefs`, `dp(key)`, Personality settings controls, backup/sync normalization.
 - Phase 3 - Dino Copy & Micro-text: `t(neutral, dino)` and dino-mode copy across toasts, confirms, empty states, and contextual labels.
 - Phase 3.5 - Dino Mode master toggle: dependent dino controls are disabled when Dino Mode is off, with saved choices preserved.
+- Phase 8 - Sound Engine: shared `js/sounds.js`, normal/dino sound banks, App Sounds setting under Appearance, and key action sound cues.
 
 ---
 
@@ -26,20 +27,20 @@ Completed implementation-plan phases:
 
 ---
 
-## Next Phase - Implementation Plan Phase 4
+## Next Phase - Implementation Plan Phase 9
 
 **Reference:** `TREX_IMPLEMENTATION_PLAN.md`
-**Goal:** Dino animations and CSS triggers
+**Goal:** Final polish pass
 **Upload these files to start:**
-`styles.css`, `js/auth.js`, `js/dashboard.js`, `js/transactions.js`
+`styles.css`, `js/core.js`, `js/dashboard.js`, `js/goals-trips.js`
 
 **Session resume format:**
 ```text
 TReX dev session resume.
-Current phase: 4
+Current phase: 9
 Current step: [description]
-Last completed: Phase 3 copy/micro-text pass; JS syntax checks passed
-Uploading: styles.css, js/auth.js, js/dashboard.js, js/transactions.js
+Last completed: Phase 8 sound engine; JS syntax checks passed
+Uploading: styles.css, js/core.js, js/dashboard.js, js/goals-trips.js
 ```
 
 ---

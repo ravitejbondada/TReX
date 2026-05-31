@@ -133,6 +133,7 @@ function handleExpenseSubmit(e) {
             showNotification(existing.isRecurring
                 ? t("Recurring ledger entry updated.", "Stampede entry updated.")
                 : t("Transaction updated successfully.", "Ledger fossil updated."));
+            playSound(S.SYSTEM);
         }
     } else {
         const newTx = {
@@ -140,6 +141,7 @@ function handleExpenseSubmit(e) {
             amount, categoryId: catId, paymentId: payId, date, note
         };
         state.transactions.push(newTx);
+        playSound(S.SAVE);
         showNotification(t("Transaction saved.", "🦖 Devoured! Expense saved."));
     }
 
@@ -262,6 +264,7 @@ function saveInlineCategory() {
 
     inlineCategoryModalMode = "";
     closeInlineCategoryModal();
+    playSound(S.SAVE);
     showNotification(t(`Category "${name}" added.`, `Territory "${name}" claimed.`));
 }
 
@@ -333,6 +336,7 @@ function saveInlinePayment() {
     refreshCreditCardViews();
 
     closeInlinePaymentModal();
+    playSound(S.SAVE);
     showNotification(t(`Payment method "${name}" added.`, `Hunting weapon "${name}" added.`));
 }
 
@@ -526,6 +530,7 @@ async function deleteTransaction(id) {
 
     state.transactions = state.transactions.filter(t => t.id !== id);
     saveStateToLocalStorage();
+    playSound(S.DELETE);
     showNotification(t("Deleted.", "🦴 Gone extinct."));
     filterHistory();
     refreshCreditCardViews();

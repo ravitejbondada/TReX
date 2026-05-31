@@ -26,7 +26,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- ChartJS for rich analytical visualizers -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="styles.css?v=20260531-budget-dino">
+    <link rel="stylesheet" href="styles.css?v=20260531-budget-clean">
     <style>
         /* iOS-style day wheel picker */
         .wheel-item {
@@ -1173,8 +1173,36 @@
                         <span class="text-slate-300 font-medium flex items-center gap-1.5">
                             <i data-lucide="sun-moon" class="w-4 h-4 text-amber-400"></i> Light Theme Mode
                         </span>
-                        <input type="checkbox" id="settingLightTheme" onchange="toggleThemeSetting()"
-                            class="w-5 h-5 accent-indigo-500 bg-slate-900 border-slate-800 rounded" />
+                        <label class="relative inline-flex items-center cursor-pointer ml-3" title="Light Theme Mode">
+                            <input type="checkbox" id="settingLightTheme" onchange="toggleThemeSetting()" class="sr-only peer" />
+                            <span class="w-10 h-5 bg-slate-800 peer-checked:bg-indigo-500 rounded-full transition-all"></span>
+                            <span class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
+                        </label>
+                    </div>
+
+                    <!-- App Sounds -->
+                    <div class="flex justify-between items-center text-xs">
+                        <div>
+                            <span class="text-slate-300 font-medium flex items-center gap-1.5">
+                                <i data-lucide="volume-2" class="w-4 h-4 text-indigo-400"></i> App Sounds
+                            </span>
+                            <p class="text-[9px] text-slate-500 mt-0.5">Audio micro-feedback across normal and dino modes</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer ml-3" title="App Sounds">
+                            <input type="checkbox" id="roarSoundsToggle" onchange="toggleRoarSounds()" class="sr-only peer" />
+                            <span class="w-10 h-5 bg-slate-800 peer-checked:bg-indigo-500 rounded-full transition-all"></span>
+                            <span class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
+                        </label>
+                    </div>
+
+                    <div id="soundVolumeRow" class="flex justify-between items-center text-xs" style="display:none">
+                        <span class="text-slate-300 font-medium">Volume</span>
+                        <div class="flex items-center gap-2">
+                            <input type="range" min="0" max="100" id="soundVolumeSlider" oninput="saveSoundVolume()"
+                                class="w-28 accent-indigo-500" />
+                            <button type="button" onclick="playSound(S.SAVE); setTimeout(() => playSound(S.DELETE), 140)"
+                                class="text-[9px] font-bold text-indigo-300 border border-indigo-500/30 rounded-lg px-2 py-1 hover:bg-indigo-950/40">Test</button>
+                        </div>
                     </div>
 
                     <div class="space-y-1.5">
@@ -1203,31 +1231,17 @@
                         </label>
                     </div>
 
-                    <!-- Roar Sounds -->
-                    <div class="flex justify-between items-center text-xs">
-                        <div>
-                            <span class="text-slate-300 font-medium flex items-center gap-1.5">🔊 Roar Sounds</span>
-                            <p class="text-[9px] text-slate-500 mt-0.5">Audio micro-feedback on actions</p>
-                        </div>
-                        <input type="checkbox" id="roarSoundsToggle" onchange="toggleRoarSounds()"
-                            class="w-5 h-5 accent-indigo-500 bg-slate-900 border-slate-800 rounded shrink-0 ml-3" />
-                    </div>
-
-                    <!-- Volume slider — hidden until Roar Sounds is enabled -->
-                    <div id="soundVolumeRow" class="flex justify-between items-center text-xs" style="display:none">
-                        <span class="text-slate-300 font-medium">Volume</span>
-                        <input type="range" min="0" max="100" id="soundVolumeSlider" oninput="saveSoundVolume()"
-                            class="w-32 accent-indigo-500" />
-                    </div>
-
                     <!-- Fossil Mode -->
                     <div class="flex justify-between items-center text-xs">
                         <div>
                             <span class="text-slate-300 font-medium flex items-center gap-1.5">🦴 Fossil Mode</span>
                             <p class="text-[9px] text-slate-500 mt-0.5">Dark amber &amp; charcoal color theme</p>
                         </div>
-                        <input type="checkbox" id="fossilModeToggle" onchange="toggleFossilMode()"
-                            class="w-5 h-5 accent-indigo-500 bg-slate-900 border-slate-800 rounded shrink-0 ml-3" />
+                        <label class="relative inline-flex items-center cursor-pointer ml-3" title="Fossil Mode">
+                            <input type="checkbox" id="fossilModeToggle" onchange="toggleFossilMode()" class="sr-only peer" />
+                            <span class="w-10 h-5 bg-slate-800 peer-checked:bg-indigo-500 rounded-full transition-all"></span>
+                            <span class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
+                        </label>
                     </div>
 
                     <!-- Dino Footprints -->
@@ -1236,8 +1250,11 @@
                             <span class="text-slate-300 font-medium flex items-center gap-1.5">🦶 Dino Footprints</span>
                             <p class="text-[9px] text-slate-500 mt-0.5">Mark high-spend days on the calendar</p>
                         </div>
-                        <input type="checkbox" id="dinoFootprintsToggle" onchange="toggleDinoFootprints()"
-                            class="w-5 h-5 accent-indigo-500 bg-slate-900 border-slate-800 rounded shrink-0 ml-3" />
+                        <label class="relative inline-flex items-center cursor-pointer ml-3" title="Dino Footprints">
+                            <input type="checkbox" id="dinoFootprintsToggle" onchange="toggleDinoFootprints()" class="sr-only peer" />
+                            <span class="w-10 h-5 bg-slate-800 peer-checked:bg-indigo-500 rounded-full transition-all"></span>
+                            <span class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
+                        </label>
                     </div>
 
                     <!-- Extinction Warnings -->
@@ -1246,8 +1263,11 @@
                             <span class="text-slate-300 font-medium flex items-center gap-1.5">☄️ Extinction Warnings</span>
                             <p class="text-[9px] text-slate-500 mt-0.5">Dramatic language when over budget</p>
                         </div>
-                        <input type="checkbox" id="extinctionWarningsToggle" onchange="toggleExtinctionWarnings()"
-                            class="w-5 h-5 accent-indigo-500 bg-slate-900 border-slate-800 rounded shrink-0 ml-3" />
+                        <label class="relative inline-flex items-center cursor-pointer ml-3" title="Extinction Warnings">
+                            <input type="checkbox" id="extinctionWarningsToggle" onchange="toggleExtinctionWarnings()" class="sr-only peer" />
+                            <span class="w-10 h-5 bg-slate-800 peer-checked:bg-indigo-500 rounded-full transition-all"></span>
+                            <span class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
+                        </label>
                     </div>
                 </div>
 
@@ -1259,8 +1279,11 @@
 
                     <div class="flex justify-between items-center text-xs">
                         <span class="text-slate-300 font-medium">Verify Security PIN Overlay</span>
-                        <input type="checkbox" id="settingPinEnabled" onchange="togglePinSetting()"
-                            class="w-5 h-5 accent-indigo-500 bg-slate-900 border-slate-800 rounded" />
+                        <label class="relative inline-flex items-center cursor-pointer ml-3" title="Verify Security PIN Overlay">
+                            <input type="checkbox" id="settingPinEnabled" onchange="togglePinSetting()" class="sr-only peer" />
+                            <span class="w-10 h-5 bg-slate-800 peer-checked:bg-indigo-500 rounded-full transition-all"></span>
+                            <span class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
+                        </label>
                     </div>
 
                     <div class="flex justify-between items-center text-xs">
@@ -1270,8 +1293,11 @@
                             </span>
                             <p id="biometricStatusText" class="text-[9px] text-slate-500 mt-0.5">Checking device support...</p>
                         </div>
-                        <input type="checkbox" id="settingBiometricEnabled" onchange="toggleBiometricSetting()"
-                            class="w-5 h-5 accent-indigo-500 bg-slate-900 border-slate-800 rounded shrink-0 ml-3" />
+                        <label class="relative inline-flex items-center cursor-pointer ml-3" title="Biometric Unlock">
+                            <input type="checkbox" id="settingBiometricEnabled" onchange="toggleBiometricSetting()" class="sr-only peer" />
+                            <span class="w-10 h-5 bg-slate-800 peer-checked:bg-indigo-500 rounded-full transition-all"></span>
+                            <span class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
+                        </label>
                     </div>
 
                     <!-- Change PIN -->
@@ -1315,8 +1341,11 @@
                                 <span class="text-slate-300 font-medium">Budget Spend Alerts</span>
                                 <p class="text-[9px] text-slate-500 mt-0.5">Notify at 50%, 75% &amp; 90% of monthly budget</p>
                             </div>
-                            <input type="checkbox" id="settingBudgetAlerts" onchange="saveBudgetAlertSetting()"
-                                class="w-5 h-5 accent-indigo-500 rounded shrink-0 ml-3" />
+                            <label class="relative inline-flex items-center cursor-pointer ml-3" title="Budget Spend Alerts">
+                                <input type="checkbox" id="settingBudgetAlerts" onchange="saveBudgetAlertSetting()" class="sr-only peer" />
+                                <span class="w-10 h-5 bg-slate-800 peer-checked:bg-indigo-500 rounded-full transition-all"></span>
+                                <span class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
+                            </label>
                         </div>
                     </div>
 
@@ -1328,8 +1357,11 @@
                                 <span class="text-slate-300 font-medium">Daily Expense Reminder</span>
                                 <p class="text-[9px] text-slate-500 mt-0.5">Remind you to log &amp; review today's expenses</p>
                             </div>
-                            <input type="checkbox" id="settingDailyReminder" onchange="toggleDailyReminderSetting()"
-                                class="w-5 h-5 accent-indigo-500 rounded shrink-0 ml-3" />
+                            <label class="relative inline-flex items-center cursor-pointer ml-3" title="Daily Expense Reminder">
+                                <input type="checkbox" id="settingDailyReminder" onchange="toggleDailyReminderSetting()" class="sr-only peer" />
+                                <span class="w-10 h-5 bg-slate-800 peer-checked:bg-indigo-500 rounded-full transition-all"></span>
+                                <span class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
+                            </label>
                         </div>
                         <div id="dailyReminderTimeRow" style="display:none"
                             class="flex items-center gap-3 bg-slate-950/60 rounded-xl px-3 py-2.5 border border-slate-800">
@@ -1717,25 +1749,17 @@
                         <h3 id="tripAddPanelTitle"
                             class="text-[10px] font-extrabold text-slate-200 uppercase tracking-widest">Log Trip Expense
                         </h3>
-                        <div>
-                            <label class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Note</label>
-                            <input type="text" id="tripExpenseDesc" placeholder="e.g., Dinner at beach shack"
-                                class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none" />
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label
-                                    class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Amount</label>
-                                <input type="number" id="tripExpenseAmount" placeholder="0.00"
-                                    class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none" />
-                            </div>
-                            <div>
-                                <label
-                                    class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Date</label>
-                                <input type="date" id="tripExpenseDate"
-                                    class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-[10px] text-white focus:outline-none" />
+
+                        <div class="bg-slate-950 p-5 rounded-2xl border border-slate-850 text-center space-y-1.5">
+                            <label class="text-[9px] uppercase tracking-widest font-extrabold text-slate-500 block">Trip
+                                Expense Amount</label>
+                            <div class="flex items-center justify-center gap-1.5">
+                                <span class="text-3xl font-black text-amber-400 current-currency-symbol">₹</span>
+                                <input type="number" step="any" id="tripExpenseAmount" placeholder="0"
+                                    class="bg-transparent text-3xl font-black focus:outline-none w-44 text-center text-white placeholder-slate-800" />
                             </div>
                         </div>
+
                         <div>
                             <label
                                 class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Category</label>
@@ -1747,6 +1771,20 @@
                                 Method</label>
                             <select id="tripExpensePaymentId"
                                 class="w-full app-dropdown rounded-lg text-xs focus:outline-none"></select>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <label
+                                    class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Transaction Date</label>
+                                <input type="date" id="tripExpenseDate"
+                                    class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-white focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Note
+                                    <span class="font-semibold normal-case tracking-normal text-slate-600">(optional)</span></label>
+                                <input type="text" id="tripExpenseDesc" placeholder="e.g., Dinner at beach shack"
+                                    class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-white focus:outline-none" />
+                            </div>
                         </div>
                         <p class="text-[9px] text-slate-500 italic">Type (Pre-Trip / On-Trip) is set automatically based
                             on the date. <span id="tripExpenseTypeLabel" class="font-bold text-amber-400"></span></p>
@@ -1770,21 +1808,25 @@
                             data-lucide="x" class="w-4 h-4"></i></button>
                 </div>
                 <div class="space-y-3">
-                    <div>
-                        <label class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Note</label>
-                        <input type="text" id="tripQuickDesc" placeholder="e.g., Lunch at beach"
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none" />
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Amount</label>
-                            <input type="number" id="tripQuickAmount" placeholder="0.00"
-                                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none" />
+                    <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center space-y-1">
+                        <label class="text-[9px] uppercase tracking-widest font-extrabold text-slate-500 block">Amount</label>
+                        <div class="flex items-center justify-center gap-1.5">
+                            <span class="text-2xl font-black text-amber-400 current-currency-symbol">₹</span>
+                            <input type="number" step="any" id="tripQuickAmount" placeholder="0"
+                                class="bg-transparent text-2xl font-black focus:outline-none w-36 text-center text-white placeholder-slate-800" />
                         </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div>
                             <label class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Date</label>
                             <input type="date" id="tripQuickDate"
-                                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 py-2.5 text-[10px] text-white focus:outline-none" />
+                                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none" />
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Note
+                                <span class="font-semibold normal-case tracking-normal text-slate-600">(optional)</span></label>
+                            <input type="text" id="tripQuickDesc" placeholder="e.g., Lunch at beach"
+                                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none" />
                         </div>
                     </div>
                     <div>
@@ -2401,17 +2443,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <!-- App Modules — order matters: core must load first -->
-    <script src="js/core.js?v=20260531-budget-dino"></script>
-    <script src="js/sync.js?v=20260531-budget-dino"></script>
-    <script src="js/auth.js?v=20260531-budget-dino"></script>
-    <script src="js/dashboard.js?v=20260531-budget-dino"></script>
-    <script src="js/transactions.js?v=20260531-budget-dino"></script>
-    <script src="js/reports.js?v=20260531-budget-dino"></script>
-    <script src="js/settings.js?v=20260531-budget-dino"></script>
-    <script src="js/credit-cards.js?v=20260531-budget-dino"></script>
-    <script src="js/recurring.js?v=20260531-budget-dino"></script>
-    <script src="js/goals-trips.js?v=20260531-budget-dino"></script>
-    <script src="js/backup.js?v=20260531-budget-dino"></script>
+    <script src="js/core.js?v=20260531-budget-clean"></script>
+    <script src="js/sounds.js?v=20260531-phase8-sounds"></script>
+    <script src="js/sync.js?v=20260531-budget-clean"></script>
+    <script src="js/auth.js?v=20260531-budget-clean"></script>
+    <script src="js/dashboard.js?v=20260531-budget-clean"></script>
+    <script src="js/transactions.js?v=20260531-budget-clean"></script>
+    <script src="js/reports.js?v=20260531-budget-clean"></script>
+    <script src="js/settings.js?v=20260531-budget-clean"></script>
+    <script src="js/credit-cards.js?v=20260531-budget-clean"></script>
+    <script src="js/recurring.js?v=20260531-budget-clean"></script>
+    <script src="js/goals-trips.js?v=20260531-budget-clean"></script>
+    <script src="js/backup.js?v=20260531-budget-clean"></script>
 
     <script>
     // ── SYNC UI BOOT PATCH ──────────────────────────────────────────────────

@@ -133,7 +133,8 @@ function saveRecurring() {
                 skippedDates: state.recurringExpenses[idx].skippedDates || [],
                 updatedAt: new Date().toISOString()
             };
-            showNotification(t(`Recurring schedule "${name}" updated.`, `Stampede "${name}" redirected.`));
+            playSound(S.SYSTEM);
+        showNotification(t(`Recurring schedule "${name}" updated.`, `Stampede "${name}" redirected.`));
         }
     } else {
         const newRec = {
@@ -143,7 +144,8 @@ function saveRecurring() {
             createdAt: new Date().toISOString()
         };
         state.recurringExpenses.push(newRec);
-        showNotification(t("Schedule saved.", "🔁 Stampede scheduled."));
+        playSound(S.SAVE);
+    showNotification(t("Schedule saved.", "🔁 Stampede scheduled."));
     }
 
     saveStateToLocalStorage();
@@ -162,6 +164,7 @@ async function deleteRecurring(id) {
     saveStateToLocalStorage();
     renderRecurringExpenses();
     updateAppDashboardView();
+    playSound(S.DELETE);
     showNotification(t("Recurring schedule removed.", "Stampede stopped."));
 }
 
@@ -551,6 +554,7 @@ function saveEMI() {
                 totalPayable: calc.totalPayable,
                 updatedAt: new Date().toISOString()
             };
+            playSound(S.SYSTEM);
             showNotification(t(`EMI schedule "${name}" updated.`, `EMI trail "${name}" updated.`));
         }
     } else {
@@ -564,6 +568,7 @@ function saveEMI() {
             createdAt: new Date().toISOString()
         };
         state.emis.push(newEMI);
+        playSound(S.SAVE);
         showNotification(t("EMI saved.", "📅 Installment plan locked in."));
     }
 
@@ -584,6 +589,7 @@ async function deleteEMI(id) {
     renderEMIsList();
     refreshCreditCardViews();
     updateAppDashboardView();
+    playSound(S.DELETE);
     showNotification(t(`EMI "${emi.name}" cancelled.`, `EMI trail "${emi.name}" collapsed.`));
 }
 

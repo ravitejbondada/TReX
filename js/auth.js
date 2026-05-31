@@ -281,6 +281,7 @@ function submitLockedQuickExpense(event) {
         closeLockedExpenseSheet();
         try { renderDashboard(); } catch (e) {}
         try { renderHistory(); } catch (e) {}
+        playSound(S.SAVE);
         showNotification(t("Expense saved.", "🦖 Devoured! Expense saved."));
     }
 }
@@ -304,11 +305,12 @@ function lockApp() {
     document.querySelectorAll("#recurringModal, #pinSuccessModal, #inlineCategoryModal, #inlinePaymentModal, #editCategoryModal, #editPaymentModal")
         .forEach(el => el.classList.add("hidden"));
 
+    playSound(S.LOCK);
     showNotification(t("App protected. PIN required.", "🦖 Lair sealed. PIN required."));
     initLucideIcons();
 }
 
-function unlockApp() {
+function unlockApp(silent = false) {
     const lockScreen = document.getElementById("simulatedLockScreen");
     if (dp('dinoMode')) {
         lockScreen.classList.add('lock-screen-exit');
@@ -322,6 +324,7 @@ function unlockApp() {
         setTimeout(() => lockScreen.classList.add("hidden"), 500);
     }
     closeLockedExpenseSheet();
+    if (!silent) playSound(S.UNLOCK_PIN);
     pinAttemptBuffer = "";
     updatePinVisualDots();
 }
@@ -428,6 +431,7 @@ async function toggleBiometricSetting() {
 function pressPin(char) {
     if (pinAttemptBuffer.length < 4) {
         pinAttemptBuffer += char;
+        playSound(S.PIN_TAP);
         updatePinVisualDots();
     }
 
@@ -438,6 +442,7 @@ function pressPin(char) {
                 showNotification(t("Passcode verified. Storage unlocked.", "🦖 Lair opened. Welcome back."));
                 pinAttemptBuffer = "";
             } else {
+                playSound(S.PIN_WRONG);
                 showNotification(t("Incorrect passcode. Try again.", "Wrong roar. Try the PIN again."));
                 if (dp('dinoMode')) {
                     const dots = document.getElementById('pinDots');
@@ -446,13 +451,14 @@ function pressPin(char) {
                         setTimeout(() => dots.classList.remove('pin-shake'), 450);
                     }
                 }
-                clearPin();
+                clearPin(true);
             }
         }, 200);
     }
 }
 
-function clearPin() {
+function clearPin(silent = false) {
+    if (!silent) playSound(S.PIN_BACK);
     pinAttemptBuffer = "";
     updatePinVisualDots();
 }
@@ -479,7 +485,8 @@ async function simulateBiometrics() {
         });
         if (!assertion) throw new Error("No assertion returned");
 
-        unlockApp();
+        playSound(S.UNLOCK_BIO);
+        unlockApp(true);
         showNotification(t("Unlocked with biometrics.", "🦖 Clawprint accepted."));
         pinAttemptBuffer = "";
         updatePinVisualDots();

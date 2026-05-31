@@ -192,6 +192,7 @@ async function deleteGoalContribution(goalId, cid) {
     saveStateToLocalStorage();
     renderSavingGoalsDedicated();
     setTimeout(() => toggleGoalAccordion(goalId), 10);
+    playSound(S.DELETE);
     showNotification(t("Contribution removed.", "Nest offering removed."));
 }
 
@@ -207,6 +208,7 @@ function createNewSavingGoalDedicated() {
     document.getElementById("newGoalTargetDedicated").value = "";
     if (dateEl) dateEl.value = "";
     renderSavingGoalsDedicated();
+    playSound(S.SAVE);
     showNotification(t("Goal created.", "🥚 New egg in the nest."));
 }
 
@@ -251,8 +253,8 @@ function fundSavingGoalDedicated(id) {
         }
     }
 
-    if (newPercent >= 100 && prevPercent < 100) showNotification(t("Goal fully funded! 🎉", "🥚 Goal hatched! TReX is proud."));
-    else showNotification(t("Contribution added.", "Egg fed."));
+    if (newPercent >= 100 && prevPercent < 100) { playSound(S.GOAL_HATCHED); showNotification(t("Goal fully funded! 🎉", "🥚 Goal hatched! TReX is proud.")); }
+    else { playSound(S.SAVE); showNotification(t("Contribution added.", "Egg fed.")); }
 }
 
 async function removeSavingGoalDedicated(id) {
@@ -262,6 +264,7 @@ async function removeSavingGoalDedicated(id) {
     state.savingGoals = state.savingGoals.filter(g => g.id !== id);
     saveStateToLocalStorage();
     renderSavingGoalsDedicated();
+    playSound(S.DELETE);
     showNotification(t("Goal removed.", "Egg removed from the nest."));
 }
 
@@ -374,7 +377,6 @@ function submitTripQuickAdd() {
     const categoryId = document.getElementById("tripQuickCategoryId").value;
     const paymentId  = document.getElementById("tripQuickPaymentId").value;
     if (!tripId)                      { showNotification(t("No active trip.", "No active migration right now.")); return; }
-    if (!desc)                        { showNotification(t("Please enter a note.", "Name this fossil before logging it.")); return; }
     if (isNaN(amount) || amount <= 0) { showNotification(t("Please enter a valid amount.", "TReX needs a real amount.")); return; }
     if (!date)                        { showNotification(t("Please select a date.", "Pick a date for this fossil.")); return; }
     if (date > getTodayISO())         { showNotification(t("Expense date cannot be in the future.", "TReX cannot hunt in tomorrow yet.")); return; }
@@ -383,6 +385,7 @@ function submitTripQuickAdd() {
     if (idx === -1) return;
     if (!state.trips[idx].expenses) state.trips[idx].expenses = [];
     const trip = state.trips[idx];
+    const expenseLabel = desc || (document.getElementById("tripQuickCategoryId")?.selectedOptions?.[0]?.textContent || t("Trip expense", "Migration fossil"));
     // determine type based on date
     const det = determineTripExpenseType(trip, date);
     if (det.error) { showNotification(t(det.error, det.error)); return; }
@@ -393,7 +396,7 @@ function submitTripQuickAdd() {
         state.transactions.push({
             id: txId,
             amount, categoryId, paymentId, date,
-            note: `${trip.emoji || '✈️'} ${trip.name} · ${desc}`,
+            note: `${trip.emoji || '✈️'} ${trip.name} · ${expenseLabel}`,
             tripId: trip.id,
             tripType: 'pre',
             tripRef: true,
@@ -410,7 +413,7 @@ function submitTripQuickAdd() {
     saveStateToLocalStorage();
     closeTripQuickAdd();
     renderActiveTripBanner();
-    showNotification(t(`"${desc}" added to ${state.trips[idx].name}.${type === 'pre' ? ' Logged to ledger.' : ''}`, `"${desc}" packed into ${state.trips[idx].name}.${type === 'pre' ? ' Fossil logged to ledger.' : ''}`));
+    showNotification(t(`"${expenseLabel}" added to ${state.trips[idx].name}.${type === 'pre' ? ' Logged to ledger.' : ''}`, `"${expenseLabel}" packed into ${state.trips[idx].name}.${type === 'pre' ? ' Fossil logged to ledger.' : ''}`));
 }
 
 function bannerSyncTrip(tripId) {
@@ -580,6 +583,7 @@ function createNewTrip() {
     document.getElementById("newTripEnd").value    = "";
     renderTripsList();
     renderActiveTripBanner();
+    playSound(S.SAVE);
     showNotification(t(`Trip "${name}" created!`, `Migration "${name}" planned!`));
 }
 
@@ -791,7 +795,7 @@ function renderTripExpenses() {
         preList.innerHTML = preItems.map(e => `
             <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-2">
                 <div class="flex-1 min-w-0">
-                    <p class="text-[11px] font-bold text-white truncate">${e.desc}</p>
+                    <p class="text-[11px] font-bold text-white truncate">${e.desc || catName(e.categoryId)}</p>
                     <p class="text-[9px] text-slate-500">${e.date} · <span style="color:${catColor(e.categoryId)}">${catName(e.categoryId)}</span> · ${payName(e.paymentId)}</p>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
@@ -854,7 +858,7 @@ function renderTripExpenses() {
                     ${byDay[day].map(e => `
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex-1 min-w-0">
-                            <p class="text-[10px] font-bold text-white truncate">${e.desc}</p>
+                            <p class="text-[10px] font-bold text-white truncate">${e.desc || catName(e.categoryId)}</p>
                             <p class="text-[9px] text-slate-500"><span style="color:${catColor(e.categoryId)}">${catName(e.categoryId)}</span> · ${payName(e.paymentId)}</p>
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
@@ -937,7 +941,6 @@ function addTripExpense() {
     const date       = document.getElementById("tripExpenseDate").value;
     const categoryId = document.getElementById("tripExpenseCategoryId").value;
     const paymentId  = document.getElementById("tripExpensePaymentId").value;
-    if (!desc)                        { showNotification(t("Please enter a note.", "Name this fossil before logging it.")); return; }
     if (isNaN(amount) || amount <= 0) { showNotification(t("Please enter a valid amount.", "TReX needs a real amount.")); return; }
     if (!date)                        { showNotification(t("Please select a date.", "Pick a date for this fossil.")); return; }
     if (date > getTodayISO())         { showNotification(t("Expense date cannot be in the future.", "TReX cannot hunt in tomorrow yet.")); return; }
@@ -947,6 +950,7 @@ function addTripExpense() {
     const idx = state.trips.findIndex(t => t.id === activeTripId);
     if (idx === -1) return;
     const trip = state.trips[idx];
+    const expenseLabel = desc || (document.getElementById("tripExpenseCategoryId")?.selectedOptions?.[0]?.textContent || t("Trip expense", "Migration fossil"));
     if (!trip.expenses) trip.expenses = [];
 
     // Determine expense type based on chosen date relative to trip dates
@@ -969,7 +973,7 @@ function addTripExpense() {
                 state.transactions[txIdx].categoryId = categoryId;
                 state.transactions[txIdx].paymentId  = paymentId;
                 state.transactions[txIdx].date       = date;
-                state.transactions[txIdx].note       = `${trip.emoji || "✈️"} ${trip.name} · ${desc}`;
+                state.transactions[txIdx].note       = `${trip.emoji || "✈️"} ${trip.name} · ${expenseLabel}`;
             }
         }
         // If type changed from pre→on, remove the old ledger entry
@@ -983,7 +987,7 @@ function addTripExpense() {
             const txId = "tx_pre_" + Date.now();
             state.transactions.push({
                 id: txId, amount, categoryId, paymentId, date,
-                note: `${trip.emoji || "✈️"} ${trip.name} · ${desc}`,
+                note: `${trip.emoji || "✈️"} ${trip.name} · ${expenseLabel}`,
                 tripId: trip.id, tripType: "pre", tripRef: true,
                 isRecurring: false, recurringId: ""
             });
@@ -995,7 +999,8 @@ function addTripExpense() {
         cancelEditTripExpense();
         renderTripDetailStats();
         renderTripExpenses();
-        showNotification(t(`Expense "${desc}" updated.`, `Fossil "${desc}" updated.`));
+        playSound(S.SYSTEM);
+        showNotification(t(`Expense "${expenseLabel}" updated.`, `Fossil "${expenseLabel}" updated.`));
         switchTripTab(type === "pre" ? "pre" : "on");
         return;
     }
@@ -1007,7 +1012,7 @@ function addTripExpense() {
         state.transactions.push({
             id: txId,
             amount, categoryId, paymentId, date,
-            note: `${trip.emoji || "✈️"} ${trip.name} · ${desc}`,
+            note: `${trip.emoji || "✈️"} ${trip.name} · ${expenseLabel}`,
             tripId:   trip.id,
             tripType: "pre",
             tripRef:  true,
@@ -1031,7 +1036,8 @@ function addTripExpense() {
     document.getElementById("tripExpenseAmount").value = "";
     renderTripDetailStats();
     renderTripExpenses();
-    showNotification(t(`Expense "${desc}" added${type === "pre" ? " & logged to ledger" : ""}.`, `Fossil "${desc}" added${type === "pre" ? " and etched into the ledger" : ""}.`));
+    playSound(S.SAVE);
+    showNotification(t(`Expense "${expenseLabel}" added${type === "pre" ? " & logged to ledger" : ""}.`, `Fossil "${expenseLabel}" added${type === "pre" ? " and etched into the ledger" : ""}.`));
     switchTripTab(type === "pre" ? "pre" : "on");
 }
 
@@ -1039,7 +1045,8 @@ async function deleteTripExpense(expenseId) {
     const idx = state.trips.findIndex(t => t.id === activeTripId);
     if (idx === -1) return;
     const exp = (state.trips[idx].expenses || []).find(e => e.id === expenseId);
-    const label = exp ? `"${exp.desc}"` : "this expense";
+    const labelText = exp ? (exp.desc || ((state.categories.find(c => c.id === exp.categoryId) || {}).name) || "this expense") : "this expense";
+    const label = exp ? `"${labelText}"` : "this expense";
     if (!await customConfirm(t(`Delete ${label}?${exp && exp.type === 'pre' ? ' Its ledger entry will also be removed.' : ''} This cannot be undone.`, `Send ${label} extinct?${exp && exp.type === 'pre' ? ' Its ledger fossil will also be removed.' : ''} This cannot be undone.`), t("Delete expense?", "Send this fossil extinct?"), t("Delete", "Extinct it"))) return;
     if (exp && exp.type === "pre" && exp.ledgerTxId) {
         state.transactions = state.transactions.filter(t => t.id !== exp.ledgerTxId);
@@ -1048,6 +1055,7 @@ async function deleteTripExpense(expenseId) {
     saveStateToLocalStorage();
     renderTripDetailStats();
     renderTripExpenses();
+    playSound(S.DELETE);
     showNotification(t("Expense removed.", "Fossil removed."));
 }
 
@@ -1161,6 +1169,7 @@ async function deleteTripConfirm() {
     state.trips = state.trips.filter(t => t.id !== activeTripId);
     saveStateToLocalStorage();
     renderActiveTripBanner();
+    playSound(S.DELETE);
     showNotification(t(`Trip "${trip.name}" deleted.`, `Migration "${trip.name}" went extinct.`));
     closeTripDetail();
 }

@@ -32,6 +32,18 @@ index.html
 
 ---
 
+## Phase 8 Sound Engine
+
+`js/sounds.js` now loads immediately after `js/core.js` and before feature modules. It defines the global sound id map `S` plus `playSound(id)`.
+
+Sound preferences are stored under `state.dinoPrefs` for compatibility:
+- `roarSounds`: App Sounds master toggle, default `false`, independent of Dino Mode.
+- `soundVolume`: master volume scalar from `0.0` to `1.0`, default `0.6`.
+
+`playSound()` chooses the normal or dino sound bank based on `dinoPrefs.dinoMode`, but the Dino Mode master toggle does not enable, disable, hide, or change the App Sounds setting itself.
+
+---
+
 ## PWA Manifest Setup
 
 **File:** `manifest.json` (external file at root, replaces embedded data URI)

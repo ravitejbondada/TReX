@@ -5,6 +5,21 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ---
 
+## [v3.7] 2026-05-31 - Phase 8 sound engine
+
+**What changed:** Added the shared Phase 8 sound engine and moved App Sounds out of the Dino/Personality section so sounds work in both normal and Dino Mode.
+
+**Files modified:**
+- `index.html` - added `js/sounds.js` to load order after `core.js`; moved App Sounds and volume/test controls under Appearance.
+- `js/sounds.js` - new Web Audio engine with normal and dino sound banks, lazy AudioContext startup, master volume, and global `S` / `playSound()`.
+- `js/settings.js` - detached sound controls from the Dino Mode dependent toggle gate.
+- `js/core.js`, `js/auth.js`, `js/transactions.js`, `js/dashboard.js`, `js/goals-trips.js`, `js/recurring.js`, `js/backup.js`, `js/sync.js` - wired sound cues into key save/delete/PIN/sync/alert actions.
+- `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`, `working.md` - documented Phase 8.
+
+**Verification:**
+- All app JS files pass `node --check` using the bundled Codex Node runtime.
+- `git diff --check` passed with only existing CRLF normalization warnings.
+
 ## [v3.6] 2026-05-31 - Implementation plan Phases 1-3 complete
 
 **What changed:** Completed the dino revamp foundation through Phase 3: side drawer settings architecture, dino preference state, and Dino Mode copy/micro-text coverage.

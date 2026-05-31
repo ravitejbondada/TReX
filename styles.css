@@ -661,38 +661,16 @@
         }
 
         .budget-dino-img {
-          width: clamp(132px, 34vw, 160px);
-          height: clamp(132px, 34vw, 160px);
+          width: 170px;
+          height: 170px;
           object-fit: contain;
           display: block;
-          margin: -16px -22px -14px 0;
+          margin: -20px -28px -18px 0;
           filter: drop-shadow(0 14px 20px rgba(0,0,0,0.32));
           transform-origin: center bottom;
           position: relative;
           z-index: 1;
         }
-        #budgetHealthEmoji:has(.budget-dino-img) {
-          position: relative;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          isolation: isolate;
-        }
-        #budgetHealthEmoji:has(.budget-dino-img)::before {
-          content: "";
-          position: absolute;
-          inset: 8px 0 0 0;
-          border-radius: 999px;
-          opacity: 0.58;
-          filter: blur(18px);
-          transform: scale(0.72);
-          z-index: 0;
-        }
-        #budgetHealthEmoji:has(.dino-fed)::before { background: #34d399; }
-        #budgetHealthEmoji:has(.dino-prowl)::before { background: #a3e635; }
-        #budgetHealthEmoji:has(.dino-hungry)::before { background: #f59e0b; }
-        #budgetHealthEmoji:has(.dino-ravenous)::before { background: #fb923c; }
-        #budgetHealthEmoji:has(.dino-extinct)::before { background: #ef4444; }
         .budget-dino-img.dino-fed,
         .budget-dino-img.dino-prowl {
           animation: dino-idle-bob 2.2s ease-in-out infinite;

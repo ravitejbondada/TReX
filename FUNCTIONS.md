@@ -6,6 +6,19 @@ To find where to add/edit something, scan the relevant section header then go to
 
 ---
 
+## sounds.js - Sound Engine
+
+| Function / Constant | Description |
+|---|---|
+| `S` | Global sound id map used by feature modules, e.g. `S.SAVE`, `S.DELETE`, `S.UNLOCK_PIN`, `S.BUDGET_ALERT` |
+| `getAudioCtx()` | Lazily creates/resumes a Web Audio `AudioContext` on user-triggered sound playback |
+| `tone(hz, start, dur, vol, type?)` | Plays a short oscillator tone with envelope shaping |
+| `noise(start, dur, vol)` | Plays a short decaying noise burst for dino/delete/reset effects |
+| `chirp(vol, dino?)` | Shared compact success chirp used by both sound banks |
+| `playSound(id)` | Public API; exits when App Sounds are off, applies master volume, and selects normal vs dino bank |
+
+---
+
 ## core.js — App Core (18 functions)
 
 | Function | Description |
@@ -54,13 +67,13 @@ To find where to add/edit something, scan the relevant section header then go to
 | `applyLockedCategoryDefaultPayment()` | Applies category default payment inside the locked expense sheet |
 | `submitLockedQuickExpense(event)` | Saves expense from locked sheet; routes to active trip expenses if a trip is active, otherwise saves as a normal ledger transaction; both paths trigger sync via `saveStateToLocalStorage()` |
 | `lockApp()` | Shows the lock screen overlay, clears the PIN input buffer, and closes the locked expense sheet if open |
-| `unlockApp()` | Hides the lock screen after successful PIN entry and closes the locked expense sheet |
+| `unlockApp(silent?)` | Hides the lock screen after successful PIN entry and closes the locked expense sheet; skips PIN unlock sound when `silent` is true |
 | `clearBiometricState()` | Clears local WebAuthn credential metadata |
 | `togglePinSetting()` | Enables/disables PIN lock from the settings checkbox |
 | `registerBiometricCredential()` | Registers a platform WebAuthn credential for this device |
 | `toggleBiometricSetting()` | Enables/disables biometric unlock from Settings |
 | `pressPin(char)` | Handles a numeric keypad press; auto-submits on 4 digits |
-| `clearPin()` | Clears the last entered PIN digit; triggered by the small `x` inline beside the PIN dots |
+| `clearPin(silent?)` | Clears the last entered PIN digit; triggered by the small `x` inline beside the PIN dots; skips back sound when `silent` is true |
 | `simulateBiometrics()` | Runs WebAuthn biometric/passkey unlock; PIN remains fallback |
 | `updatePinVisualDots()` | Updates the 4 dot indicators based on current `pinAttemptBuffer` length |
 | `changePin()` | Validates old PIN, sets new PIN from settings form, saves state |

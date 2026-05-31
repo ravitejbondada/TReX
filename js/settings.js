@@ -130,6 +130,59 @@ function syncPaymentBillingDayRequirement(scopeKey) {
             ? "Required for credit cards while credit card mode is enabled."
             : "Recurring day of month for credit cards. Leave blank for now.";
     }
+    ensureBillingDayWheel(scopeKey);
+    const wheelRoot = document.getElementById(`${fieldId}WheelRoot`);
+    if (wheelRoot) wheelRoot.style.display = required ? '' : 'none';
+    if (!required && billingField) billingField.value = '';
+}
+
+function ensureBillingDayWheel(scopeKey) {
+    const fieldId = scopeKey === "edit" ? "editPayBillingDay" : "inlinePayBillingDay";
+    const select = document.getElementById(fieldId);
+    if (!select) return;
+    const host = select.closest('.select-wrap') || select;
+    host.style.display = 'none';
+    let root = document.getElementById(`${fieldId}WheelRoot`);
+    if (!root) {
+        const rows = Array.from({ length: 28 }, (_, i) => `<div class="wheel-item" data-value="${i + 1}">${i + 1}</div>`).join('');
+        root = document.createElement('div');
+        root.id = `${fieldId}WheelRoot`;
+        root.innerHTML = `<div id="${fieldId}Display" style="display:flex;align-items:center;justify-content:space-between;background:#0f172a;border:1px solid #334155;border-radius:10px;padding:11px 14px;cursor:pointer;"><span id="${fieldId}DisplayText" style="font-size:0.85rem;font-weight:600;color:#f1f5f9;">Day ${select.value || 15}</span><span id="${fieldId}Chevron" style="font-size:0.7rem;color:#64748b;transition:transform 0.2s;">v</span></div><div id="${fieldId}Wheel" style="display:none;margin-top:6px;position:relative;height:168px;overflow:hidden;border-radius:14px;background:#0f172a;border:1px solid rgba(99,102,241,0.25);user-select:none;-webkit-user-select:none;touch-action:none;overscroll-behavior:contain;"><div style="position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:42px;pointer-events:none;z-index:2;background:rgba(99,102,241,0.12);border-top:1px solid rgba(99,102,241,0.4);border-bottom:1px solid rgba(99,102,241,0.4);border-radius:8px;margin:0 12px;"></div><div style="position:absolute;top:0;left:0;right:0;height:60px;background:linear-gradient(to bottom,#0f172a 0%,transparent 100%);pointer-events:none;z-index:3;"></div><div style="position:absolute;bottom:0;left:0;right:0;height:60px;background:linear-gradient(to top,#0f172a 0%,transparent 100%);pointer-events:none;z-index:3;"></div><div id="${fieldId}WheelTrack" style="position:absolute;left:0;right:0;display:flex;flex-direction:column;align-items:center;will-change:transform;cursor:grab;touch-action:none;overscroll-behavior:contain;"><div style="height:63px;flex-shrink:0;"></div>${rows}<div style="height:63px;flex-shrink:0;"></div></div></div>`;
+        host.insertAdjacentElement('afterend', root);
+    }
+    initDayWheel(root.querySelector(`#${fieldId}WheelTrack`), root.querySelector(`#${fieldId}Wheel`), root.querySelector(`#${fieldId}Display`), root.querySelector(`#${fieldId}DisplayText`), root.querySelector(`#${fieldId}Chevron`), () => parseInt(select.value, 10) || 15, day => { select.value = String(day); });
+}
+
+function initDayWheel(track, wheel, display, displayText, chevron, getValue, setValue) {
+    const ITEM_H = 42;
+    if (!track || !wheel || !display || track._wheelInited) return;
+    track._wheelInited = true;
+    let currentDay = Math.min(28, Math.max(1, getValue()));
+    let offsetY = 0, startY = 0, startOffset = 0, isDragging = false, velocity = 0, lastY = 0, lastT = 0, isOpen = false;
+    const stopScroll = e => { e.preventDefault(); e.stopPropagation(); };
+    const clamp = v => Math.min(Math.max(v, -(28 - 1) * ITEM_H), 0);
+    function snapTo(day, animate) {
+        currentDay = Math.min(Math.max(Math.round(day), 1), 28);
+        offsetY = -(currentDay - 1) * ITEM_H;
+        track.style.transition = animate ? 'transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
+        track.style.transform = `translateY(${offsetY}px)`;
+        setValue(currentDay);
+        if (displayText) displayText.textContent = `Day ${currentDay}`;
+        track.querySelectorAll('.wheel-item').forEach(el => {
+            const selected = parseInt(el.dataset.value, 10) === currentDay;
+            el.style.color = selected ? '#a5b4fc' : '#94a3b8';
+            el.style.fontWeight = selected ? '700' : '400';
+            el.style.fontSize = selected ? '17px' : '14px';
+        });
+    }
+    display.addEventListener('click', () => { isOpen = !isOpen; wheel.style.display = isOpen ? 'block' : 'none'; if (chevron) chevron.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)'; if (isOpen) snapTo(getValue(), false); });
+    wheel.addEventListener('touchmove', stopScroll, { passive: false });
+    wheel.addEventListener('wheel', e => { stopScroll(e); snapTo(currentDay + (e.deltaY > 0 ? 1 : -1), true); }, { passive: false });
+    track.addEventListener('touchmove', stopScroll, { passive: false });
+    track.addEventListener('pointerdown', e => { e.stopPropagation(); isDragging = true; velocity = 0; startY = e.clientY; startOffset = offsetY; lastY = e.clientY; lastT = Date.now(); track.style.cursor = 'grabbing'; track.setPointerCapture(e.pointerId); e.preventDefault(); }, { passive: false });
+    track.addEventListener('pointermove', e => { if (!isDragging) return; e.stopPropagation(); const dt = Date.now() - lastT; velocity = dt > 0 ? (e.clientY - lastY) / dt : 0; lastY = e.clientY; lastT = Date.now(); offsetY = clamp(startOffset + (e.clientY - startY)); track.style.transition = 'none'; track.style.transform = `translateY(${offsetY}px)`; e.preventDefault(); }, { passive: false });
+    track.addEventListener('pointerup', e => { if (!isDragging) return; e.stopPropagation(); isDragging = false; track.style.cursor = 'grab'; snapTo(1 + Math.round(-clamp(offsetY + velocity * 120) / ITEM_H), true); e.preventDefault(); }, { passive: false });
+    snapTo(currentDay, false);
 }
 
 function formatBillingDayLabel(day) {
@@ -378,6 +431,7 @@ function saveBudgetAndCycleSettings() {
     state.cycleType = cycleType;
     state.cycleDay = startDay;
     saveStateToLocalStorage();
+    playSound(S.SYSTEM);
     showNotification(t("Settings saved.", "🦖 Stomped it. Settings saved."));
 }
 
@@ -509,6 +563,7 @@ function saveEditCategory() {
         saveStateToLocalStorage();
         renderSettingsLists();
         closeEditCategoryModal();
+        playSound(S.SYSTEM);
         showNotification(t("Category saved.", "🦕 New territory claimed."));
     }
 }
@@ -532,6 +587,7 @@ async function deleteCategory(catId) {
     state.categories = state.categories.filter(c => c.id !== catId);
     saveStateToLocalStorage();
     renderSettingsLists();
+    playSound(S.DELETE);
     showNotification(t("Category removed.", "Territory fossilized."));
 }
 
@@ -691,7 +747,7 @@ function openDrawerSection(sectionName) {
                         position:relative; height:168px; overflow:hidden;
                         border-radius:14px; background:#0f172a;
                         border:1px solid rgba(99,102,241,0.25);
-                        user-select:none; -webkit-user-select:none; touch-action:pan-y;">
+                        user-select:none; -webkit-user-select:none; touch-action:none; overscroll-behavior:contain;">
                         <!-- selection highlight band -->
                         <div style="
                             position:absolute; left:0; right:0;
@@ -715,7 +771,7 @@ function openDrawerSection(sectionName) {
                         <div id="cycleDayWheelTrack" style="
                             position:absolute; left:0; right:0;
                             display:flex; flex-direction:column; align-items:center;
-                            will-change:transform; cursor:grab;">
+                            will-change:transform; cursor:grab; touch-action:none; overscroll-behavior:contain;">
                             <div style="height:63px;flex-shrink:0;"></div>
                             ${_wheelRows}
                             <div style="height:63px;flex-shrink:0;"></div>
@@ -759,8 +815,18 @@ function openDrawerSection(sectionName) {
                 const track  = container.querySelector('#cycleDayWheelTrack');
                 const hidden = container.querySelector('#settingCycleDay');
                 const displayText = container.querySelector('#cycleDayDisplayText');
+                const wheel = container.querySelector('#cycleDayWheel');
                 if (!track || track._wheelInited) return;
                 track._wheelInited = true;
+                const stopScroll = e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                };
+                if (wheel) {
+                    wheel.addEventListener('touchmove', stopScroll, { passive: false });
+                    wheel.addEventListener('wheel', stopScroll, { passive: false });
+                }
+                track.addEventListener('touchmove', stopScroll, { passive: false });
                 let currentDay = parseInt(hidden.value, 10) || 1;
                 let offsetY = 0, startY = 0, startOffset = 0;
                 let isDragging = false, velocity = 0, lastY = 0, lastT = 0;
@@ -784,6 +850,7 @@ function openDrawerSection(sectionName) {
                 snapTo(currentDay, false);
 
                 track.addEventListener('pointerdown', e => {
+                    e.stopPropagation();
                     track.style.cursor = 'grabbing';
                     isDragging = true; velocity = 0;
                     startY = e.clientY; startOffset = offsetY;
@@ -794,6 +861,7 @@ function openDrawerSection(sectionName) {
 
                 track.addEventListener('pointermove', e => {
                     if (!isDragging) return;
+                    e.stopPropagation();
                     const dt = Date.now() - lastT;
                     velocity = dt > 0 ? (e.clientY - lastY) / dt : 0;
                     lastY = e.clientY; lastT = Date.now();
@@ -805,6 +873,7 @@ function openDrawerSection(sectionName) {
 
                 track.addEventListener('pointerup', e => {
                     if (!isDragging) return;
+                    e.stopPropagation();
                     isDragging = false;
                     track.style.cursor = 'grab';
                     snapTo(1 + Math.round(-clamp(offsetY + velocity * 120) / ITEM_H), true);
@@ -1030,8 +1099,6 @@ function syncPersonalitySettings() {
 function syncDinoDependentControls() {
     const dinoEnabled = document.getElementById('dinoModeToggle')?.checked ?? (state.dinoPrefs?.dinoMode ?? true);
     const dependentIds = [
-        'roarSoundsToggle',
-        'soundVolumeSlider',
         'fossilModeToggle',
         'dinoFootprintsToggle',
         'extinctionWarningsToggle'
@@ -1052,7 +1119,7 @@ function syncDinoDependentControls() {
     const volumeRowEl = document.getElementById('soundVolumeRow');
     if (volumeRowEl) {
         const roarOn = state.dinoPrefs?.roarSounds ?? false;
-        volumeRowEl.style.display = dinoEnabled && roarOn ? 'flex' : 'none';
+        volumeRowEl.style.display = roarOn ? 'flex' : 'none';
     }
 }
 
@@ -1073,7 +1140,9 @@ function toggleDinoMode(sourceEl = null) {
 function toggleRoarSounds() {
     if (!state.dinoPrefs) state.dinoPrefs = {};
     state.dinoPrefs.roarSounds = document.getElementById('roarSoundsToggle').checked;
-    syncDinoDependentControls();
+    const volumeRowEl = document.getElementById('soundVolumeRow');
+    if (volumeRowEl) volumeRowEl.style.display = state.dinoPrefs.roarSounds ? 'flex' : 'none';
+    if (state.dinoPrefs.roarSounds) playSound(S.SYSTEM);
     saveStateToLocalStorage();
 }
 

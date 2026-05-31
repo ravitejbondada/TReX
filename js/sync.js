@@ -688,6 +688,7 @@ function applyRemoteState(remoteState, silent = false) {
     localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
 
     if (!silent) {
+        playSound(S.SYNC_DONE);
         showNotification(t("Synced.", "☁️ Herd synced across devices."));
     }
 
@@ -1319,6 +1320,7 @@ async function connectGoogleSync() {
         state.syncEnabled = true;
         saveStateToLocalStorage();
         updateSyncStatus("idle");
+        playSound(S.DRIVE_CONNECT);
         showNotification(t("Google Drive connected!", "Herd connected to Google Drive!"));
         renderSyncControls();
         await pushToDrive();
@@ -1397,6 +1399,7 @@ function disconnectGoogleSync() {
             saveStateToLocalStorage();
             renderSyncControls();
             updateSyncStatus("offline");
+            playSound(S.DRIVE_DISCONNECT);
             showNotification(t("Google Drive disconnected.", "Herd link disconnected."));
         });
 }
@@ -1406,6 +1409,7 @@ function disconnectGoogleSync() {
  */
 async function triggerManualSync() {
     if (!state.syncEnabled) return;
+    playSound(S.SYNC_START);
     showNotification(t("Sync started...", "Herd sync started..."));
     await syncFromDrive(true);
     renderSyncControls();
@@ -1742,5 +1746,6 @@ async function resetSyncData() {
 
     renderSyncControls();
     updateSyncStatus("offline");
+    playSound(S.DRIVE_DISCONNECT);
     showNotification(t("Sync data reset. Other devices will be asked how to proceed.", "Cloud herd reset. Other devices must choose their trail."));
 }

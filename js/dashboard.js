@@ -231,7 +231,7 @@ function renderBudgetDinoImage(el, rawPercent) {
     const dinoState = getDinoState(rawPercent);
     const src = DINO_BUDGET_IMAGES[dinoState] || DINO_BUDGET_IMAGES['dino-fed'];
     el.className = '';
-    el.innerHTML = `<img src="${src}" alt="Budget dino" class="budget-dino-img ${dinoState}" style="width:170px;height:170px;margin:-20px -28px -18px 0;" draggable="false" />`;
+    el.innerHTML = `<img src="${src}" alt="Budget dino" class="budget-dino-img ${dinoState}" draggable="false" />`;
 }
 
 function renderForecastCard(metrics) {
@@ -605,6 +605,7 @@ function checkBudgetAlerts(metrics) {
             } else {
                 body = `You've used ${threshold}% of your monthly budget (${state.currencySymbol}${metrics.totalSpent.toLocaleString()} of ${state.currencySymbol}${state.monthlyBudget.toLocaleString()}).`;
             }
+            playSound(S.BUDGET_ALERT);
             new Notification("TReX – Budget Alert 🔔", {
                 body,
                 icon: document.getElementById("dynamicAppleIcon")?.href || ""
@@ -748,6 +749,7 @@ function checkMissedDailyReminder() {
 function sendTestReminderNotification() {
     requestNotificationPermission(async () => {
         const shown = await showTrexBrowserNotification("TReX - Test Reminder", "Notifications are working for this browser and device.");
+        if (shown) playSound(S.TEST_REMINDER);
         showNotification(shown ? t("Test notification sent.", "Test roar sent.") : t("Unable to send test notification.", "The test roar did not leave the cave."));
     });
 }
@@ -840,6 +842,7 @@ function triggerQuickLog(amount, categoryId, note, paymentId, event) {
     state.transactions.push(newTx);
     saveStateToLocalStorage();
     updateAppDashboardView();
+    playSound(S.SAVE_QUICK);
     showNotification(t(`Quick Logged: ${state.currencySymbol}${amount} for "${note}"`, `Quick bite logged: ${state.currencySymbol}${amount} for "${note}"`));
 }
 
