@@ -37,7 +37,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `closeDrawer()` | Closes the side drawer/backdrop and resets any open drawer sub-panel |
 | `dp(key)` | Safely reads a value from `state.dinoPrefs` |
 | `t(neutral, dino)` | Returns Dino Mode copy when `dinoPrefs.dinoMode` is enabled, otherwise neutral copy |
-| `switchScreen(viewName)` | Main router — hides all view panels, shows target, updates nav tabs, calls init render |
+| `switchScreen(viewName)` | Main router — hides all view panels, shows target, updates nav tabs, calls init render, resets scroll on both `screenContainer` and the active view panel |
 | `registerTrexServiceWorker()` | Registers `sw.js` on secure origins/localhost for PWA notification handling |
 | `checkAndShowOnboardingModal()` | Called from `window.onload`; delegates to `sync.js` to show the Drive onboarding prompt if sync is disabled and not yet seen this session |
 | `updateHeaderSyncIcon()` | *(defined in sync.js, called from core.js boot)* Updates the `#headerSyncBtn` icon and click binding in the app header based on `state.syncStatus` |
@@ -88,7 +88,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `calculateCycleMetrics()` | Computes spent, remaining, daily rate, days left for the active cycle |
 | `formatDateReadable(dateObj, opts?)` | Formats a Date as "Mon DD" or "Mon DD, YYYY" with optional weekday |
 | `formatDateTime(dateObj)` | Formats a Date as "Today", "Yesterday", or "Mon DD" for activity feed |
-| `updateAppDashboardView()` | Master dashboard refresh — calls all widget renderers |
+| `updateAppDashboardView()` | Master dashboard refresh — calls all widget renderers; "Tap to set your budget" link opens the drawer budget panel via `openDrawer(); openDrawerSection('budget')` |
 | `renderForecastCard(metrics)` | Renders the projected end-of-cycle forecast card |
 | `renderSpendHeatmap()` | Renders the monthly spending heatmap calendar grid |
 | `getQuickLogs()` | Returns quick log config array from state or default seeds |
@@ -209,7 +209,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `updateExpensePaymentLockUI()` | Disables/enables the payment dropdown when locked to a CC |
 | `clearExpensePaymentLock()` | Clears payment lock state and updates UI |
 | `applyExpensePaymentLock(paymentId)` | Locks the expense form payment to a specific payment id |
-| `saveBudgetAndCycleSettings()` | Reads budget/cycle form fields, validates, saves to state |
+| `saveBudgetAndCycleSettings()` | Reads budget/cycle form fields, validates, saves to state, shows a `customConfirm` dialog; on OK closes the drawer and navigates to the dashboard |
 | `renderSettingsLists()` | Renders categories list, payments list, recurring list, EMI list |
 | `openDrawerSection(sectionName)` | Opens a drawer sub-panel and renders Budget, Categories, Payments, Credit Cards, Recurring, EMI, or backup content |
 | `closeDrawerSection()` | Closes the drawer content sub-panel and returns to the drawer nav list |

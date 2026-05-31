@@ -225,7 +225,8 @@ All navigation goes through `switchScreen(viewName)` in `core.js`.
 | `tripDetail` | `tripDetailView` | openTripDetail() |
 
 `switchScreen` hides all `.view-panel` divs, shows the target, sets nav tab highlights,
-and calls the screen's init render function.
+calls the screen's init render function, and resets scroll to top on both `screenContainer`
+and the active view panel element.
 
 ---
 

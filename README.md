@@ -143,3 +143,11 @@ The Reports / Premium Insights screen includes a **Download PDF Summary Report**
 ## Default PIN
 
 `1234` — can be changed in Settings → Security.
+
+---
+
+## UX Notes
+
+- **Set budget shortcut:** Tapping "Tap to set your budget →" on the dashboard opens the drawer Budget & Cycle panel directly (`openDrawer(); openDrawerSection('budget')`), not the Settings screen.
+- **Budget save flow:** After submitting a budget in the drawer, a confirmation dialog appears. Tapping OK closes the drawer and navigates to the dashboard.
+- **Nav scroll-to-top:** Every bottom nav tab switch resets the view scroll position to the top (both `screenContainer` and the active view panel).

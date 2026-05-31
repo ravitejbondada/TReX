@@ -5,6 +5,23 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ---
 
+## [v4.3] 2026-05-31 — Budget link fix, save confirmation, nav scroll-to-top
+
+**What changed:** "Tap to set your budget" now opens the drawer budget panel directly. Saving budget shows a confirmation dialog and navigates home on OK. All bottom nav tab switches scroll the view to the top.
+
+**Files modified:**
+- `js/dashboard.js` — `updateAppDashboardView`: changed `onclick` of "Tap to set your budget" from `switchScreen('settings')` to `openDrawer(); openDrawerSection('budget')`.
+- `js/settings.js` — `saveBudgetAndCycleSettings`: replaced `showNotification` with `customConfirm` confirmation dialog; on OK, calls `closeDrawer()` then `switchScreen('dashboard')`.
+- `js/core.js` — `switchScreen`: added scroll reset for the active view panel element in addition to the existing `screenContainer` reset, so all nav tab switches scroll to top.
+- `CHANGELOG.md`, `FUNCTIONS.md`, `README.md`, `ARCHITECTURE.md` — updated docs.
+
+**Behavior:**
+- Tapping "Tap to set your budget" on the dashboard opens the drawer Budget & Cycle panel, not the Settings screen.
+- After submitting a budget, a confirmation modal appears. Tapping OK closes the drawer and returns to the dashboard.
+- Tapping any bottom nav tab always resets the view scroll position to the top.
+
+---
+
 ## [v4.2] 2026-05-31 - Recurring engine simplified
 
 **What changed:** Recurring schedules now only insert ledger records when due. Once inserted, the transaction is treated like any other normal transaction.
