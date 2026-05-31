@@ -376,7 +376,7 @@ function saveBudgetAndCycleSettings() {
     state.cycleType = cycleType;
     state.cycleDay = startDay;
     saveStateToLocalStorage();
-    showNotification("Budget parameters updated.");
+    showNotification(t("Settings saved.", "🦖 Stomped it. Settings saved."));
 }
 
 function renderSettingsLists() {
@@ -507,7 +507,7 @@ function saveEditCategory() {
         saveStateToLocalStorage();
         renderSettingsLists();
         closeEditCategoryModal();
-        showNotification("Category configuration saved.");
+        showNotification(t("Category saved.", "🦕 New territory claimed."));
     }
 }
 
@@ -525,7 +525,7 @@ async function deleteCategory(catId) {
 
     const cat = state.categories.find(c => c.id === catId);
     const label = cat ? `"${cat.name}"` : "this category";
-    if (!await customConfirm(`Delete category ${label}? This cannot be undone.`)) return;
+    if (!await customConfirm(`Delete category ${label}? This cannot be undone.`, t("Delete category?", "Wipe this territory?"), t("Delete", "Wipe it"))) return;
 
     state.categories = state.categories.filter(c => c.id !== catId);
     saveStateToLocalStorage();
@@ -579,7 +579,7 @@ function saveEditPayment() {
         renderSettingsLists();
         refreshCreditCardViews();
         closeEditPaymentModal();
-        showNotification("Account configuration saved.");
+        showNotification(t("Payment method saved.", "🦖 Hunting weapon added."));
     }
 }
 
@@ -592,7 +592,7 @@ async function deletePaymentMethod(payId) {
 
     const pay = state.payments.find(p => p.id === payId);
     const label = pay ? `"${pay.name}"` : "this account";
-    if (!await customConfirm(`Delete account ${label}? This cannot be undone.`)) return;
+    if (!await customConfirm(`Delete account ${label}? This cannot be undone.`, t("Delete payment?", "Fossilize this?"), t("Delete", "Fossilize"))) return;
 
     // Cancel all recurring expenses linked to this payment method
     const linkedRecurring = (state.recurringExpenses || []).filter(r => r.paymentId === payId);

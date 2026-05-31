@@ -137,7 +137,7 @@ function saveRecurring() {
             createdAt: new Date().toISOString()
         };
         state.recurringExpenses.push(newRec);
-        showNotification("Recurring expense Scheduled.");
+        showNotification(t("Schedule saved.", "🔁 Stampede scheduled."));
     }
 
     saveStateToLocalStorage();
@@ -150,7 +150,7 @@ async function deleteRecurring(id) {
     const rec = state.recurringExpenses.find(r => r.id === id);
     if (!rec) return;
     const label = rec.note ? `"${rec.note}"` : "this recurring schedule";
-    if (!await customConfirm(`Delete ${label}? Future scheduled entries will also be removed.`)) return;
+    if (!await customConfirm(`Delete ${label}? Future scheduled entries will also be removed.`, t("Stop this schedule?", "Stop the stampede?"), t("Stop", "Stop it"))) return;
     removeFutureRecurringTransactions(id);
     state.recurringExpenses = state.recurringExpenses.filter(r => r.id !== id);
     saveStateToLocalStorage();
@@ -178,7 +178,10 @@ function renderRecurringExpenses() {
     if (dashContainer) {
         if (list.length === 0) {
             dashContainer.innerHTML = "";
-            if (dashEmpty) dashEmpty.classList.remove("hidden");
+            if (dashEmpty) {
+                dashEmpty.textContent = t("No recurring expenses configured.", "🔁 No stampedes scheduled yet.");
+                dashEmpty.classList.remove("hidden");
+            }
         } else {
             if (dashEmpty) dashEmpty.classList.add("hidden");
             dashContainer.innerHTML = list.map(r => {
@@ -216,7 +219,10 @@ function renderRecurringExpenses() {
     if (settContainer) {
         if (list.length === 0) {
             settContainer.innerHTML = "";
-            if (settEmpty) settEmpty.classList.remove("hidden");
+            if (settEmpty) {
+                settEmpty.textContent = t("No recurring expenses configured.", "🔁 No stampedes scheduled yet.");
+                settEmpty.classList.remove("hidden");
+            }
         } else {
             if (settEmpty) settEmpty.classList.add("hidden");
             settContainer.innerHTML = list.map(r => {
@@ -552,7 +558,7 @@ function saveEMI() {
             createdAt: new Date().toISOString()
         };
         state.emis.push(newEMI);
-        showNotification(`EMI for "${name}" scheduled successfully.`);
+        showNotification(t("EMI saved.", "📅 Installment plan locked in."));
     }
 
     saveStateToLocalStorage();
@@ -599,7 +605,10 @@ function renderEMIsList() {
     if (container) {
         if (list.length === 0) {
             container.innerHTML = "";
-            if (empty) empty.classList.remove("hidden");
+            if (empty) {
+                empty.textContent = t("No EMI schedules yet.", "📅 No EMI schedules yet.");
+                empty.classList.remove("hidden");
+            }
         } else {
             if (empty) empty.classList.add("hidden");
             container.innerHTML = list.map(e => {

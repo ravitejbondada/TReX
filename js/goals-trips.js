@@ -18,7 +18,7 @@ function renderSavingGoalsDedicated() {
     if (countLabel) countLabel.textContent = `${state.savingGoals.length} Target${state.savingGoals.length !== 1 ? 's' : ''}`;
 
     if (state.savingGoals.length === 0) {
-        container.innerHTML = `<p class="text-[11px] text-slate-500 text-center py-6 italic">No active savings targets defined.</p>`;
+        container.innerHTML = `<p class="text-[11px] text-slate-500 text-center py-6 italic">${t("No active savings targets defined.", "🥚 No eggs in the nest yet. Create a goal.")}</p>`;
         return;
     }
 
@@ -205,7 +205,7 @@ function createNewSavingGoalDedicated() {
     document.getElementById("newGoalTargetDedicated").value = "";
     if (dateEl) dateEl.value = "";
     renderSavingGoalsDedicated();
-    showNotification(`Goal "${name}" created.`);
+    showNotification(t("Goal created.", "🥚 New egg in the nest."));
 }
 
 function fundSavingGoalDedicated(id) {
@@ -241,7 +241,7 @@ function fundSavingGoalDedicated(id) {
 async function removeSavingGoalDedicated(id) {
     const g = state.savingGoals.find(g => g.id === id);
     const label = g ? `"${g.name}"` : "this goal";
-    if (!await customConfirm(`Delete goal ${label}? All contributions will be lost.`)) return;
+    if (!await customConfirm(`Delete goal ${label}? All contributions will be lost.`, t("Delete goal?", "Abandon the hunt?"), t("Delete", "Abandon"))) return;
     state.savingGoals = state.savingGoals.filter(g => g.id !== id);
     saveStateToLocalStorage();
     renderSavingGoalsDedicated();
@@ -489,6 +489,7 @@ function renderTripsList() {
 
     if (trips.length === 0) {
         container.innerHTML = "";
+        emptyState.textContent = t("No trips planned yet.", "🦖 No migrations planned. Add a trip.");
         emptyState.classList.remove("hidden");
         return;
     }
@@ -501,7 +502,11 @@ function renderTripsList() {
         const overAmt = isOver ? spent - trip.budget : 0;
         const status  = getTripStatus(trip);
         const statusColors = { planning: "text-violet-400 bg-violet-950/50 border-violet-500/30", active: "text-emerald-400 bg-emerald-950/50 border-emerald-500/30", completed: "text-slate-400 bg-slate-800/50 border-slate-700/30" };
+        const dinoStatusLabels = { planning: "🥚 Hatching", active: "🦖 On the Hunt", completed: "🏆 Conquered" };
+        const neutralStatusLabels = { planning: "PLANNING", active: "ACTIVE", completed: "COMPLETED" };
+        const statusLabel = dp('dinoMode') ? (dinoStatusLabels[status] || status.toUpperCase()) : (neutralStatusLabels[status] || status.toUpperCase());
         const barColors    = { planning: "bg-violet-500", active: "bg-amber-500", completed: "bg-slate-500" };
+        const spentLabel = dp('dinoMode') ? "Devoured" : "Spent";
         const sym = state.currencySymbol || "₹";
         const cardBorder = isOver ? "border-rose-500/60 shadow-rose-500/10 shadow-lg" : "border-slate-800";
         const cardBg     = isOver ? "bg-rose-950/20" : "bg-slate-900/60";
@@ -516,12 +521,12 @@ function renderTripsList() {
                     </div>
                 </div>
                 <div class="flex items-center gap-1.5">
-                    ${isOver ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full border text-rose-400 bg-rose-950/60 border-rose-500/40 flex items-center gap-1">⚠️ Over</span>` : `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full border ${statusColors[status]}">${status.toUpperCase()}</span>`}
+                    ${isOver ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full border text-rose-400 bg-rose-950/60 border-rose-500/40 flex items-center gap-1">⚠️ Over</span>` : `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full border ${statusColors[status]}">${statusLabel}</span>`}
                 </div>
             </div>
             <div class="space-y-1.5">
                 <div class="flex justify-between text-[10px]">
-                    <span class="text-slate-400">Spent: <span class="font-bold ${isOver ? "text-rose-400" : "text-white"}">${sym}${spent.toLocaleString()}</span></span>
+                    <span class="text-slate-400">${spentLabel}: <span class="font-bold ${isOver ? "text-rose-400" : "text-white"}">${sym}${spent.toLocaleString()}</span></span>
                     <span class="text-slate-400">Budget: <span class="font-bold text-amber-400">${sym}${(trip.budget || 0).toLocaleString()}</span></span>
                 </div>
                 <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
@@ -1131,7 +1136,7 @@ async function deleteTripConfirm() {
     if (!activeTripId) return;
     const trip = (state.trips || []).find(t => t.id === activeTripId);
     if (!trip) return;
-    if (!await customConfirm(`Delete trip "${trip.name}"? All expenses and ledger entries will be removed.`)) return;
+    if (!await customConfirm(`Delete trip "${trip.name}"? All expenses and ledger entries will be removed.`, t("Delete trip?", "Cancel the migration?"), t("Delete", "Cancel trip"))) return;
     // Remove all ledger transactions linked to this trip
     state.transactions = state.transactions.filter(t => t.tripId !== activeTripId);
     state.trips = state.trips.filter(t => t.id !== activeTripId);

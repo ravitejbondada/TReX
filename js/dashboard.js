@@ -262,12 +262,21 @@ function renderForecastCard(metrics) {
     surplusEl.className = `text-[11px] font-black mt-0.5 block ${gap >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
 
     const narrativeEl = document.getElementById("forecastNarrative");
+    const forecastCopy = dp('dinoMode') ? {
+        good: "🦕 Budget healthy. TReX approves.",
+        warn: "🦖 TReX is restless. Slow the spending.",
+        over: "💥 Budget devoured. Brace for impact.",
+    } : {
+        good: "On track for the month.",
+        warn: "Getting tight — watch your spending.",
+        over: "Over budget this cycle.",
+    };
     if (isOverrun) {
-        narrativeEl.innerHTML = `At current pace, you'll exceed your budget by <strong class="text-rose-400">${sym}${Math.abs(gap).toLocaleString()}</strong> with ${metrics.daysRemaining} days left. Cut daily spend to <strong class="text-white">${sym}${Math.round(metrics.safeToSpend).toLocaleString()}/day</strong> to break even.`;
+        narrativeEl.innerHTML = `${forecastCopy.over} At current pace, you'll exceed your budget by <strong class="text-rose-400">${sym}${Math.abs(gap).toLocaleString()}</strong> with ${metrics.daysRemaining} days left. Cut daily spend to <strong class="text-white">${sym}${Math.round(metrics.safeToSpend).toLocaleString()}/day</strong> to break even.`;
     } else if (isWarning) {
-        narrativeEl.innerHTML = `You're projected to finish at <strong class="text-amber-300">${sym}${projected.toLocaleString()}</strong> – close to your limit. Keep daily spend under <strong class="text-white">${sym}${Math.round(metrics.safeToSpend).toLocaleString()}/day</strong> to stay safe.`;
+        narrativeEl.innerHTML = `${forecastCopy.warn} Projected to finish at <strong class="text-amber-300">${sym}${projected.toLocaleString()}</strong>. Keep daily spend under <strong class="text-white">${sym}${Math.round(metrics.safeToSpend).toLocaleString()}/day</strong> to stay safe.`;
     } else {
-        narrativeEl.innerHTML = `Looking great! Projected to finish with a surplus of <strong class="text-emerald-400">${sym}${Math.abs(gap).toLocaleString()}</strong>. Current allowance is <strong class="text-white">${sym}${Math.round(metrics.safeToSpend).toLocaleString()}/day</strong>.`;
+        narrativeEl.innerHTML = `${forecastCopy.good} Projected surplus of <strong class="text-emerald-400">${sym}${Math.abs(gap).toLocaleString()}</strong>. Current allowance is <strong class="text-white">${sym}${Math.round(metrics.safeToSpend).toLocaleString()}/day</strong>.`;
     }
 
     initLucideIcons(card);
@@ -509,8 +518,19 @@ function checkBudgetAlerts(metrics) {
         const key = `${threshold}_${new Date().getMonth()}_${new Date().getFullYear()}`;
         if (pct >= threshold && !fired.includes(key)) {
             fired.push(key);
+            let body;
+            const over = Math.abs(metrics.totalSpent - state.monthlyBudget).toLocaleString();
+            if (pct >= 120 && dp('extinctionWarnings')) {
+                body = t(`You're over budget!`, `🌋 METEOR STRIKE. You're ${state.currencySymbol}${over} over budget.`);
+            } else if (pct >= 100) {
+                body = t("Budget reached! No more spending.", "💥 Budget extinct! You've hit your limit.");
+            } else if (pct >= 80) {
+                body = t(`${threshold}% of budget used.`, `🦖 TReX is getting hungry — ${threshold}% of budget devoured.`);
+            } else {
+                body = `You've used ${threshold}% of your monthly budget (${state.currencySymbol}${metrics.totalSpent.toLocaleString()} of ${state.currencySymbol}${state.monthlyBudget.toLocaleString()}).`;
+            }
             new Notification("TReX – Budget Alert 🔔", {
-                body: `You've used ${threshold}% of your monthly budget (${state.currencySymbol}${metrics.totalSpent.toLocaleString()} of ${state.currencySymbol}${state.monthlyBudget.toLocaleString()}).`,
+                body,
                 icon: document.getElementById("dynamicAppleIcon")?.href || ""
             });
         }
@@ -538,11 +558,21 @@ function getReminderFireDate(reference = new Date()) {
 }
 
 function getDailyReminderBody() {
-    const today = getTodayLocalISO();
-    const todayTxCount = (state.transactions || []).filter(t => t.date === today).length;
-    return todayTxCount > 0
-        ? `You've logged ${todayTxCount} expense${todayTxCount > 1 ? "s" : ""} today. Tap to review and make sure nothing is missing.`
-        : "No expenses logged today yet. Open TReX to record and review your spending.";
+    if (!dp('dinoMode')) {
+        const today = getTodayLocalISO();
+        const todayTxCount = (state.transactions || []).filter(t => t.date === today).length;
+        return todayTxCount > 0
+            ? `You've logged ${todayTxCount} expense${todayTxCount > 1 ? "s" : ""} today. Tap to review and make sure nothing is missing.`
+            : "No expenses logged today yet. Open TReX to record and review your spending.";
+    }
+    const lines = [
+        "TReX is hungry — feed it today's expenses 🦖",
+        "Short arms, long memory. Log your spending.",
+        "Don't let expenses go extinct untracked.",
+        "The herd is waiting. Sync your expenses.",
+        "A T-Rex never forgets. Did you log today?",
+    ];
+    return lines[new Date().getDay() % lines.length];
 }
 
 async function showTrexBrowserNotification(title, body) {
@@ -582,7 +612,7 @@ function toggleDailyReminderSetting() {
         requestNotificationPermission(() => {
             checkMissedDailyReminder();
             scheduleDailyReminder();
-            showNotification("Daily reminder enabled.");
+            showNotification(t("Reminder saved.", "⏰ TReX will remember. (Short-armed but sharp-minded.)"));
         });
     } else {
         timeRow.style.display = "none";

@@ -499,6 +499,7 @@ async function syncFromDrive(forceInteractiveAuth = false) {
     } catch (e) {
         console.error("syncFromDrive error:", e);
         updateSyncStatus("error", e.message || "Failed to pull");
+        showNotification(t("Sync failed.", "🌋 Sync blocked. Meteorite incoming?"));
     }
 }
 
@@ -687,7 +688,7 @@ function applyRemoteState(remoteState, silent = false) {
     localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
 
     if (!silent) {
-        showNotification("Data synchronized from Google Drive.");
+        showNotification(t("Synced.", "☁️ Herd synced across devices."));
     }
 
     // Re-render UI immediately without a full page reload
@@ -1481,7 +1482,7 @@ function showOnboardingModal() {
                 </div>
                 <div>
                     <h3 class="text-sm font-extrabold text-white leading-tight">Your data is local-only</h3>
-                    <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                    <p class="text-[11px] text-slate-400 mt-1 leading-relaxed" id="onboardingBodyText">
                         TReX stores all your data in this browser. If you <strong class="text-amber-400">clear your cache, switch browsers, or use incognito</strong>, your transactions, goals, and settings will be permanently lost.
                     </p>
                 </div>
@@ -1520,7 +1521,11 @@ function showOnboardingModal() {
 
     document.body.appendChild(div);
     if (typeof initLucideIcons === "function") initLucideIcons(div);
-}
+    // Apply dino copy if Dino Mode is on
+    const onboardingBody = document.getElementById("onboardingBodyText");
+    if (onboardingBody && dp('dinoMode')) {
+        onboardingBody.innerHTML = "🦖 TReX stores your data locally — like fossils in rock. Connect Google Drive to protect your herd across devices.";
+    }
 
 /**
  * Called from core.js window.onload — shows onboarding modal if conditions met:
@@ -1575,14 +1580,14 @@ function showMigrationModal() {
                     <button id="btnMigrationMerge"
                         class="w-full text-left p-3.5 bg-indigo-950/50 hover:bg-indigo-950/80 border border-indigo-500/30 rounded-2xl transition-all active:scale-[0.99] group">
                         <span class="text-xs font-extrabold text-indigo-300 flex items-center gap-2">
-                            <i data-lucide="upload-cloud" class="w-4 h-4"></i> Merge — Upload local data to Cloud
+                            <i data-lucide="upload-cloud" class="w-4 h-4"></i> <span class="migration-merge-label">Merge — Upload local data to Cloud</span>
                         </span>
                         <p class="text-[9px] text-slate-400 mt-1 ml-6">Your current data is pushed to Google Drive. Any existing cloud data is overwritten with this device's version.</p>
                     </button>
                     <button id="btnMigrationFresh"
                         class="w-full text-left p-3.5 bg-slate-950/60 hover:bg-slate-900 border border-slate-800 rounded-2xl transition-all active:scale-[0.99] group">
                         <span class="text-xs font-extrabold text-slate-200 flex items-center gap-2">
-                            <i data-lucide="download-cloud" class="w-4 h-4"></i> Fresh Start — Replace with Cloud data
+                            <i data-lucide="download-cloud" class="w-4 h-4"></i> <span class="migration-fresh-label">Fresh Start — Replace with Cloud data</span>
                         </span>
                         <p class="text-[9px] text-slate-400 mt-1 ml-6">Cloud data replaces your local data. Your current local transactions and settings will be overwritten.</p>
                     </button>
@@ -1602,6 +1607,13 @@ function showMigrationModal() {
 
         document.body.appendChild(div);
         if (typeof initLucideIcons === "function") initLucideIcons(div);
+        // Apply dino copy if Dino Mode is on
+        if (dp('dinoMode')) {
+            const mergeLabel = div.querySelector('.migration-merge-label');
+            if (mergeLabel) mergeLabel.textContent = "Merge the Herds";
+            const freshLabel = div.querySelector('.migration-fresh-label');
+            if (freshLabel) freshLabel.textContent = "Start a New Era";
+        }
 
         document.getElementById("btnMigrationMerge").onclick = () => cleanup("merge");
         document.getElementById("btnMigrationFresh").onclick = () => cleanup("fresh");
@@ -1616,8 +1628,8 @@ function showMigrationModal() {
 async function resetAllData() {
     const confirmed = await customConfirm(
         "This will permanently delete your TReX cloud backup and erase all local data on this device, including transactions, settings, trips, goals, recurring expenses, EMIs, and PIN settings. This cannot be undone.",
-        "Full Reset: Cloud + Local",
-        "Delete Everything"
+        t("Reset everything?", "Trigger the meteor?"),
+        t("Wipe everything", "Wipe everything")
     );
     if (!confirmed) return;
 
@@ -1657,8 +1669,8 @@ async function resetAllData() {
 async function resetSyncData() {
     const confirmed = await customConfirm(
         "This will permanently delete your TReX backup from Google Drive and disconnect sync on this device. Your local data will remain untouched. This cannot be undone.",
-        "Reset Sync Data",
-        "Delete & Reset"
+        t("Reset cloud sync?", "Forget the herd?"),
+        t("Disconnect", "Disconnect")
     );
     if (!confirmed) return;
 

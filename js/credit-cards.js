@@ -284,8 +284,8 @@ function renderCreditCardsView() {
         detailPanel.classList.add("hidden");
         tiles.innerHTML = `
             <div class="bg-slate-900/40 border border-slate-850 rounded-2xl p-4 text-center space-y-2">
-                <p class="text-xs font-bold text-slate-200">Credit card mode is off</p>
-                <p class="text-[11px] text-slate-500 leading-relaxed">Turn it on in Settings to use this tab.</p>
+                <p class="text-xs font-bold text-slate-200">${t("Credit card mode is off", "🦖 No cards in the lair")}</p>
+                <p class="text-[11px] text-slate-500 leading-relaxed">${t("Turn it on in Settings to use this tab.", "Enable credit card mode in Settings to unleash the herd.")}</p>
             </div>
         `;
         initLucideIcons(tiles);
@@ -297,8 +297,8 @@ function renderCreditCardsView() {
         detailPanel.classList.add("hidden");
         tiles.innerHTML = `
             <div class="bg-slate-900/40 border border-slate-850 rounded-2xl p-4 text-center space-y-2">
-                <p class="text-xs font-bold text-slate-200">No credit cards yet</p>
-                <p class="text-[11px] text-slate-500 leading-relaxed">Add a credit card in Settings to start tracking billing days.</p>
+                <p class="text-xs font-bold text-slate-200">${t("No credit cards yet", "💳 No credit cards configured.")}</p>
+                <p class="text-[11px] text-slate-500 leading-relaxed">${t("Add a credit card in Settings to start tracking billing days.", "Add one via Payment Methods → type \"Credit Card\".")}</p>
             </div>
         `;
         initLucideIcons(tiles);

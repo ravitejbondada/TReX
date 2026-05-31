@@ -516,6 +516,6 @@ function changePin() {
     document.getElementById("currentPinInput").value = "";
     document.getElementById("newPinInput").value = "";
     document.getElementById("confirmPinInput").value = "";
-    showNotification("PIN updated successfully.");
+    showNotification(t("PIN changed.", "🔒 Lair secured."));
     showPinChangeSuccess();
 }

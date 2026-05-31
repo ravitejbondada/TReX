@@ -324,7 +324,7 @@ function renderHistoricalMonthReport() {
         document.getElementById("reportAllocatedSpan").textContent = `${symbol}0`;
         document.getElementById("reportSpentSpan").textContent = `${symbol}0`;
         document.getElementById("reportLeftoverSpan").textContent = `${symbol}0`;
-        document.getElementById("reportSummaryText").innerHTML = `<span class="text-slate-500 italic">No data available for displaying graphs.</span>`;
+        document.getElementById("reportSummaryText").innerHTML = `<span class="text-slate-500 italic">${t("No data available for displaying graphs.", "🦴 Fossil-free zone. Add expenses to see reports.")}</span>`;
         return;
     }
 

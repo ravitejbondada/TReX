@@ -450,6 +450,14 @@ function dp(key) {
     return (state.dinoPrefs || {})[key];
 }
 
+/* ── DINO COPY HELPER ────────────────────────────────────────────────────────
+   t(neutral, dino) — returns dino string when Dino Mode is on, neutral otherwise.
+   Usage: showNotification(t("Saved.", "🦖 Devoured!"))
+────────────────────────────────────────────────────────────────────────────── */
+function t(neutral, dino) {
+    return dp('dinoMode') ? dino : neutral;
+}
+
 function switchScreen(viewName) {
     closeDrawer();
     document.querySelectorAll(".view-panel").forEach(p => p.classList.add("hidden"));

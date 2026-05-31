@@ -140,7 +140,7 @@ function handleExpenseSubmit(e) {
             amount, categoryId: catId, paymentId: payId, date, note
         };
         state.transactions.push(newTx);
-        showNotification("Transaction saved.");
+        showNotification(t("Transaction saved.", "🦖 Devoured! Expense saved."));
     }
 
     saveStateToLocalStorage();
@@ -375,7 +375,11 @@ function openLedgerWithDate(dateISO) {
 }
 
 function filterHistory() {
-    const search = document.getElementById("historySearchInput").value.toLowerCase();
+    const searchInput = document.getElementById("historySearchInput");
+    if (searchInput) searchInput.placeholder = dp('dinoMode') ? "Search the fossil record…" : "Search transactions…";
+    const historyTitle = document.getElementById("historyViewTitle");
+    if (historyTitle) historyTitle.textContent = dp('dinoMode') ? "Fossil Record" : "Transaction History";
+    const search = searchInput ? searchInput.value.toLowerCase() : "";
     const catId = document.getElementById("historyFilterCategory").value;
     const payId = document.getElementById("historyFilterPayment").value;
     const container = document.getElementById("allHistoryList");
@@ -411,7 +415,7 @@ function filterHistory() {
     if (totalEl) totalEl.textContent  = items.length ? `${state.currencySymbol}${total.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` : "—";
 
     if (items.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 text-center py-12">No matching transactions found.</p>`;
+        container.innerHTML = `<p class="text-xs text-slate-500 text-center py-12">${t("No matching transactions found.", "🦴 No fossils match your search.")}</p>`;
         return;
     }
 
@@ -482,10 +486,10 @@ async function deleteTransaction(id) {
     const tx = state.transactions.find(t => t.id === id);
     if (tx && tx.tripRef) { showNotification("Edit this expense inside the Trip."); return; }
     const label = tx ? (tx.note ? `"${tx.note}"` : `₹${tx.amount}`) : "this transaction";
-    if (!await customConfirm(`Delete ${label}? This cannot be undone.`)) return;
+    if (!await customConfirm(`Delete ${label}? This cannot be undone.`, t("Delete this?", "Send it extinct?"), t("Delete", "Extinct it"))) return;
     state.transactions = state.transactions.filter(t => t.id !== id);
     saveStateToLocalStorage();
-    showNotification("Transaction deleted.");
+    showNotification(t("Deleted.", "🦴 Gone extinct."));
     filterHistory();
     refreshCreditCardViews();
     updateAppDashboardView();

@@ -364,7 +364,7 @@ function exportDataToJSON() {
         JSON.stringify(payload, null, 2),
         "application/json"
     );
-    showNotification("Backup exported (JSON).");
+    showNotification(t("Backup exported.", "🥚 Fossilized! Backup ready."));
 }
 
 function exportDataToCSV() {
@@ -426,7 +426,7 @@ function exportDataToCSV() {
     });
 
     downloadBackupFile(`wallet_engine_full_backup_${date}.csv`, csv, "text/csv;charset=utf-8;");
-    showNotification("Backup exported (CSV).");
+    showNotification(t("Backup exported.", "🥚 Fossilized! Backup ready."));
 }
 
 function importBackupFile(e) {
@@ -446,7 +446,7 @@ function importBackupFile(e) {
                     return;
                 }
                 applyFullStateRestore(parsed);
-                showNotification("Wallet restored (JSON).");
+                showNotification(t("Data restored.", "🦖 Unearthed! Data restored."));
             } else if (lower.endsWith(".csv")) {
                 const sections = parseBackupCSVSections(text);
                 if (!sections.SETTINGS && !sections.CATEGORIES) {
@@ -459,7 +459,7 @@ function importBackupFile(e) {
                     return;
                 }
                 applyFullStateRestore(draft);
-                showNotification("Wallet restored (CSV).");
+                showNotification(t("Data restored.", "🦖 Unearthed! Data restored."));
             } else {
                 showNotification("Unsupported file format.");
             }
