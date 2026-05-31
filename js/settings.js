@@ -527,6 +527,7 @@ function renderSettingsLists() {
 
 /* CATEGORIES EDITING */
 function openEditCategoryModal(catId) {
+    closeDrawer();
     const cat = state.categories.find(c => c.id === catId);
     if (!cat) return;
 
@@ -600,6 +601,7 @@ async function deleteCategory(catId) {
 
 /* PAYMENT ACCOUNTS EDITING */
 function openEditPaymentModal(payId) {
+    closeDrawer();
     const pay = state.payments.find(p => p.id === payId);
     if (!pay) return;
 
@@ -900,7 +902,7 @@ function openDrawerSection(sectionName) {
         case 'categories':
             body.innerHTML = `
                 <div style="padding:12px 16px 0; display:flex; justify-content:flex-end;">
-                    <button onclick="openInlineCategoryModal()"
+                    <button onclick="closeDrawer(); openInlineCategoryModal()"
                         class="text-[10px] text-indigo-400 font-bold flex items-center gap-1 hover:underline">
                         <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add New
                     </button>
@@ -913,7 +915,7 @@ function openDrawerSection(sectionName) {
         case 'payments':
             body.innerHTML = `
                 <div style="padding:12px 16px 0; display:flex; justify-content:flex-end;">
-                    <button onclick="openInlinePaymentModal()"
+                    <button onclick="closeDrawer(); openInlinePaymentModal()"
                         class="text-[10px] text-indigo-400 font-bold flex items-center gap-1 hover:underline">
                         <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add New
                     </button>
@@ -1030,7 +1032,7 @@ function openDrawerSection(sectionName) {
         case 'recurring':
             body.innerHTML = `
                 <div style="padding:12px 16px 0; display:flex; justify-content:flex-end;">
-                    <button onclick="openRecurringModal()"
+                    <button onclick="closeDrawer(); openRecurringModal()"
                         class="text-[10px] text-indigo-400 font-bold flex items-center gap-1 hover:underline">
                         <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add
                     </button>
@@ -1044,7 +1046,7 @@ function openDrawerSection(sectionName) {
         case 'emis':
             body.innerHTML = `
                 <div style="padding:12px 16px 0; display:flex; justify-content:flex-end;">
-                    <button onclick="openEMIModal()"
+                    <button onclick="closeDrawer(); openEMIModal()"
                         class="text-[10px] text-indigo-400 font-bold flex items-center gap-1 hover:underline">
                         <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add
                     </button>

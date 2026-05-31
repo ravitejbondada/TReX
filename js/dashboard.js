@@ -344,222 +344,162 @@ function renderForecastCard(metrics) {
 /* ──── END FORECAST CARD ────────────────────────────────────────────────────────────────────────────────────────── */
 
 /* ──── SPEND HEATMAP CALENDAR (Feature 4) ────────────────────────────────────────────────────── */
-
-// Salary-cycle page offset: 0 = current cycle, -1 = previous, etc.
-let _heatmapCycleOffset = 0;
-
-function _heatmapGetCycleWindow(offset) {
-    // Returns { cycleStart: Date, cycleEnd: Date } for the given offset (0 = active cycle)
-    const today = new Date();
-    const cycleDay = parseInt(state.cycleDay) || 5;
-
-    // Find the start of the currently active cycle (offset=0)
-    let activeStart;
-    const y = today.getFullYear(), m = today.getMonth(), d = today.getDate();
-    if (d >= cycleDay) {
-        activeStart = new Date(y, m, cycleDay);
-    } else {
-        activeStart = new Date(y, m - 1, cycleDay);
-    }
-
-    // Shift by offset cycles (each cycle = 1 month)
-    const cycleStart = new Date(activeStart.getFullYear(), activeStart.getMonth() + offset, cycleDay);
-    const cycleEnd   = new Date(cycleStart.getFullYear(), cycleStart.getMonth() + 1, cycleDay - 1);
-    cycleStart.setHours(0, 0, 0, 0);
-    cycleEnd.setHours(23, 59, 59, 999);
-    return { cycleStart, cycleEnd };
-}
-
-function _heatmapGetCalendarGrid(offset) {
-    // For calendar mode — rolling current month (offset always 0, no nav)
-    const today = new Date();
-    const year  = today.getFullYear();
-    const month = today.getMonth();
-    return {
-        gridYear: year, gridMonth: month,
-        cycleStart: new Date(year, month, 1),
-        cycleEnd:   new Date(year, month + 1, 0, 23, 59, 59, 999),
-    };
-}
-
 function renderSpendHeatmap() {
     const grid    = document.getElementById("spendHeatmapGrid");
     const tooltip = document.getElementById("heatmapTooltip");
     if (!grid) return;
     grid.innerHTML = "";
 
-    const today       = new Date();
-    const isSalary    = state.cycleType === "salary";
-    const sym         = state.currencySymbol;
-    const MONTHS      = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const today    = new Date();
+    const isSalary = state.cycleType === "salary";
+    const sym      = state.currencySymbol;
+    const MONTHS   = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const pad      = n => String(n).padStart(2,'0');
+    const todayISO = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
 
-    // ── Determine the calendar grid window ──────────────────────────────────
-    let gridYear, gridMonth, cycleStart, cycleEnd;
-
+    // ── Cycle window ─────────────────────────────────────────────────────────
+    let cycleStart, cycleEnd;
     if (isSalary) {
-        const win = _heatmapGetCycleWindow(_heatmapCycleOffset);
-        cycleStart = win.cycleStart;
-        cycleEnd   = win.cycleEnd;
-
-        // The grid spans the calendar month in which the cycle *starts*
-        // but the cycle itself may spill into the next calendar month.
-        // We render two partial calendar months: start month + end month,
-        // but to keep a single 7-col grid we pick the START month's calendar
-        // and mark out-of-cycle days with crosshatch.
-        gridYear  = cycleStart.getFullYear();
-        gridMonth = cycleStart.getMonth();
+        const cycleDay = parseInt(state.cycleDay) || 5;
+        const y = today.getFullYear(), m = today.getMonth(), d = today.getDate();
+        const activeStart = d >= cycleDay ? new Date(y, m, cycleDay) : new Date(y, m - 1, cycleDay);
+        cycleStart = new Date(activeStart);
+        cycleEnd   = new Date(activeStart.getFullYear(), activeStart.getMonth() + 1, cycleDay - 1, 23, 59, 59, 999);
     } else {
-        // Calendar mode — rolling current month, no nav
-        _heatmapCycleOffset = 0;
-        gridYear  = today.getFullYear();
-        gridMonth = today.getMonth();
-        cycleStart = new Date(gridYear, gridMonth, 1);
-        cycleEnd   = new Date(gridYear, gridMonth + 1, 0, 23, 59, 59, 999);
+        cycleStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        cycleEnd   = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+    }
+    cycleStart.setHours(0, 0, 0, 0);
+
+    // ── Header label ─────────────────────────────────────────────────────────
+    const labelEl = document.getElementById("heatmapMonthLabel");
+    if (labelEl) {
+        labelEl.textContent = isSalary
+            ? `${MONTHS[cycleStart.getMonth()]} ${cycleStart.getDate()} – ${MONTHS[cycleEnd.getMonth()]} ${cycleEnd.getDate()}`
+            : `${MONTHS[today.getMonth()]} ${today.getFullYear()}`;
     }
 
-    // ── Update header label + nav arrows ────────────────────────────────────
-    const labelEl  = document.getElementById("heatmapMonthLabel");
-    const prevBtn  = document.getElementById("heatmapPrevBtn");
-    const nextBtn  = document.getElementById("heatmapNextBtn");
-    const navWrap  = document.getElementById("heatmapNavWrap");
-
-    if (isSalary) {
-        // Label: "Jun 10 – Jul 9" style
-        const pad = n => String(n).padStart(2,'0');
-        const sLabel = `${MONTHS[cycleStart.getMonth()]} ${cycleStart.getDate()}`;
-        const eLabel = `${MONTHS[cycleEnd.getMonth()]} ${cycleEnd.getDate()}`;
-        if (labelEl) labelEl.textContent = `${sLabel} – ${eLabel}`;
-        if (navWrap) navWrap.classList.remove("hidden");
-        // Disable next if we're already at current cycle
-        if (nextBtn) nextBtn.disabled = _heatmapCycleOffset >= 0;
-    } else {
-        if (labelEl) labelEl.textContent = `${MONTHS[gridMonth]} ${gridYear}`;
-        if (navWrap) navWrap.classList.add("hidden");
-    }
-
-    // ── Build daily spend map scoped to the cycle window ────────────────────
-    const dailySpend = {}; // key: "YYYY-MM-DD" → amount
+    // ── Spend map ─────────────────────────────────────────────────────────────
+    const dailySpend = {};
     state.transactions.forEach(t => {
         if (!t.date) return;
-        const txDate = new Date(t.date);
-        if (txDate >= cycleStart && txDate <= cycleEnd) {
+        const d = new Date(t.date);
+        if (d >= cycleStart && d <= cycleEnd)
             dailySpend[t.date] = (dailySpend[t.date] || 0) + parseFloat(t.amount || 0);
-        }
     });
-
-    const spendValues = Object.values(dailySpend).filter(v => v > 0);
-    const maxSpend    = spendValues.length > 0 ? Math.max(...spendValues) : 1;
+    const maxSpend = Math.max(1, ...Object.values(dailySpend).filter(v => v > 0));
 
     function heatColor(amount) {
-        if (!amount || amount === 0) return { bg: "bg-slate-800/60", border: "border-slate-800" };
-        const ratio = amount / maxSpend;
-        if (ratio < 0.25) return { bg: "bg-emerald-900/70", border: "border-emerald-800/50" };
-        if (ratio < 0.55) return { bg: "bg-amber-700/70", border: "border-amber-600/50" };
-        if (ratio < 0.80) return { bg: "bg-orange-600/80", border: "border-orange-500/50" };
-        return { bg: "bg-yellow-300/80", border: "border-yellow-200/50" };
+        if (!amount) return { bg: "bg-slate-800/60", border: "border-slate-800" };
+        const r = amount / maxSpend;
+        if (r < 0.25) return { bg: "bg-emerald-900/70", border: "border-emerald-800/50" };
+        if (r < 0.55) return { bg: "bg-amber-700/70",   border: "border-amber-600/50"  };
+        if (r < 0.80) return { bg: "bg-orange-600/80",  border: "border-orange-500/50" };
+        return             { bg: "bg-yellow-300/80",  border: "border-yellow-200/50" };
     }
 
-    // ── Render grid: always show the calendar month that contains cycleStart ─
-    // For salary cycles that spill into next month we also render next month's
-    // days in the same grid (continuing past end of gridMonth).
-    const firstDayOfGrid = new Date(gridYear, gridMonth, 1).getDay();
-    const todayISO = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    // ── Build flat list of all cells the grid will show ───────────────────────
+    // For salary: span from day-1 of cycleStart's month through last day of cycleEnd's month,
+    // but prune rows where every cell is out-of-cycle.
+    const gridStartMonth = new Date(cycleStart.getFullYear(), cycleStart.getMonth(), 1);
+    const gridEndMonth   = new Date(cycleEnd.getFullYear(), cycleEnd.getMonth() + 1, 0);
+    const leadingBlanks  = gridStartMonth.getDay(); // 0–6, Sun-based
 
-    // How many days to show: for salary, we need to cover up to cycleEnd
-    // which may be in gridMonth+1. Render through the last day of cycleEnd's month.
-    const lastCalMonth  = cycleEnd.getMonth();
-    const lastCalYear   = cycleEnd.getFullYear();
-    const lastCalDay    = new Date(lastCalYear, lastCalMonth + 1, 0).getDate();
-
-    // Total cells from day 1 of gridMonth through last day of cycleEnd's month
-    // expressed as absolute dates
-    const gridStart = new Date(gridYear, gridMonth, 1);
-    const gridEnd   = new Date(lastCalYear, lastCalMonth, lastCalDay);
-
-    // Leading blanks
-    for (let i = 0; i < firstDayOfGrid; i++) {
-        const blank = document.createElement("div");
-        blank.className = "aspect-square rounded-md";
-        grid.appendChild(blank);
+    // Collect all calendar days for the span
+    const allDays = [];
+    const cur = new Date(gridStartMonth);
+    while (cur <= gridEndMonth) {
+        allDays.push(new Date(cur));
+        cur.setDate(cur.getDate() + 1);
     }
 
-    // Iterate every calendar day in range
-    const cursor = new Date(gridStart);
-    while (cursor <= gridEnd) {
-        const cYear  = cursor.getFullYear();
-        const cMonth = cursor.getMonth();
-        const cDay   = cursor.getDate();
-        const pad    = n => String(n).padStart(2,'0');
-        const dateISO = `${cYear}-${pad(cMonth+1)}-${pad(cDay)}`;
+    // Split into rows of 7 (accounting for leading blanks in first row)
+    const rows = [];
+    let rowBuf = [];
+    let slot = 0;
+    // leading blank slots
+    for (let i = 0; i < leadingBlanks; i++) { rowBuf.push(null); slot++; }
+    allDays.forEach(day => {
+        rowBuf.push(day);
+        slot++;
+        if (slot % 7 === 0) { rows.push(rowBuf); rowBuf = []; }
+    });
+    if (rowBuf.length) {
+        while (rowBuf.length < 7) rowBuf.push(null); // trailing blanks
+        rows.push(rowBuf);
+    }
 
-        const inCycle  = cursor >= cycleStart && cursor <= cycleEnd;
-        const isToday  = dateISO === todayISO;
-        const isFuture = cursor > today;
-        // Out-of-cycle: in the grid but not in the payday window
-        const isOutOfCycle = isSalary && !inCycle;
+    // For salary: drop rows where no cell falls inside the cycle
+    const visibleRows = isSalary
+        ? rows.filter(row => row.some(day => day && day >= cycleStart && day <= cycleEnd))
+        : rows;
 
-        const spend  = dailySpend[dateISO] || 0;
-        const colors = heatColor(spend);
+    // ── Render ────────────────────────────────────────────────────────────────
+    const dinoSpendVals = Object.values(dailySpend).filter(v => v > 0).sort((a,b) => a-b);
+    const dinoTopThr    = dinoSpendVals[Math.floor(dinoSpendVals.length * 0.75)] || 0;
 
-        const cell = document.createElement("div");
+    visibleRows.forEach(row => {
+        row.forEach(day => {
+            const cell = document.createElement("div");
 
-        if (isOutOfCycle) {
-            // Cross-hatch tint — no interaction
-            cell.className = "aspect-square rounded-md border border-slate-800/40 heatmap-crosshatch relative cursor-default";
-            cell.innerHTML = `<span class="text-[8px] font-bold text-slate-700/50">${cDay}</span>`;
-        } else {
-            cell.className = [
-                "aspect-square rounded-md border flex items-center justify-center transition-all relative",
-                isFuture
-                    ? "opacity-30 cursor-default bg-slate-800/60 border-slate-800"
-                    : `cursor-pointer hover:scale-110 hover:z-10 hover:ring-1 hover:ring-indigo-400/60 hover:ring-offset-1 hover:ring-offset-slate-950 ${colors.bg} ${colors.border}`,
-                isToday ? "ring-1 ring-indigo-400 ring-offset-1 ring-offset-slate-950" : "",
-            ].join(" ");
+            if (!day) {
+                // blank slot
+                cell.className = "aspect-square rounded-md";
+                grid.appendChild(cell);
+                return;
+            }
 
-            cell.innerHTML = `<span class="text-[8px] font-bold ${isToday ? 'text-indigo-300' : isFuture ? 'text-slate-700' : spend > 0 ? 'text-white' : 'text-slate-600'}">${cDay}</span>`;
+            const cYear  = day.getFullYear(), cMonth = day.getMonth(), cDay = day.getDate();
+            const dateISO = `${cYear}-${pad(cMonth+1)}-${pad(cDay)}`;
+            const inCycle    = day >= cycleStart && day <= cycleEnd;
+            const isOutOfCycle = isSalary && !inCycle;
+            const isToday    = dateISO === todayISO;
+            const isFuture   = day > today;
+            const spend      = dailySpend[dateISO] || 0;
 
-            cell.addEventListener("mouseenter", () => {
-                if (isFuture) { tooltip.textContent = ""; return; }
-                const dateStr = formatDateReadable(new Date(cYear, cMonth, cDay), { weekday: true });
-                tooltip.textContent = spend > 0
-                    ? `${dateStr} – ${sym}${spend.toLocaleString()} spent`
-                    : `${dateStr} – No spend logged`;
-            });
-            cell.addEventListener("mouseleave", () => { tooltip.textContent = ""; });
+            if (isOutOfCycle) {
+                cell.className = "aspect-square rounded-md border border-slate-800/40 heatmap-crosshatch relative cursor-default flex items-center justify-center";
+                cell.innerHTML = `<span class="text-[8px] font-bold text-slate-700/50">${cDay}</span>`;
+            } else {
+                const colors = heatColor(spend);
+                cell.className = [
+                    "aspect-square rounded-md border flex items-center justify-center transition-all relative",
+                    isFuture
+                        ? "opacity-30 cursor-default bg-slate-800/60 border-slate-800"
+                        : `cursor-pointer hover:scale-110 hover:z-10 hover:ring-1 hover:ring-indigo-400/60 hover:ring-offset-1 hover:ring-offset-slate-950 ${colors.bg} ${colors.border}`,
+                    isToday ? "ring-1 ring-indigo-400 ring-offset-1 ring-offset-slate-950" : "",
+                ].join(" ");
+                cell.innerHTML = `<span class="text-[8px] font-bold ${isToday ? 'text-indigo-300' : isFuture ? 'text-slate-700' : spend > 0 ? 'text-white' : 'text-slate-600'}">${cDay}</span>`;
 
-            cell.addEventListener("click", () => {
-                if (isFuture) return;
-                const dateStr = formatDateReadable(new Date(cYear, cMonth, cDay), { weekday: true });
-                tooltip.textContent = spend > 0
-                    ? `${dateStr} – ${sym}${spend.toLocaleString()} spent`
-                    : `${dateStr} – No spend logged`;
-                openLedgerWithDate(dateISO);
-            });
+                cell.addEventListener("mouseenter", () => {
+                    if (isFuture) { tooltip.textContent = ""; return; }
+                    const ds = formatDateReadable(new Date(cYear, cMonth, cDay), { weekday: true });
+                    tooltip.textContent = spend > 0 ? `${ds} – ${sym}${spend.toLocaleString()} spent` : `${ds} – No spend logged`;
+                });
+                cell.addEventListener("mouseleave", () => { tooltip.textContent = ""; });
+                cell.addEventListener("click", () => {
+                    if (isFuture) return;
+                    const ds = formatDateReadable(new Date(cYear, cMonth, cDay), { weekday: true });
+                    tooltip.textContent = spend > 0 ? `${ds} – ${sym}${spend.toLocaleString()} spent` : `${ds} – No spend logged`;
+                    openLedgerWithDate(dateISO);
+                });
 
-            // Phase 9 — dino footprint markers
-            if (dp('dinoFootprints') && !isFuture) {
-                const spendValues2 = Object.values(dailySpend).filter(v => v > 0).sort((a,b) => a-b);
-                const topThr = spendValues2[Math.floor(spendValues2.length * 0.75)] || 0;
-                if (spend === 0) {
-                    const m = document.createElement('span');
-                    m.className = 'heatmap-egg'; m.textContent = '🥚'; cell.appendChild(m);
-                } else if (spend >= topThr && topThr > 0) {
-                    const m = document.createElement('span');
-                    m.className = 'heatmap-foot';
-                    m.innerHTML = `<svg viewBox="0 0 20 24" width="9" height="11" fill="currentColor" style="opacity:0.9;display:block;"><ellipse cx="10" cy="17" rx="6.5" ry="6"/><ellipse cx="4" cy="8" rx="2.8" ry="3"/><ellipse cx="10" cy="5.5" rx="2.8" ry="3"/><ellipse cx="16" cy="8" rx="2.8" ry="3"/></svg>`;
-                    cell.appendChild(m);
+                if (dp('dinoFootprints') && !isFuture) {
+                    if (spend === 0) {
+                        const m = document.createElement('span');
+                        m.className = 'heatmap-egg'; m.textContent = '🥚'; cell.appendChild(m);
+                    } else if (spend >= dinoTopThr && dinoTopThr > 0) {
+                        const m = document.createElement('span');
+                        m.className = 'heatmap-foot';
+                        m.innerHTML = `<svg viewBox="0 0 20 24" width="9" height="11" fill="currentColor" style="opacity:0.9;display:block;"><ellipse cx="10" cy="17" rx="6.5" ry="6"/><ellipse cx="4" cy="8" rx="2.8" ry="3"/><ellipse cx="10" cy="5.5" rx="2.8" ry="3"/><ellipse cx="16" cy="8" rx="2.8" ry="3"/></svg>`;
+                        cell.appendChild(m);
+                    }
                 }
             }
-        }
 
-        grid.appendChild(cell);
-        cursor.setDate(cursor.getDate() + 1);
-    }
-}
-
-function heatmapNavigate(delta) {
-    _heatmapCycleOffset = Math.min(0, _heatmapCycleOffset + delta);
-    renderSpendHeatmap();
+            grid.appendChild(cell);
+        });
+    });
 }
 /* ──── END SPEND HEATMAP ────────────────────────────────────────────────────────────────────────────────────────── */
 

@@ -98,6 +98,7 @@ function toggleRecurringPause(id) {
 }
 
 function openRecurringModal(editId) {
+    if (typeof closeDrawer === "function") closeDrawer();
     const modal = document.getElementById("recurringModal");
     modal.classList.remove("hidden");
 
@@ -352,6 +353,7 @@ function openEMIFromCreditCard() {
 }
 
 function openEMIModal(emiId = "") {
+    if (typeof closeDrawer === "function") closeDrawer();
     const catSel = document.getElementById("emiCategory");
     const paySel = document.getElementById("emiPayment");
     if (!catSel || !paySel) return;
