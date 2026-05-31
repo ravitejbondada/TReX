@@ -1,53 +1,67 @@
-# TReX - Active Work Log
+# TReX Working Log
 
 **Last updated:** May 31, 2026
-**Current version:** v3.7
-**Changelog:** All completed work from v2.0-v3.7 is documented in `CHANGELOG.md`.
+**Current version:** v4.2+
+**Plan:** `TREX_IMPLEMENTATION_PLAN.md` - Feature Implementation Plan
 
 ---
 
-## Current Status
+## Current Item
 
-TREX_IMPLEMENTATION_PLAN.md Phase 8 (Sound Engine) - **Complete**
-Next up: **TREX_IMPLEMENTATION_PLAN.md - Phase 9 (Polish)**
+Phase 1 - Item 1: Swipe-to-delete on ledger rows
 
-Completed implementation-plan phases:
-- Phase 1 - Settings Architecture Revamp: side drawer, drawer sub-panels, clean Settings layout.
-- Phase 2 - State & Preferences Foundation: `dinoPrefs`, `dp(key)`, Personality settings controls, backup/sync normalization.
-- Phase 3 - Dino Copy & Micro-text: `t(neutral, dino)` and dino-mode copy across toasts, confirms, empty states, and contextual labels.
-- Phase 3.5 - Dino Mode master toggle: dependent dino controls are disabled when Dino Mode is off, with saved choices preserved.
-- Phase 8 - Sound Engine: shared `js/sounds.js`, normal/dino sound banks, App Sounds setting under Appearance, and key action sound cues.
-- Recurring engine simplification: recurring schedules catch up qualified due dates, monthly dates clamp to month-end, pause skips processing, resume restarts from a chosen date, and inserted rows behave like manual expenses.
+## Status
+
+[ ] Not started
+
+## Notes
+
+- Fresh start for the new feature implementation plan.
+- Recurring pause/resume and recurring scheduler simplification are already complete and intentionally removed from the new plan.
+- Before touching source for an item, update this file to `[~] In progress`; after verification, mark `[x] Done` and add a brief completion note.
+
+---
+
+## Completed
+
+- Previous Dino/theme/sounds implementation work is documented in `CHANGELOG.md`.
+- Recurring engine simplification is complete: recurring inserts plain ledger rows, catches up qualified due dates, clamps monthly dates to month-end, and resume restarts from a chosen date.
+
+---
+
+## Checklist
+
+### Phase 1 - Core Ledger UX
+
+[ ] 1. Swipe-to-delete
+[ ] 2. Bulk delete / select mode
+[ ] 3. Filter by amount range
+[ ] 4. Running balance
+[ ] 5. Transaction templates / presets
+[ ] 6. Inline edit (amount + note)
+
+### Phase 2 - Analytics & Insights
+
+[ ] 7. Payment split chart (dashboard)
+[ ] 8. Weekly/monthly comparison (dashboard)
+[ ] 9. Category spend trend (reports)
+[ ] 10. Goal progress bar + projected date
+[ ] 11. Trip daily budget breakdown
+
+### Phase 3 - Power Features
+
+[ ] 12. Split transactions
+[ ] 13. Tag / label system
+[ ] 14. EMI foreclosure calculator
+[ ] 15. Offline conflict queue
+
+### Phase 4 - Low Priority
+
+[ ] 16. High contrast theme
 
 ---
 
 ## Known Limitations
 
-- **PWA daily reminder:** `scheduleDailyReminder()` uses `setTimeout` - requires the browser tab to be active. Does not fire with screen off or browser backgrounded. Planned fix: Capacitor migration (`@capacitor/local-notifications`).
-- **PWA notifications:** Chrome's "Tap to copy URL" notification appears alongside app notifications on Android - this is browser behaviour, not fixable from JS.
-
----
-
-## Next Phase - Implementation Plan Phase 9
-
-**Reference:** `TREX_IMPLEMENTATION_PLAN.md`
-**Goal:** Final polish pass
-**Upload these files to start:**
-`styles.css`, `js/core.js`, `js/dashboard.js`, `js/goals-trips.js`
-
-**Session resume format:**
-```text
-TReX dev session resume.
-Current phase: 9
-Current step: [description]
-Last completed: Phase 8 sound engine; JS syntax checks passed
-Uploading: styles.css, js/core.js, js/dashboard.js, js/goals-trips.js
-```
-
----
-
-## Resume Instructions
-
-Re-upload only the files being touched for the current phase/step.
-Verify the stability checklist before moving to the next step.
-Update `CHANGELOG.md` and this file after each phase ships.
+- PWA daily reminder uses `setTimeout`; it requires the browser tab to be active.
+- Browser/PWA notification quirks may vary by platform.
