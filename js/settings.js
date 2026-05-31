@@ -358,15 +358,16 @@ function applyExpensePaymentLock(paymentId) {
 function saveBudgetAndCycleSettings() {
     const limit = parseFloat(document.getElementById("settingMonthlyBudget").value);
     const cycleType = document.getElementById("settingCycleType").value;
-    const startDay = parseInt(document.getElementById("settingCycleDay").value);
+    const cycleDayEl = document.getElementById("settingCycleDay");
+    const startDay = cycleDayEl ? parseInt(cycleDayEl.value, 10) : state.cycleDay;
 
     if (isNaN(limit) || limit <= 0) {
         showNotification("Invalid monthly budget amount.");
         return;
     }
 
-    if (cycleType === "salary" && (isNaN(startDay) || startDay < 1 || startDay > 31)) {
-        showNotification("Payday range must exist between 1 and 31.");
+    if (cycleType === "salary" && (isNaN(startDay) || startDay < 1 || startDay > 28)) {
+        showNotification("Payday must be between 1 and 28.");
         return;
     }
 
@@ -644,7 +645,14 @@ function openDrawerSection(sectionName) {
 
     switch (sectionName) {
 
-        case 'budget':
+        case 'budget': {
+            const _curDay = parseInt(state.cycleDay, 10) || 1;
+            const _isSalary = state.cycleType === 'salary';
+            // Build wheel rows HTML — 28 days max (safe for all months)
+            let _wheelRows = '';
+            for (let d = 1; d <= 28; d++) {
+                _wheelRows += `<div class="wheel-item${d === _curDay ? ' selected' : ''}" data-value="${d}">${d}</div>`;
+            }
             body.innerHTML = `
                 <div class="drawer-form-section">
                     <label class="drawer-form-label">Monthly Budget Cap</label>
@@ -656,15 +664,49 @@ function openDrawerSection(sectionName) {
                     <label class="drawer-form-label">Budget Reset Cycle</label>
                     <select id="settingCycleType" onchange="toggleCycleDateSelector()"
                         class="w-full app-dropdown rounded-lg text-xs focus:outline-none">
-                        <option value="calendar" ${state.cycleType === 'calendar' ? 'selected' : ''}>Calendar Month</option>
-                        <option value="salary"   ${state.cycleType === 'salary'   ? 'selected' : ''}>Payday Cycle</option>
+                        <option value="calendar" ${!_isSalary ? 'selected' : ''}>Calendar Month</option>
+                        <option value="salary"   ${_isSalary  ? 'selected' : ''}>Payday Cycle</option>
                     </select>
                 </div>
-                <div id="settingCycleDayContainer" class="drawer-form-section" style="padding-top:12px;${state.cycleType !== 'salary' ? 'display:none;' : ''}">
-                    <label class="drawer-form-label">Cycle Day (Payday)</label>
-                    <input type="number" min="1" max="31" id="settingCycleDay"
-                        value="${state.cycleDay || 1}"
-                        class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-white focus:outline-none" />
+                <div id="settingCycleDayContainer" class="drawer-form-section" style="padding-top:12px;${!_isSalary ? 'display:none;' : ''}">
+                    <label class="drawer-form-label" style="margin-bottom:10px;">Payday — day of month</label>
+                    <!-- iOS-style wheel picker -->
+                    <div id="cycleDayWheel" style="
+                        position:relative; height:168px; overflow:hidden;
+                        border-radius:14px; background:#0f172a;
+                        border:1px solid rgba(99,102,241,0.25);
+                        user-select:none; -webkit-user-select:none; touch-action:pan-y;">
+                        <!-- selection highlight band -->
+                        <div style="
+                            position:absolute; left:0; right:0;
+                            top:50%; transform:translateY(-50%);
+                            height:42px; pointer-events:none; z-index:2;
+                            background:rgba(99,102,241,0.12);
+                            border-top:1px solid rgba(99,102,241,0.4);
+                            border-bottom:1px solid rgba(99,102,241,0.4);
+                            border-radius:8px; margin:0 12px;"></div>
+                        <!-- top fade -->
+                        <div style="
+                            position:absolute; top:0; left:0; right:0; height:60px;
+                            background:linear-gradient(to bottom,#0f172a 0%,transparent 100%);
+                            pointer-events:none; z-index:3;"></div>
+                        <!-- bottom fade -->
+                        <div style="
+                            position:absolute; bottom:0; left:0; right:0; height:60px;
+                            background:linear-gradient(to top,#0f172a 0%,transparent 100%);
+                            pointer-events:none; z-index:3;"></div>
+                        <!-- scrollable track -->
+                        <div id="cycleDayWheelTrack" style="
+                            position:absolute; left:0; right:0;
+                            display:flex; flex-direction:column; align-items:center;
+                            will-change:transform; cursor:grab;">
+                            <div style="height:63px;flex-shrink:0;"></div>
+                            ${_wheelRows}
+                            <div style="height:63px;flex-shrink:0;"></div>
+                        </div>
+                    </div>
+                    <!-- hidden value field read by saveBudgetAndCycleSettings() -->
+                    <input type="hidden" id="settingCycleDay" value="${_curDay}" />
                 </div>
                 <div class="drawer-form-section" style="padding-top:12px;padding-bottom:4px;">
                     <label class="drawer-form-label">Credit Card Mode</label>
@@ -678,6 +720,76 @@ function openDrawerSection(sectionName) {
                 <button class="drawer-save-btn" onclick="saveBudgetAndCycleSettings()">
                     Save Configuration
                 </button>`;
+            wrapAllSelects(body);
+            // ── Init wheel picker ─────────────────────────────────────────────
+            (function initCycleDayWheel() {
+                const ITEM_H = 42;
+                const track  = body.querySelector('#cycleDayWheelTrack');
+                const hidden = body.querySelector('#settingCycleDay');
+                let currentDay = parseInt(hidden.value, 10) || 1;
+                let offsetY = 0; // translateY applied to track
+                let startY = 0, startOffset = 0, isDragging = false, velocity = 0, lastY = 0, lastT = 0;
+
+                function clamp(v) { return Math.min(Math.max(v, -(28 - 1) * ITEM_H), 0); }
+
+                function snapTo(day, animate) {
+                    currentDay = Math.min(Math.max(Math.round(day), 1), 28);
+                    offsetY = -(currentDay - 1) * ITEM_H;
+                    track.style.transition = animate ? 'transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
+                    track.style.transform = `translateY(${offsetY}px)`;
+                    hidden.value = currentDay;
+                    track.querySelectorAll('.wheel-item').forEach(el => {
+                        el.style.color = parseInt(el.dataset.value) === currentDay ? '#a5b4fc' : '#94a3b8';
+                        el.style.fontWeight = parseInt(el.dataset.value) === currentDay ? '700' : '400';
+                        el.style.fontSize   = parseInt(el.dataset.value) === currentDay ? '17px'  : '14px';
+                    });
+                }
+
+                // Set initial position without animation
+                snapTo(currentDay, false);
+
+                // Pointer events (works on both touch and mouse)
+                track.addEventListener('pointerdown', e => {
+                    track.style.cursor = 'grabbing';
+                    isDragging = true; velocity = 0;
+                    startY = e.clientY; startOffset = offsetY;
+                    lastY = e.clientY; lastT = Date.now();
+                    track.setPointerCapture(e.pointerId);
+                    e.preventDefault();
+                }, { passive: false });
+
+                track.addEventListener('pointermove', e => {
+                    if (!isDragging) return;
+                    const dy = e.clientY - lastY;
+                    const dt = Date.now() - lastT;
+                    velocity = dt > 0 ? dy / dt : 0;
+                    lastY = e.clientY; lastT = Date.now();
+                    offsetY = clamp(startOffset + (e.clientY - startY));
+                    track.style.transition = 'none';
+                    track.style.transform = `translateY(${offsetY}px)`;
+                    e.preventDefault();
+                }, { passive: false });
+
+                track.addEventListener('pointerup', e => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    track.style.cursor = 'grab';
+                    // Fling with velocity, then snap
+                    const flung = clamp(offsetY + velocity * 120);
+                    const rawDay = 1 + Math.round(-flung / ITEM_H);
+                    snapTo(rawDay, true);
+                    e.preventDefault();
+                }, { passive: false });
+
+                // Wheel/scroll on desktop
+                track.addEventListener('wheel', e => {
+                    e.preventDefault();
+                    const delta = e.deltaY > 0 ? 1 : -1;
+                    snapTo(currentDay + delta, true);
+                }, { passive: false });
+            })();
+            break;
+        }
             wrapAllSelects(body);
             break;
 
@@ -707,21 +819,81 @@ function openDrawerSection(sectionName) {
             renderSettingsLists();
             break;
 
-        case 'creditcards':
+        case 'creditcards': {
+            const _ccEnabled = !!state.creditCardsEnabled;
+            const _cards = state.payments.filter(p => !p.archived && (p.type === 'Credit Card' || p.type === 'CC'));
+            const _sym = state.currencySymbol || '₹';
+
+            // Build per-card rows
+            let _cardRows = '';
+            if (_ccEnabled && _cards.length > 0) {
+                _cards.forEach(pay => {
+                    const bucket = getCreditCardBucketSnapshot(pay);
+                    const due    = bucket.dueTotal || 0;
+                    const recent = bucket.recentTotal || 0;
+                    const billingLabel = pay.billingDay ? `Billing day ${pay.billingDay}` : 'No billing day set';
+                    _cardRows += `
+                    <div style="background:#0f172a;border:1px solid rgba(99,102,241,0.2);border-radius:12px;padding:12px 14px;margin-bottom:10px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                            <span style="width:10px;height:10px;border-radius:50%;background:${pay.color};flex-shrink:0;"></span>
+                            <span style="font-size:0.8rem;font-weight:700;color:#f1f5f9;">${pay.name}</span>
+                            <span style="font-size:0.65rem;color:#64748b;margin-left:auto;">${billingLabel}</span>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <div style="background:#1e293b;border-radius:8px;padding:10px;">
+                                <div style="font-size:0.6rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Due this cycle</div>
+                                <div style="font-size:1rem;font-weight:700;color:#f87171;">${_sym}${due.toLocaleString('en-IN', {maximumFractionDigits:0})}</div>
+                            </div>
+                            <div style="background:#1e293b;border-radius:8px;padding:10px;">
+                                <div style="font-size:0.6rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Recent spend</div>
+                                <div style="font-size:1rem;font-weight:700;color:#fb923c;">${_sym}${recent.toLocaleString('en-IN', {maximumFractionDigits:0})}</div>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+            } else if (_ccEnabled && _cards.length === 0) {
+                _cardRows = `<p style="font-size:0.7rem;color:#475569;text-align:center;padding:16px 0;">No credit cards added yet.<br>Add one via Payment Methods → type "Credit Card".</p>`;
+            }
+
             body.innerHTML = `
-                <div style="padding:16px;">
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs text-slate-300 font-medium">Credit Card Mode</span>
-                        <input type="checkbox" id="settingCreditCardsEnabled" onchange="toggleCreditCardsSetting()"
-                            ${state.creditCardsEnabled ? 'checked' : ''}
-                            class="w-5 h-5 accent-indigo-500 bg-slate-900 border-slate-800 rounded" />
+                <div style="padding:16px 16px 8px;">
+                    <!-- Toggle row -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                        <div>
+                            <div style="font-size:0.8rem;font-weight:600;color:#e2e8f0;">Credit Card Mode</div>
+                            <div style="font-size:0.65rem;color:#64748b;margin-top:2px;">Billing cycles, due tracking &amp; CC tab</div>
+                        </div>
+                        <label style="position:relative;display:inline-block;width:44px;height:26px;flex-shrink:0;">
+                            <input type="checkbox" id="settingCreditCardsEnabled" onchange="toggleCreditCardsSetting(); openDrawerSection('creditcards');"
+                                ${_ccEnabled ? 'checked' : ''}
+                                style="opacity:0;width:0;height:0;position:absolute;" />
+                            <span style="
+                                position:absolute;inset:0;border-radius:13px;cursor:pointer;
+                                background:${_ccEnabled ? '#4f46e5' : '#1e293b'};
+                                border:1px solid ${_ccEnabled ? '#4f46e5' : '#334155'};
+                                transition:background 0.2s;"></span>
+                            <span style="
+                                position:absolute;top:3px;left:${_ccEnabled ? '21px' : '3px'};
+                                width:20px;height:20px;border-radius:50%;background:#fff;
+                                transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></span>
+                        </label>
                     </div>
-                    <p class="text-[10px] text-slate-500 leading-relaxed">
-                        Enables the credit card tab, billing cycle tracking, and payment method billing-day fields.
-                        Payment methods with type "Credit Card" can then be managed via Payment Methods.
-                    </p>
+                    ${_ccEnabled ? `
+                    <!-- Divider -->
+                    <div style="height:1px;background:rgba(148,163,184,0.1);margin:14px 0 12px;"></div>
+                    <!-- Portfolio header -->
+                    <div style="font-size:0.6rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Your Cards</div>
+                    ${_cardRows}
+                    <!-- Go to cards tab -->
+                    <button onclick="closeDrawer(); switchScreen('cards');" style="
+                        width:100%;margin-top:6px;padding:10px;border-radius:10px;
+                        background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);
+                        color:#a5b4fc;font-size:0.75rem;font-weight:600;cursor:pointer;">
+                        Open Cards Tab →
+                    </button>` : ''}
                 </div>`;
             break;
+        }
 
         case 'recurring':
             body.innerHTML = `

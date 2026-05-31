@@ -27,6 +27,25 @@
     <!-- ChartJS for rich analytical visualizers -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* iOS-style day wheel picker */
+        .wheel-item {
+            height: 42px;
+            line-height: 42px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 400;
+            color: #94a3b8;
+            width: 100%;
+            transition: color 0.15s, font-size 0.15s, font-weight 0.15s;
+            pointer-events: none;
+        }
+        .wheel-item.selected {
+            color: #a5b4fc;
+            font-size: 17px;
+            font-weight: 700;
+        }
+    </style>
 
 </head>
 
@@ -1361,6 +1380,8 @@
                     <input type="checkbox" id="settingCreditCardsEnabled" onchange="toggleCreditCardsSetting()" />
                     <!-- Budget & cycle inputs REMOVED — they now live exclusively in the drawer sub-panel.
                          syncSettingsFormFields() and toggleCycleDateSelector() are null-guarded. -->
+                    <!-- Import file input — triggered by drawer Import Backup item -->
+                    <input type="file" id="importFile" accept=".json" onchange="importBackupFile(this)" />
                 </div>
 
             </div>
