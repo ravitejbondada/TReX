@@ -1065,6 +1065,12 @@ function toggleDinoMode(sourceEl = null) {
     if (drawerDinoModeEl) drawerDinoModeEl.checked = checked;
     syncDinoDependentControls();
     saveStateToLocalStorage();
+
+    // Re-render dino-aware UI immediately so the toggle takes effect without a hard refresh
+    if (typeof updatePinVisualDots === 'function') try { updatePinVisualDots(); } catch(e) {}
+    if (typeof renderDashboard === 'function') try { renderDashboard(); } catch(e) {}
+    if (typeof renderHistory === 'function') try { renderHistory(); } catch(e) {}
+
     showNotification(t("Personality updated.", "Personality evolved."));
 }
 
