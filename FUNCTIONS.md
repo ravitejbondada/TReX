@@ -133,7 +133,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `populateEMIFormDropdowns()` | Populates EMI form category and payment dropdowns |
 | `applyCategoryDefaultPayment()` | Auto-selects the default payment when a category is chosen |
 | `loadExpenseToFormForEdit(txId, returnCardId?)` | Populates the expense form for editing an existing transaction |
-| `handleExpenseSubmit(e)` | Form submit handler — validates, creates/updates transaction, saves state; stamps `createdAt` (full ISO timestamp) on create; on edit, preserves `createdAt` if the date is unchanged, updates it to now if the date changes |
+| `handleExpenseSubmit(e)` | Form submit handler — validates, creates/updates transaction, saves state; stamps `createdAt` on create; on edit, preserves `createdAt` if date unchanged, updates to now if date changes; if editing a recurring/EMI-generated tx, adds original date to `rec.skippedDates` and strips `isRecurring`/`recurringId`/`isEMI`/`emiId` so the tx becomes a plain transaction |
 | `populateInlineCategoryPaymentOptions()` | Populates dropdowns inside the inline add category/payment modals |
 | `openInlineCategoryModal(mode?)` | Opens the quick-add category modal from the expense form |
 | `closeInlineCategoryModal()` | Closes the inline category modal |
@@ -147,7 +147,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `getLedgerDateRange()` | Returns `{ startDate, endDate }` based on active ledger selection |
 | `openLedgerWithDate(dateISO)` | Switches to history view and filters to the month containing the date |
 | `filterHistory()` | Applies search text + category/payment filters to the history list |
-| `deleteTransaction(id)` | Async — confirms then removes a transaction from state |
+| `deleteTransaction(id)` | Async — confirms then removes a transaction; if the tx has a `recurringId`, adds its date to `rec.skippedDates` so `processRecurringExpenses` does not re-post it |
 
 ---
 

@@ -127,14 +127,27 @@ function handleExpenseSubmit(e) {
         if (index !== -1) {
             const existing = state.transactions[index];
             const dateChanged = existing.date !== date;
+
+            // If this was a recurring/EMI-generated tx, mark the old date as skipped
+            // so processRecurringExpenses won't re-post it, then detach from the rule.
+            if (existing.recurringId) {
+                const rec = state.recurringExpenses?.find(r => r.id === existing.recurringId);
+                if (rec) {
+                    if (!Array.isArray(rec.skippedDates)) rec.skippedDates = [];
+                    if (!rec.skippedDates.includes(existing.date)) {
+                        rec.skippedDates.push(existing.date);
+                        rec.updatedAt = new Date().toISOString();
+                    }
+                }
+            }
+
+            const { isRecurring: _r, recurringId: _rid, isEMI: _e, emiId: _eid, ...rest } = existing;
             state.transactions[index] = {
-                ...existing,
+                ...rest,
                 amount, categoryId: catId, paymentId: payId, date, note,
                 createdAt: dateChanged ? new Date().toISOString() : (existing.createdAt || new Date().toISOString())
             };
-            showNotification(existing.isRecurring
-                ? t("Recurring ledger entry updated.", "Stampede entry updated.")
-                : t("Transaction updated successfully.", "Ledger fossil updated."));
+            showNotification(t("Transaction updated successfully.", "Ledger fossil updated."));
             playSound(S.SYSTEM);
         }
     } else {

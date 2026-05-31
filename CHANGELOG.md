@@ -5,6 +5,37 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ---
 
+## [v4.2] 2026-05-31 — Recurring/EMI transactions are now plain after edit or delete
+
+**What changed:** Editing or deleting a recurring- or EMI-generated transaction now persists correctly — edits are no longer reverted and deleted entries no longer come back.
+
+**Files modified:**
+- `js/transactions.js` — `handleExpenseSubmit`: when editing a tx that carries `recurringId`, the original date is added to `rec.skippedDates` before saving (prevents `processRecurringExpenses` re-posting it on next boot), then `isRecurring`, `recurringId`, `isEMI`, and `emiId` are stripped so the tx is stored as a plain transaction. `deleteTransaction`: existing `skippedDates` logic was already correct — no change needed.
+- `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md` — updated transaction shape docs and function descriptions.
+
+**Behavior:**
+- Editing a recurring-generated tx: original occurrence date is skipped in the rule; the edited tx is detached and treated as a normal transaction going forward.
+- Deleting a recurring-generated tx: date is added to `skippedDates`; `processRecurringExpenses` will not re-post it.
+- The recurring schedule itself is unaffected — future occurrences continue to auto-post as normal.
+
+---
+
+## [v4.1] 2026-05-31 — Payment types revised; currency list expanded
+
+**What changed:** Removed UPI and Net Banking payment types. Renamed "Debit Card" to "Account/Debit Card". Expanded CURRENCIES from 4 to 16 entries with INR as default/first.
+
+**Files modified:**
+- `js/core.js` — `CURRENCIES` expanded (added AED, SGD, AUD, CAD, JPY, CNY, CHF, SAR, MYR, THB, IDR, NZD); `DEFAULT_PAYMENTS` updated (removed UPI p2, renamed Debit Card → Account/Debit Card).
+- `index.html` — `inlinePayType` and `editPayType` dropdowns updated (removed UPI/Net Banking options, renamed Debit Card).
+- `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md` — updated payment type list and DEFAULT_PAYMENTS docs.
+
+**Behavior:**
+- Available payment types: Cash, Credit Card, Account/Debit Card.
+- Default payments for new installs: Cash + Account/Debit Card (no UPI seeded).
+- Currency picker now shows 16 currencies; INR remains default.
+
+---
+
 ## [v3.9] 2026-05-31 — Transaction timestamp sort
 
 **What changed:** Added `createdAt` (full ISO 8601 timestamp) to every transaction so the ledger and recent activity feed sort by actual creation time within the same day, not just by date string. Time is never shown in the UI.

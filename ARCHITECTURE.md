@@ -133,10 +133,10 @@ let state = {
   ],
   payments: [
     { id, name, type, limit, color, billingDay, archived? }
-    // type: "Credit Card" | "UPI" | "Cash" | "Debit Card" | "Net Banking"
+    // type: "Credit Card" | "Cash" | "Account/Debit Card"
     // billingDay: 1–28, only relevant when type === "Credit Card"
     // archived: true if payment deleted but has existing transactions
-    // Initialized with DEFAULT_PAYMENTS (Cash, UPI, Card)
+    // Initialized with DEFAULT_PAYMENTS (Cash, Account/Debit Card)
   ],
   transactions: [
     // Starts empty [] (no mock/dummy transactions)

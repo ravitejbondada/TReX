@@ -12,9 +12,21 @@
 
 const CURRENCIES = [
     { code: "INR", symbol: "\u20B9", name: "INR (\u20B9) Indian Rupee" },
-    { code: "USD", symbol: "$", name: "USD ($) United States Dollar" },
+    { code: "USD", symbol: "$",      name: "USD ($) United States Dollar" },
     { code: "EUR", symbol: "\u20AC", name: "EUR (\u20AC) Euro" },
-    { code: "GBP", symbol: "\u00A3", name: "GBP (\u00A3) Great Britain Pound" }
+    { code: "GBP", symbol: "\u00A3", name: "GBP (\u00A3) British Pound" },
+    { code: "AED", symbol: "\u062F.\u0625", name: "AED (د.إ) UAE Dirham" },
+    { code: "SGD", symbol: "S$",     name: "SGD (S$) Singapore Dollar" },
+    { code: "AUD", symbol: "A$",     name: "AUD (A$) Australian Dollar" },
+    { code: "CAD", symbol: "C$",     name: "CAD (C$) Canadian Dollar" },
+    { code: "JPY", symbol: "\u00A5", name: "JPY (¥) Japanese Yen" },
+    { code: "CNY", symbol: "\u00A5", name: "CNY (¥) Chinese Yuan" },
+    { code: "CHF", symbol: "Fr",     name: "CHF (Fr) Swiss Franc" },
+    { code: "SAR", symbol: "\u0631.\u0633", name: "SAR (ر.س) Saudi Riyal" },
+    { code: "MYR", symbol: "RM",     name: "MYR (RM) Malaysian Ringgit" },
+    { code: "THB", symbol: "\u0E3F", name: "THB (฿) Thai Baht" },
+    { code: "IDR", symbol: "Rp",     name: "IDR (Rp) Indonesian Rupiah" },
+    { code: "NZD", symbol: "NZ$",    name: "NZD (NZ$) New Zealand Dollar" }
 ];
 
 const DEFAULT_CATEGORIES = [
@@ -27,9 +39,8 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const DEFAULT_PAYMENTS = [
-    { id: "p1", name: "Cash",  type: "Cash",        limit: 0, color: "#eab308", billingDay: null },
-    { id: "p2", name: "UPI",   type: "UPI",         limit: 0, color: "#06b6d4", billingDay: null },
-    { id: "p3", name: "Card",  type: "Debit Card",  limit: 0, color: "#4f46e5", billingDay: null }
+    { id: "p1", name: "Cash",         type: "Cash",             limit: 0, color: "#eab308", billingDay: null },
+    { id: "p3", name: "Account/Debit", type: "Account/Debit Card", limit: 0, color: "#4f46e5", billingDay: null }
 ];
 
 const DEFAULT_SAVING_GOALS = [];
