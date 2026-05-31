@@ -410,6 +410,20 @@ function renderSpendHeatmap() {
         });
 
         grid.appendChild(cell);
+
+        // Phase 9 — dino footprint markers
+        if (dp('dinoFootprints') && !isFuture) {
+            const spendValues2 = Object.values(dailySpend).filter(v => v > 0).sort((a,b) => a-b);
+            const topThr = spendValues2[Math.floor(spendValues2.length * 0.75)] || 0;
+            const midThr = spendValues2[Math.floor(spendValues2.length * 0.40)] || 0;
+            if (spend === 0) {
+                const m = document.createElement('span');
+                m.className = 'heatmap-egg'; m.textContent = '🥚'; cell.appendChild(m);
+            } else if (spend >= topThr && topThr > 0) {
+                const m = document.createElement('span');
+                m.className = 'heatmap-foot'; m.textContent = '🦶'; cell.appendChild(m);
+            }
+        }
     }
 }
 /* ──── END SPEND HEATMAP ────────────────────────────────────────────────────────────────────────────────────────── */
@@ -1104,6 +1118,13 @@ function renderWeeklyTrendChartLine() {
 function renderRecentActivityList() {
     const container = document.getElementById("recentTransactionsList");
     if (!container) return;
+
+    // Phase 9 — dynamic label
+    const titleEl = document.querySelector('#dashboardView .recent-activity-title');
+    if (titleEl) {
+        titleEl.textContent = (dp('dinoMode') && dp('recentActivityLabel') === 'dino')
+            ? 'Recent Kills 🦴' : 'Recent Logs';
+    }
     container.innerHTML = "";
 
     const sorted = [...state.transactions].sort((a, b) => new Date(b.date) - new Date(a.date));

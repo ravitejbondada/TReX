@@ -25,6 +25,7 @@ function renderSavingGoalsDedicated() {
     state.savingGoals.forEach(g => {
         if (!g.contributions) g.contributions = [];
         const percent = Math.min(100, (g.current / g.target) * 100);
+        const eggHtml = dp('dinoMode') ? `<span class="goal-egg-icon" id="goal-egg-${g.id}">${getEggSvg(percent)}</span>` : '';
 
         let badgeHtml = "";
         if (percent >= 100)      badgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-950/80 border border-emerald-500/20 text-emerald-400 rounded-lg text-[9px] font-extrabold uppercase"><i data-lucide="trophy" class="w-3 h-3"></i>Fully Funded</span>`;
@@ -68,6 +69,7 @@ function renderSavingGoalsDedicated() {
                             <span class="p-1.5 rounded-lg bg-indigo-600/15 text-indigo-400 border border-indigo-500/20 shrink-0">
                                 <i data-lucide="target" class="w-3.5 h-3.5"></i>
                             </span>
+                            ${eggHtml}
                             <span class="font-extrabold text-slate-100 block truncate text-[11px]">${g.name}</span>
                             <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-500 shrink-0 transition-transform duration-200" id="goal-chevron-${g.id}"></i>
                         </div>
@@ -234,7 +236,22 @@ function fundSavingGoalDedicated(id) {
     renderSavingGoalsDedicated();
     setTimeout(() => toggleGoalAccordion(id), 10);
 
-    if (newPercent >= 100 && prevPercent < 100) showNotification(t("Goal fully funded!", "Goal hatched! TReX is proud."));
+    // Phase 9 — egg crack animation on tier upgrade
+    if (dp('dinoMode')) {
+        const oldTier = Math.floor(Math.min(prevPercent, 99) / 25);
+        const newTier = Math.floor(Math.min(newPercent, 100) / 25);
+        if (newTier > oldTier) {
+            setTimeout(() => {
+                const eggEl = document.getElementById(`goal-egg-${id}`);
+                if (eggEl) {
+                    eggEl.classList.add('egg-crack-transition');
+                    setTimeout(() => eggEl.classList.remove('egg-crack-transition'), 650);
+                }
+            }, 50);
+        }
+    }
+
+    if (newPercent >= 100 && prevPercent < 100) showNotification(t("Goal fully funded! 🎉", "🥚 Goal hatched! TReX is proud."));
     else showNotification(t("Contribution added.", "Egg fed."));
 }
 
@@ -1148,3 +1165,13 @@ async function deleteTripConfirm() {
     closeTripDetail();
 }
 
+
+/* === PHASE 9 — EGG HATCHING GOALS === */
+
+function getEggSvg(pct) {
+    if (pct >= 100) return `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color:#4ade80"><ellipse cx="12" cy="14" rx="7" ry="8"/><ellipse cx="16" cy="7" rx="4" ry="3.5"/><circle cx="17.5" cy="6" r="1" fill="#1a1a2e"/><ellipse cx="9" cy="17" rx="2" ry="1.5" opacity=".6"/></svg>`;
+    if (pct >= 75)  return `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color:#a3e635"><ellipse cx="12" cy="13" rx="7" ry="8"/><path d="M12,5 L10,9 L13,11" stroke="#1a1a2e" stroke-width="1.2" fill="none"/><circle cx="12" cy="5" r="1.5"/></svg>`;
+    if (pct >= 50)  return `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color:#f59e0b"><ellipse cx="12" cy="13" rx="7" ry="9"/><path d="M11,6 L10,10 L13,12 L11,16" stroke="#1a1a2e" stroke-width="1" fill="none"/></svg>`;
+    if (pct >= 25)  return `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color:#94a3b8"><ellipse cx="12" cy="13" rx="7" ry="9"/><path d="M13,8 L12,11" stroke="#1a1a2e" stroke-width="1" fill="none"/></svg>`;
+    return `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color:#64748b"><ellipse cx="12" cy="13" rx="7" ry="9"/></svg>`;
+}

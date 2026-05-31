@@ -134,7 +134,7 @@ window.onload = function () {
     updateAppLockButton();
     buildCurrencySelectorOptions();
     syncSettingsFormFields();
-    applyTheme(state.theme || "dark");
+    applyTheme(state.theme || "dark", state.dinoPrefs?.fossilMode);
 
     if (!state.recurringExpenses) state.recurringExpenses = [];
     if (!state.emis) state.emis = [];
@@ -393,9 +393,17 @@ function customConfirm(message, title = "Confirm Action", okLabel = "Delete") {
 }
 
 /* CLIENT COLOR THEME SETTINGS */
-function applyTheme(theme) {
+function applyTheme(theme, fossilMode) {
     state.theme = theme;
-    document.documentElement.setAttribute("data-theme", theme);
+    const html = document.documentElement;
+    const useFossil = fossilMode ?? dp('fossilMode');
+    if (useFossil) {
+        html.setAttribute('data-theme', 'fossil');
+    } else if (theme === 'light') {
+        html.setAttribute('data-theme', 'light');
+    } else {
+        html.removeAttribute('data-theme');
+    }
     const lightToggle = document.getElementById("settingLightTheme");
     if (lightToggle) lightToggle.checked = theme === "light";
 }

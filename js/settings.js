@@ -1065,12 +1065,6 @@ function toggleDinoMode(sourceEl = null) {
     if (drawerDinoModeEl) drawerDinoModeEl.checked = checked;
     syncDinoDependentControls();
     saveStateToLocalStorage();
-
-    // Re-render dino-aware UI immediately so the toggle takes effect without a hard refresh
-    if (typeof updatePinVisualDots === 'function') try { updatePinVisualDots(); } catch(e) {}
-    if (typeof renderDashboard === 'function') try { renderDashboard(); } catch(e) {}
-    if (typeof renderHistory === 'function') try { renderHistory(); } catch(e) {}
-
     showNotification(t("Personality updated.", "Personality evolved."));
 }
 
@@ -1091,9 +1085,9 @@ function saveSoundVolume() {
 function toggleFossilMode() {
     if (!state.dinoPrefs) state.dinoPrefs = {};
     state.dinoPrefs.fossilMode = document.getElementById('fossilModeToggle').checked;
-    // ⚠️ applyTheme() signature is not updated until Phase 9 — save only.
     saveStateToLocalStorage();
-    showNotification(t("Fossil Mode saved. Visual theme applies in a future update.", "Fossil Mode saved. The amber era arrives later."));
+    applyTheme(state.theme, state.dinoPrefs.fossilMode);
+    showNotification(t("Fossil Mode updated.", "🦴 The amber era has arrived."));
 }
 
 function toggleDinoFootprints() {
