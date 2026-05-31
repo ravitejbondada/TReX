@@ -1526,6 +1526,7 @@ function showOnboardingModal() {
     if (onboardingBody && dp('dinoMode')) {
         onboardingBody.innerHTML = "🦖 TReX stores your data locally — like fossils in rock. Connect Google Drive to protect your herd across devices.";
     }
+}
 
 /**
  * Called from core.js window.onload — shows onboarding modal if conditions met:
