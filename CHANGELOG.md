@@ -5,6 +5,21 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ---
 
+## [v3.6] 2026-05-31 - Implementation plan Phases 1-3 complete
+
+**What changed:** Completed the dino revamp foundation through Phase 3: side drawer settings architecture, dino preference state, and Dino Mode copy/micro-text coverage.
+
+**Files modified:**
+- `index.html` - Phase 1 drawer/header/clean Settings structure and Phase 2 Personality controls were verified as present.
+- `js/core.js` - added/verified drawer helpers, `dp(key)`, and `t(neutral, dino)`; wrapped theme toast copy.
+- `js/auth.js`, `js/transactions.js`, `js/dashboard.js`, `js/settings.js`, `js/goals-trips.js`, `js/recurring.js`, `js/reports.js`, `js/sync.js`, `js/backup.js`, `js/credit-cards.js` - finished Phase 3 dino/neutral copy wrapping for remaining toasts, confirms, empty states, and contextual labels.
+- `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`, `working.md` - reconciled docs for Phase 1-3 completion and Phase 4 readiness.
+- `js/settings.js` - added a Dino Mode master-toggle gate that disables dependent dino controls while preserving their saved choices.
+
+**Verification:**
+- All app JS files pass `node --check` using the bundled Codex Node runtime.
+- Local HTTP server returned `200` for `index.html` during the Phase 1-3 audit.
+
 ## [v3.5] 2026-05-30 — Lock screen UX rework, encoding fixes, budget sync fix
 
 **What changed:** Reworked the locked quick expense UX, fixed widespread UTF-8 encoding corruption in dashboard.js, and fixed a budget field sync bug where a device with no budget could overwrite a real budget from another device.

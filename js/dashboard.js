@@ -192,9 +192,9 @@ function renderForecastCard(metrics) {
     if (metrics.totalSpent <= 0 || !state.monthlyBudget || state.monthlyBudget === 0) {
         // Explicitly overwrite all forecast card fields to "No data available"
         const noDataFields = ["forecastProjectedTotal","forecastSpentLabel","forecastBudgetLabel","forecastBurnRate","forecastDaysLeft"];
-        noDataFields.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = "No data available"; });
+        noDataFields.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = t("No data available", "No fossils to forecast yet"); });
         const surplusEl = document.getElementById("forecastSurplusGap");
-        if (surplusEl) { surplusEl.textContent = "No data available"; surplusEl.className = "text-[11px] font-black mt-0.5 block text-slate-500"; }
+        if (surplusEl) { surplusEl.textContent = t("No data available", "No fossils to forecast yet"); surplusEl.className = "text-[11px] font-black mt-0.5 block text-slate-500"; }
         card.classList.add("hidden");
         return;
     }
@@ -389,7 +389,7 @@ function renderQuickLogButtons() {
     if (!grid) return;
     const logs = getQuickLogs();
     if (logs.length === 0) {
-        grid.innerHTML = `<p class="col-span-2 text-[10px] text-slate-600 italic text-center py-2">No quick logs yet. Tap Customize to add some.</p>`;
+        grid.innerHTML = `<p class="col-span-2 text-[10px] text-slate-600 italic text-center py-2">${t("No quick logs yet. Tap Customize to add some.", "No quick bites yet. Customize your favorite snacks.")}</p>`;
         return;
     }
     grid.innerHTML = logs.map(q => {
@@ -485,7 +485,7 @@ function saveAndCloseQuickLogEditor() {
     saveStateToLocalStorage();
     closeQuickLogEditor();
     renderQuickLogButtons();
-    showNotification("Quick log buttons saved.");
+    showNotification(t("Quick log buttons saved.", "Quick bites saved."));
 }
 
 function closeQuickLogEditor() {
@@ -500,9 +500,9 @@ function saveBudgetAlertSetting() {
     state.budgetAlertsEnabled = document.getElementById("settingBudgetAlerts").checked;
     saveStateToLocalStorage();
     if (state.budgetAlertsEnabled) {
-        requestNotificationPermission(() => showNotification("Budget alerts enabled."));
+        requestNotificationPermission(() => showNotification(t("Budget alerts enabled.", "Budget lookout is awake.")));
     } else {
-        showNotification("Budget alerts disabled.");
+        showNotification(t("Budget alerts disabled.", "Budget lookout is resting."));
     }
 }
 
@@ -563,7 +563,7 @@ function getDailyReminderBody() {
         const todayTxCount = (state.transactions || []).filter(t => t.date === today).length;
         return todayTxCount > 0
             ? `You've logged ${todayTxCount} expense${todayTxCount > 1 ? "s" : ""} today. Tap to review and make sure nothing is missing.`
-            : "No expenses logged today yet. Open TReX to record and review your spending.";
+            : t("No expenses logged today yet. Open TReX to record and review your spending.", "No prey logged today yet. Open TReX and feed the ledger.");
     }
     const lines = [
         "TReX is hungry — feed it today's expenses 🦖",
@@ -618,7 +618,7 @@ function toggleDailyReminderSetting() {
         timeRow.style.display = "none";
         statusEl.style.display = "none";
         clearTimeout(_reminderTimer);
-        showNotification("Daily reminder disabled.");
+        showNotification(t("Daily reminder disabled.", "Daily roar reminder silenced."));
     }
     syncNotificationSettings();
 }
@@ -672,13 +672,13 @@ function checkMissedDailyReminder() {
 function sendTestReminderNotification() {
     requestNotificationPermission(async () => {
         const shown = await showTrexBrowserNotification("TReX - Test Reminder", "Notifications are working for this browser and device.");
-        showNotification(shown ? "Test notification sent." : "Unable to send test notification.");
+        showNotification(shown ? t("Test notification sent.", "Test roar sent.") : t("Unable to send test notification.", "The test roar did not leave the cave."));
     });
 }
 
 function requestNotificationPermission(callback) {
     if (!("Notification" in window)) {
-        showNotification("Notifications not supported in this browser.");
+        showNotification(t("Notifications not supported in this browser.", "This browser cannot carry TReX roars."));
         return;
     }
     if (Notification.permission === "granted") {
@@ -689,7 +689,7 @@ function requestNotificationPermission(callback) {
         return;
     }
     if (Notification.permission === "denied") {
-        showNotification("Notifications blocked. Enable them in browser settings.");
+        showNotification(t("Notifications blocked. Enable them in browser settings.", "Roars are blocked. Enable notifications in browser settings."));
         syncNotificationSettings();
         return;
     }
@@ -699,7 +699,7 @@ function requestNotificationPermission(callback) {
             if (btn) btn.style.display = "none";
             if (callback) callback();
         } else {
-            showNotification("Notification permission denied.");
+            showNotification(t("Notification permission denied.", "Roar permission denied."));
             const budget = document.getElementById("settingBudgetAlerts");
             const reminder = document.getElementById("settingDailyReminder");
             if (budget) budget.checked = false;
@@ -759,7 +759,7 @@ function triggerQuickLog(amount, categoryId, note, paymentId) {
     state.transactions.push(newTx);
     saveStateToLocalStorage();
     updateAppDashboardView();
-    showNotification(`Quick Logged: ${state.currencySymbol}${amount} for "${note}"`);
+    showNotification(t(`Quick Logged: ${state.currencySymbol}${amount} for "${note}"`, `Quick bite logged: ${state.currencySymbol}${amount} for "${note}"`));
 }
 
 /* STATS RENDERERS */
@@ -815,7 +815,7 @@ function renderDashboardCategoryHorizontalBars(startDate, endDate) {
     });
 
     if (container.children.length === 0) {
-        container.innerHTML = `<p class="text-[10px] text-slate-500 text-center py-2 italic">No category expenditures noted this cycle.</p>`;
+        container.innerHTML = `<p class="text-[10px] text-slate-500 text-center py-2 italic">${t("No category expenditures noted this cycle.", "No territory has been devoured this cycle.")}</p>`;
     }
 }
 
@@ -958,7 +958,7 @@ function renderDashboardPaymentHorizontalBars(startDate, endDate) {
     });
 
     if (container.children.length === 0) {
-        container.innerHTML = `<p class="text-[10px] text-slate-500 text-center py-2 italic">No payment channel activity logged.</p>`;
+        container.innerHTML = `<p class="text-[10px] text-slate-500 text-center py-2 italic">${t("No payment channel activity logged.", "No hunting weapons used this cycle.")}</p>`;
     }
 }
 
@@ -1066,7 +1066,7 @@ function renderRecentActivityList() {
     const limit = sorted.slice(0, 4);
 
     if (limit.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4 bg-slate-900/20 rounded-xl border border-slate-850">Tap "+ Add Expense" to begin tracking.</p>`;
+        container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4 bg-slate-900/20 rounded-xl border border-slate-850">${t('Tap "+ Add Expense" to begin tracking.', 'Tap "+ Add Expense" to feed TReX its first fossil.')}</p>`;
         return;
     }
 

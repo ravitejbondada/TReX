@@ -442,7 +442,7 @@ function importBackupFile(e) {
             if (lower.endsWith(".json")) {
                 const parsed = JSON.parse(text);
                 if (!isValidBackupPayload(parsed)) {
-                    showNotification("Invalid JSON backup file.");
+                    showNotification(t("Invalid JSON backup file.", "That fossil crate is not valid JSON."));
                     return;
                 }
                 applyFullStateRestore(parsed);
@@ -450,22 +450,22 @@ function importBackupFile(e) {
             } else if (lower.endsWith(".csv")) {
                 const sections = parseBackupCSVSections(text);
                 if (!sections.SETTINGS && !sections.CATEGORIES) {
-                    showNotification("Invalid CSV backup structure.");
+                    showNotification(t("Invalid CSV backup structure.", "That fossil sheet has the wrong CSV bones."));
                     return;
                 }
                 const draft = buildStateFromCSVSections(sections);
                 if (!draft.categories.length && !draft.payments.length) {
-                    showNotification("Backup lacks categories/payments.");
+                    showNotification(t("Backup lacks categories/payments.", "This fossil crate is missing territories or weapons."));
                     return;
                 }
                 applyFullStateRestore(draft);
                 showNotification(t("Data restored.", "🦖 Unearthed! Data restored."));
             } else {
-                showNotification("Unsupported file format.");
+                showNotification(t("Unsupported file format.", "TReX cannot read that fossil format."));
             }
         } catch (err) {
             console.error(err);
-            showNotification("Failed to import backup file.");
+            showNotification(t("Failed to import backup file.", "The fossil dig failed. Try another backup."));
         }
         e.target.value = "";
     };

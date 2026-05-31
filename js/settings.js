@@ -66,7 +66,7 @@ function updateCurrencySetting() {
     state.currency = composite[0];
     state.currencySymbol = composite[1];
     saveStateToLocalStorage();
-    showNotification(`Currency switched to ${state.currency} (${state.currencySymbol}).`);
+    showNotification(t(`Currency switched to ${state.currency} (${state.currencySymbol}).`, `Treasure now counted in ${state.currency} (${state.currencySymbol}).`));
 }
 
 function toggleCreditCardsSetting() {
@@ -83,7 +83,9 @@ function toggleCreditCardsSetting() {
     if (!document.getElementById("cardsView").classList.contains("hidden")) {
         renderCreditCardsView();
     }
-    showNotification(state.creditCardsEnabled ? "Credit card mode enabled." : "Credit card mode disabled.");
+    showNotification(state.creditCardsEnabled
+        ? t("Credit card mode enabled.", "Card caves unlocked.")
+        : t("Credit card mode disabled.", "Card caves tucked away."));
 }
 
 function backfillMissingCreditCardBillingDays() {
@@ -363,12 +365,12 @@ function saveBudgetAndCycleSettings() {
     const startDay = cycleDayEl ? parseInt(cycleDayEl.value, 10) : state.cycleDay;
 
     if (isNaN(limit) || limit <= 0) {
-        showNotification("Invalid monthly budget amount.");
+        showNotification(t("Invalid monthly budget amount.", "That budget bone needs a real amount."));
         return;
     }
 
     if (cycleType === "salary" && (isNaN(startDay) || startDay < 1 || startDay > 28)) {
-        showNotification("Payday must be between 1 and 28.");
+        showNotification(t("Payday must be between 1 and 28.", "Pick a payday from 1 to 28 for this nest."));
         return;
     }
 
@@ -495,7 +497,7 @@ function saveEditCategory() {
     const defaultPaymentId = document.getElementById("editCatDefaultPayment").value;
 
     if (!name) {
-        showNotification("Name cannot remain blank.");
+        showNotification(t("Name cannot remain blank.", "This field needs a name."));
         return;
     }
 
@@ -513,24 +515,24 @@ function saveEditCategory() {
 
 async function deleteCategory(catId) {
     if (state.categories.length <= 1) {
-        showNotification("At least one active category is required.");
+        showNotification(t("At least one active category is required.", "TReX needs at least one territory."));
         return;
     }
 
     const inUse = state.transactions.some(t => t.categoryId === catId);
     if (inUse) {
-        showNotification("Category contains active data. Clear transactions first.");
+        showNotification(t("Category contains active data. Clear transactions first.", "This territory still has fossils. Clear its transactions first."));
         return;
     }
 
     const cat = state.categories.find(c => c.id === catId);
     const label = cat ? `"${cat.name}"` : "this category";
-    if (!await customConfirm(`Delete category ${label}? This cannot be undone.`, t("Delete category?", "Wipe this territory?"), t("Delete", "Wipe it"))) return;
+    if (!await customConfirm(t(`Delete category ${label}? This cannot be undone.`, `Wipe territory ${label}? This cannot be undone.`), t("Delete category?", "Wipe this territory?"), t("Delete", "Wipe it"))) return;
 
     state.categories = state.categories.filter(c => c.id !== catId);
     saveStateToLocalStorage();
     renderSettingsLists();
-    showNotification("Category removed.");
+    showNotification(t("Category removed.", "Territory fossilized."));
 }
 
 /* PAYMENT ACCOUNTS EDITING */
@@ -561,11 +563,11 @@ function saveEditPayment() {
     const color = document.getElementById("editPayColor").value;
 
     if (!name) {
-        showNotification("Name cannot remain blank.");
+        showNotification(t("Name cannot remain blank.", "This field needs a name."));
         return;
     }
     if (isCreditCardBillingDayRequired(type) && billingDay === null) {
-        showNotification("Billing day is required for credit cards.");
+        showNotification(t("Billing day is required for credit cards.", "Credit card caves need a billing day."));
         return;
     }
 
@@ -586,13 +588,13 @@ function saveEditPayment() {
 async function deletePaymentMethod(payId) {
     const activePayments = state.payments.filter(p => !p.archived);
     if (activePayments.length <= 1) {
-        showNotification("At least one active payment account is required.");
+        showNotification(t("At least one active payment account is required.", "TReX needs at least one hunting weapon."));
         return;
     }
 
     const pay = state.payments.find(p => p.id === payId);
     const label = pay ? `"${pay.name}"` : "this account";
-    if (!await customConfirm(`Delete account ${label}? This cannot be undone.`, t("Delete payment?", "Fossilize this?"), t("Delete", "Fossilize"))) return;
+    if (!await customConfirm(t(`Delete account ${label}? This cannot be undone.`, `Fossilize account ${label}? This cannot be undone.`), t("Delete payment?", "Fossilize this?"), t("Delete", "Fossilize"))) return;
 
     // Cancel all recurring expenses linked to this payment method
     const linkedRecurring = (state.recurringExpenses || []).filter(r => r.paymentId === payId);
@@ -609,13 +611,13 @@ async function deletePaymentMethod(payId) {
             pay.archived = true;
         }
         showNotification(linkedRecurring.length > 0
-            ? `Account archived. ${linkedRecurring.length} recurring schedule${linkedRecurring.length > 1 ? "s" : ""} cancelled.`
-            : "Account archived due to historic transactions.");
+            ? t(`Account archived. ${linkedRecurring.length} recurring schedule${linkedRecurring.length > 1 ? "s" : ""} cancelled.`, `Weapon fossilized. ${linkedRecurring.length} stampede${linkedRecurring.length > 1 ? "s" : ""} stopped.`)
+            : t("Account archived due to historic transactions.", "Weapon fossilized because old tracks still point to it."));
     } else {
         state.payments = state.payments.filter(p => p.id !== payId);
         showNotification(linkedRecurring.length > 0
-            ? `Account removed. ${linkedRecurring.length} recurring schedule${linkedRecurring.length > 1 ? "s" : ""} cancelled.`
-            : "Account removed.");
+            ? t(`Account removed. ${linkedRecurring.length} recurring schedule${linkedRecurring.length > 1 ? "s" : ""} cancelled.`, `Weapon removed. ${linkedRecurring.length} stampede${linkedRecurring.length > 1 ? "s" : ""} stopped.`)
+            : t("Account removed.", "Weapon removed."));
     }
     saveStateToLocalStorage();
     renderSettingsLists();
@@ -958,7 +960,7 @@ function openDrawerSection(sectionName) {
                     </button>
                 </div>
                 <div id="settingsRecurringList" class="space-y-2.5 p-3 no-scrollbar"></div>
-                <p id="settingsRecurringEmpty" class="text-[10px] text-slate-600 text-center py-2 hidden">No recurring expenses configured.</p>`;
+                <p id="settingsRecurringEmpty" class="text-[10px] text-slate-600 text-center py-2 hidden">${t("No recurring expenses configured.", "No stampedes scheduled yet.")}</p>`;
             initLucideIcons(body);
             renderSettingsLists();
             break;
@@ -972,13 +974,13 @@ function openDrawerSection(sectionName) {
                     </button>
                 </div>
                 <div id="settingsEMIList" class="space-y-2.5 p-3 no-scrollbar"></div>
-                <p id="settingsEMIEmpty" class="text-[10px] text-slate-600 text-center py-2 hidden">No credit card EMIs configured.</p>`;
+                <p id="settingsEMIEmpty" class="text-[10px] text-slate-600 text-center py-2 hidden">${t("No credit card EMIs configured.", "No card burrows with EMIs yet.")}</p>`;
             initLucideIcons(body);
             renderSettingsLists();
             break;
 
         default:
-            body.innerHTML = '<p class="text-xs text-slate-500 p-4">Nothing here yet.</p>';
+            body.innerHTML = `<p class="text-xs text-slate-500 p-4">${t("Nothing here yet.", "No fossils in this drawer yet.")}</p>`;
     }
 
     // Slide: hide nav, show content
@@ -1018,20 +1020,50 @@ function syncPersonalitySettings() {
 
     const extinctionEl = document.getElementById('extinctionWarningsToggle');
     if (extinctionEl) extinctionEl.checked = p.extinctionWarnings ?? true;
+
+    syncDinoDependentControls();
+}
+
+function syncDinoDependentControls() {
+    const dinoEnabled = document.getElementById('dinoModeToggle')?.checked ?? (state.dinoPrefs?.dinoMode ?? true);
+    const dependentIds = [
+        'roarSoundsToggle',
+        'soundVolumeSlider',
+        'fossilModeToggle',
+        'dinoFootprintsToggle',
+        'extinctionWarningsToggle'
+    ];
+
+    dependentIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = !dinoEnabled;
+        const row = el.closest('.flex');
+        if (row) {
+            row.classList.toggle('opacity-45', !dinoEnabled);
+            row.classList.toggle('pointer-events-none', !dinoEnabled);
+        }
+    });
+
+    const volumeRowEl = document.getElementById('soundVolumeRow');
+    if (volumeRowEl) {
+        const roarOn = state.dinoPrefs?.roarSounds ?? false;
+        volumeRowEl.style.display = dinoEnabled && roarOn ? 'flex' : 'none';
+    }
 }
 
 function toggleDinoMode() {
     if (!state.dinoPrefs) state.dinoPrefs = {};
     state.dinoPrefs.dinoMode = document.getElementById('dinoModeToggle').checked;
+    syncDinoDependentControls();
     saveStateToLocalStorage();
-    showNotification('Personality updated.');
+    showNotification(t("Personality updated.", "Personality evolved."));
 }
 
 function toggleRoarSounds() {
     if (!state.dinoPrefs) state.dinoPrefs = {};
     state.dinoPrefs.roarSounds = document.getElementById('roarSoundsToggle').checked;
-    const volumeRowEl = document.getElementById('soundVolumeRow');
-    if (volumeRowEl) volumeRowEl.style.display = state.dinoPrefs.roarSounds ? 'flex' : 'none';
+    syncDinoDependentControls();
     saveStateToLocalStorage();
 }
 
@@ -1047,7 +1079,7 @@ function toggleFossilMode() {
     state.dinoPrefs.fossilMode = document.getElementById('fossilModeToggle').checked;
     // ⚠️ applyTheme() signature is not updated until Phase 9 — save only.
     saveStateToLocalStorage();
-    showNotification('Fossil Mode saved. Visual theme applies in a future update.');
+    showNotification(t("Fossil Mode saved. Visual theme applies in a future update.", "Fossil Mode saved. The amber era arrives later."));
 }
 
 function toggleDinoFootprints() {

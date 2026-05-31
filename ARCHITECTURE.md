@@ -1,4 +1,4 @@
-﻿# TReX - Architecture Reference
+# TReX - Architecture Reference
 
 > Primary reference for AI-assisted sessions. Read this before touching any file.
 
@@ -18,16 +18,16 @@ index.html
 └── JS load order (sequential, globals shared via window scope)
     │
     ├── 1. core.js           ← MUST LOAD FIRST — defines `state`, all modules depend on it
-    ├── 2. auth.js           ← lock/PIN, WebAuthn biometric unlock, locked expense sheet (circle-plus keypad key)
-    ├── 3. dashboard.js      ← dashboard, quick logs, alerts, PWA reminders
-    ├── 4. transactions.js   ← reads/writes state.transactions, state.categories, state.payments
-    ├── 5. reports.js        ← reads state.transactions, state.categories, state.payments (read-only)
-    ├── 6. settings.js       ← reads/writes all state fields; owns CC billing logic
-    ├── 7. credit-cards.js   ← reads state via settings.js helpers; renders card views
-    ├── 8. recurring.js      ← reads/writes state.recurringExpenses, state.emis, state.transactions
-    ├── 9. goals-trips.js    ← reads/writes state.savingGoals, state.trips, state.transactions
-    ├── 10. backup.js        ← reads full state for export; writes full state on import
-    └── 11. sync.js          ← Google Drive OAuth, push/pull, conflict resolution, onboarding/migration/reset
+    ├── 2. sync.js           ← Google Drive OAuth, push/pull, conflict resolution, onboarding/migration/reset
+    ├── 3. auth.js           ← lock/PIN, WebAuthn biometric unlock, locked expense sheet (circle-plus keypad key)
+    ├── 4. dashboard.js      ← dashboard, quick logs, alerts, PWA reminders
+    ├── 5. transactions.js   ← reads/writes state.transactions, state.categories, state.payments
+    ├── 6. reports.js        ← reads state.transactions, state.categories, state.payments (read-only)
+    ├── 7. settings.js       ← reads/writes all state fields; owns CC billing logic and drawer sub-panels
+    ├── 8. credit-cards.js   ← reads state via settings.js helpers; renders card views
+    ├── 9. recurring.js      ← reads/writes state.recurringExpenses, state.emis, state.transactions
+    ├── 10. goals-trips.js   ← reads/writes state.savingGoals, state.trips, state.transactions
+    └── 11. backup.js        ← reads full state for export; writes full state on import
 ```
 
 ---
@@ -104,6 +104,16 @@ let state = {
   biometricLabel: "",
   biometricRegisteredAt: "",
   budgetAlertThreshold: 80,      // Percent of budget
+  dinoPrefs: {
+    dinoMode: true,
+    roarSounds: false,
+    soundVolume: 0.6,
+    fossilMode: false,
+    extinctionWarnings: true,
+    dinoFootprints: true,
+    herdMode: true,
+    recentActivityLabel: "dino"
+  },
 
   // ── Core data ─────────────────────────────────────────────
   categories: [
@@ -200,6 +210,27 @@ and calls the screen's init render function.
 
 ---
 
+## Side Drawer & Clean Settings
+
+Phase 1 moved data-management surfaces out of the Settings screen and into the hamburger side drawer.
+
+Key element IDs:
+- `#hamburgerBtn` — header button that calls `openDrawer()`
+- `#sideDrawer` — left slide-out Manage panel
+- `#drawerBackdrop` — tap/click backdrop that calls `closeDrawer()`
+- `#drawerNav` — top-level drawer navigation list
+- `#drawerContent` / `#drawerContentBody` / `#drawerContentTitle` — sliding sub-panel host
+- `#appHeaderLogo` — header logo image, reserved for Phase 6 tap handling
+
+Key functions:
+- `openDrawer()` / `closeDrawer()` live in `core.js`
+- `openDrawerSection(sectionName)` / `closeDrawerSection()` live in `settings.js`
+- `switchScreen(viewName)` always calls `closeDrawer()` before navigation
+
+Settings now contains only Appearance, Personality, Security, Notifications, Sync, and Danger Zone. Budget/cycle, categories, payment methods, credit cards, recurring expenses, EMIs, and backup actions are reached through the drawer.
+
+---
+
 ## Key Patterns
 
 ### State Mutation
@@ -227,6 +258,11 @@ Returns a Promise resolving to `true` (confirmed) or `false` (cancelled).
 
 ### Notifications
 `showNotification(message)` — shows a toast for 2.8 seconds. Auto-dismisses.
+
+### Dino Preferences & Copy Helpers
+`dp(key)` safely reads `state.dinoPrefs`. `t(neutral, dino)` returns Dino Mode copy when `dp("dinoMode")` is true and neutral copy otherwise.
+
+Phase 3 uses `t(...)` for toasts, confirm dialog labels/messages, empty states, and contextual labels without changing layout or data behavior.
 
 ---
 

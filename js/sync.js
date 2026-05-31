@@ -164,7 +164,7 @@ function initGoogleAuth(forceInteractive = false) {
             if (response.error) {
                 console.error("GIS Authentication failed:", response);
                 updateSyncStatus("error", response.error);
-                showNotification("Google Drive authorization failed.");
+                showNotification(t("Google Drive authorization failed.", "The herd gate rejected Google Drive access."));
                 return;
             }
             accessToken = response.access_token;
@@ -837,7 +837,7 @@ function showCloudResetMarkerModal(marker, token, fileId) {
         document.getElementById("btnMakeLocalMain").onclick = async () => {
             try {
                 await uploadLocalAsSyncSource(token, fileId, marker.syncEpoch, marker.syncResetLineage, marker.syncResetHistory);
-                showNotification("This device is now the cloud source.");
+                showNotification(t("This device is now the cloud source.", "This device leads the herd now."));
             } catch (e) {
                 updateSyncStatus("error", e.message || "Failed to update cloud");
             }
@@ -846,7 +846,7 @@ function showCloudResetMarkerModal(marker, token, fileId) {
         };
         document.getElementById("btnDecideResetLater").onclick = () => {
             pauseSyncForReset(marker.syncEpoch);
-            showNotification("Sync paused until you choose how to handle the reset.");
+            showNotification(t("Sync paused until you choose how to handle the reset.", "Herd sync paused at the reset boundary."));
             div.remove();
             resolve("later");
         };
@@ -912,7 +912,7 @@ function showResetBoundaryConflictModal(remoteState, token, fileId) {
         document.getElementById("btnUseLocalAfterReset").onclick = async () => {
             try {
                 await uploadLocalAsSyncSource(token, fileId, remoteState.syncEpoch, remoteState.syncResetLineage, remoteState.syncResetHistory);
-                showNotification("Cloud replaced with this device's data.");
+                showNotification(t("Cloud replaced with this device's data.", "The herd now follows this device."));
             } catch (e) {
                 updateSyncStatus("error", e.message || "Failed to update cloud");
             }
@@ -931,7 +931,7 @@ function showResetBoundaryConflictModal(remoteState, token, fileId) {
                 state.lastSyncedAt = new Date().toISOString();
                 localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
                 updateSyncStatus("idle");
-                showNotification("Local and cloud data force-merged.");
+                showNotification(t("Local and cloud data force-merged.", "Herd tracks merged."));
             } catch (e) {
                 updateSyncStatus("error", e.message || "Failed to merge");
             }
@@ -940,7 +940,7 @@ function showResetBoundaryConflictModal(remoteState, token, fileId) {
         };
         document.getElementById("btnPauseAfterReset").onclick = () => {
             pauseSyncForReset(remoteState.syncEpoch);
-            showNotification("Sync paused. Reconnect sync to choose later.");
+            showNotification(t("Sync paused. Reconnect sync to choose later.", "Herd sync paused. Reconnect when ready."));
             div.remove();
             resolve("pause");
         };
@@ -989,7 +989,7 @@ function showConflictModal(remoteState) {
             state.lastSyncedAt = new Date().toISOString();
             localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
             updateSyncStatus("idle");
-            showNotification("Cloud database updated with local data.");
+            showNotification(t("Cloud database updated with local data.", "Cloud nest updated from this device."));
         } catch (e) {
             updateSyncStatus("error", e.message || "Failed to update cloud");
         }
@@ -999,7 +999,7 @@ function showConflictModal(remoteState) {
     document.getElementById("btnConflictCancel").onclick = () => {
         modal.classList.add("hidden");
         updateSyncStatus("idle");
-        showNotification("Sync cancelled. Local device data preserved.");
+        showNotification(t("Sync cancelled. Local device data preserved.", "Sync cancelled. This cave keeps its fossils."));
     };
 }
 
@@ -1280,7 +1280,7 @@ async function connectGoogleSync() {
         state.syncEnabled = true;
         saveStateToLocalStorage();
         updateSyncStatus("idle");
-        showNotification("Google Drive connected!");
+        showNotification(t("Google Drive connected!", "Herd connected to Google Drive!"));
         renderSyncControls();
         await pushToDrive();
         // Resolve and cache the newly created file ID
@@ -1331,7 +1331,7 @@ async function connectGoogleSync() {
     state.syncEnabled = true;
     saveStateToLocalStorage();
     updateSyncStatus("idle");
-    showNotification("Google Drive connected!");
+    showNotification(t("Google Drive connected!", "Herd connected to Google Drive!"));
     renderSyncControls();
 
     if (migrationChoice === "fresh") {
@@ -1348,7 +1348,7 @@ async function connectGoogleSync() {
  * Disconnects the sync functionality and resets local sync status
  */
 function disconnectGoogleSync() {
-    customConfirm("Are you sure you want to disconnect Google Drive? Syncing will be disabled, but your data on both this device and Google Drive will remain intact.", "Disconnect Sync", "Disconnect")
+    customConfirm(t("Are you sure you want to disconnect Google Drive? Syncing will be disabled, but your data on both this device and Google Drive will remain intact.", "Disconnect from the herd? Syncing stops, but fossils stay on this device and in Google Drive."), t("Disconnect Sync", "Leave the herd?"), t("Disconnect", "Leave herd"))
         .then(confirmed => {
             if (!confirmed) return;
             state.syncEnabled = false;
@@ -1358,7 +1358,7 @@ function disconnectGoogleSync() {
             saveStateToLocalStorage();
             renderSyncControls();
             updateSyncStatus("offline");
-            showNotification("Google Drive disconnected.");
+            showNotification(t("Google Drive disconnected.", "Herd link disconnected."));
         });
 }
 
@@ -1367,7 +1367,7 @@ function disconnectGoogleSync() {
  */
 async function triggerManualSync() {
     if (!state.syncEnabled) return;
-    showNotification("Sync started...");
+    showNotification(t("Sync started...", "Herd sync started..."));
     await syncFromDrive(true);
     renderSyncControls();
 }
@@ -1379,7 +1379,7 @@ function saveCustomClientId() {
     const val = document.getElementById("settingGoogleClientId").value.trim();
     state.googleClientId = val || "";
     saveStateToLocalStorage();
-    showNotification(state.googleClientId ? "Custom Client ID applied." : "Default Client ID restored.");
+    showNotification(state.googleClientId ? t("Custom Client ID applied.", "Custom herd key applied.") : t("Default Client ID restored.", "Default herd key restored."));
     initGoogleAuth(true);
     if (state.syncEnabled) {
         syncFromDrive();
@@ -1628,7 +1628,7 @@ function showMigrationModal() {
  */
 async function resetAllData() {
     const confirmed = await customConfirm(
-        "This will permanently delete your TReX cloud backup and erase all local data on this device, including transactions, settings, trips, goals, recurring expenses, EMIs, and PIN settings. This cannot be undone.",
+        t("This will permanently delete your TReX cloud backup and erase all local data on this device, including transactions, settings, trips, goals, recurring expenses, EMIs, and PIN settings. This cannot be undone.", "Meteor strike warning: this wipes the cloud nest and every local fossil on this device. This cannot be undone."),
         t("Reset everything?", "Trigger the meteor?"),
         t("Wipe everything", "Wipe everything")
     );
@@ -1669,7 +1669,7 @@ async function resetAllData() {
  */
 async function resetSyncData() {
     const confirmed = await customConfirm(
-        "This will permanently delete your TReX backup from Google Drive and disconnect sync on this device. Your local data will remain untouched. This cannot be undone.",
+        t("This will permanently delete your TReX backup from Google Drive and disconnect sync on this device. Your local data will remain untouched. This cannot be undone.", "This will erase the cloud herd backup and disconnect this device. Local fossils stay here. This cannot be undone."),
         t("Reset cloud sync?", "Forget the herd?"),
         t("Disconnect", "Disconnect")
     );
@@ -1703,5 +1703,5 @@ async function resetSyncData() {
 
     renderSyncControls();
     updateSyncStatus("offline");
-    showNotification("Sync data reset. Other devices will be asked how to proceed.");
+    showNotification(t("Sync data reset. Other devices will be asked how to proceed.", "Cloud herd reset. Other devices must choose their trail."));
 }

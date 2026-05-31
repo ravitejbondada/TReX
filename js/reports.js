@@ -369,7 +369,7 @@ function renderHistoricalMonthReport() {
             `Currently tracking this cycle. Safe remaining balance is <strong class="text-emerald-400 font-bold">${symbol}${metrics.remainingBudget.toLocaleString()}</strong>. Ensure your burn velocity remains in line with projections.`;
     } else if (cycleTransactions.length === 0) {
         document.getElementById("reportSummaryText").innerHTML =
-            `<span class="text-slate-500 italic">No transactions recorded for this cycle.</span>`;
+            `<span class="text-slate-500 italic">${t("No transactions recorded for this cycle.", "No spending fossils in this cycle.")}</span>`;
     } else {
         document.getElementById("reportSummaryText").innerHTML =
             `Cycle completed with <strong class="text-white">${symbol}${totalSpent.toLocaleString()}</strong> spent${currentLimit > 0 ? ` out of <strong class="text-slate-300">${symbol}${currentLimit.toLocaleString()}</strong> budget` : ""}. Surplus: <strong class="text-emerald-400 font-bold">${symbol}${surplus.toLocaleString()}</strong>.`;
@@ -494,7 +494,7 @@ function renderAccordionReportList() {
     });
 
     if (accordionView.children.length === 0) {
-        accordionView.innerHTML = `<p class="text-[10px] text-slate-500 text-center py-4 italic">No transactions cataloged for this period.</p>`;
+        accordionView.innerHTML = `<p class="text-[10px] text-slate-500 text-center py-4 italic">${t("No transactions cataloged for this period.", "No fossils cataloged for this period.")}</p>`;
     } else {
         initLucideIcons();
     }
@@ -837,7 +837,7 @@ function renderMomReport() {
         .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
 
     if (deltaRows.length === 0) {
-        deltaTable.innerHTML = `<p class="text-[10px] text-slate-500 text-center py-4 italic">No shared category data for these cycles.</p>`;
+        deltaTable.innerHTML = `<p class="text-[10px] text-slate-500 text-center py-4 italic">${t("No shared category data for these cycles.", "No matching territories across these eras.")}</p>`;
     } else {
         deltaTable.innerHTML = deltaRows.map(row => {
             const isUp = row.diff > 0;
@@ -873,16 +873,16 @@ function renderMomReport() {
  */
 async function generatePDFReport() {
     if (typeof window.jspdf === "undefined" || typeof html2canvas === "undefined") {
-        showNotification("PDF libraries loading. Please try again in a moment.");
+        showNotification(t("PDF libraries loading. Please try again in a moment.", "Report bones are still assembling. Try again in a moment."));
         return;
     }
 
     if (!state.transactions || state.transactions.length === 0) {
-        showNotification("No transaction data available to generate a report.");
+        showNotification(t("No transaction data available to generate a report.", "No fossils yet for a report."));
         return;
     }
 
-    showNotification("Generating PDF report…");
+    showNotification(t("Generating PDF report...", "Fossilizing your PDF report..."));
 
     const { jsPDF } = window.jspdf;
     const sym = state.currencySymbol;
@@ -964,7 +964,7 @@ async function generatePDFReport() {
         <div style="margin-bottom:36px;">
             <div style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;">Category Breakdown</div>
             ${catRows.length === 0
-                ? `<div style="color:#475569;font-size:12px;font-style:italic;">No spending recorded for this cycle.</div>`
+                ? `<div style="color:#475569;font-size:12px;font-style:italic;">${t("No spending recorded for this cycle.", "No spending fossils in this cycle.")}</div>`
                 : catRows.map(c => {
                     const pct = totalSpent > 0 ? Math.round((c.sum / totalSpent) * 100) : 0;
                     const barW = Math.max(2, pct);
@@ -993,7 +993,7 @@ async function generatePDFReport() {
             <div style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;">Payment Method Split</div>
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
                 ${payRows.length === 0
-                    ? `<div style="color:#475569;font-size:12px;font-style:italic;">No payment data.</div>`
+                    ? `<div style="color:#475569;font-size:12px;font-style:italic;">${t("No payment data.", "No weapon data.")}</div>`
                     : payRows.map(p => `
                     <div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;">
                         <div style="font-size:10px;font-weight:700;color:#64748b;">${p.name}</div>
@@ -1020,7 +1020,7 @@ async function generatePDFReport() {
                 </thead>
                 <tbody>
                     ${cycleTxs.length === 0
-                        ? `<tr><td colspan="5" style="text-align:center;padding:20px;color:#475569;font-style:italic;">No transactions for this cycle.</td></tr>`
+                        ? `<tr><td colspan="5" style="text-align:center;padding:20px;color:#475569;font-style:italic;">${t("No transactions for this cycle.", "No fossils for this cycle.")}</td></tr>`
                         : [...cycleTxs].sort((a, b) => new Date(b.date) - new Date(a.date)).map((t, i) => {
                             const cat = state.categories.find(c => c.id === t.categoryId) || { name: "—", color: "#64748b" };
                             const pay = state.payments.find(p => p.id === t.paymentId) || { name: "—" };
@@ -1087,10 +1087,10 @@ async function generatePDFReport() {
 
         const fileName = `TReX_Financial_Report_${cycleMonthName}_${cycleYear}.pdf`;
         pdf.save(fileName);
-        showNotification(`Report downloaded: ${fileName}`);
+        showNotification(t(`Report downloaded: ${fileName}`, `Fossil report downloaded: ${fileName}`));
     } catch (err) {
         console.error("PDF generation error:", err);
-        showNotification("PDF generation failed. Please try again.");
+        showNotification(t("PDF generation failed. Please try again.", "The fossil report cracked. Please try again."));
     } finally {
         document.body.removeChild(container);
     }

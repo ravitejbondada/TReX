@@ -34,7 +34,7 @@ function renderSavingGoalsDedicated() {
 
         // Build contributions HTML
         const contribRows = g.contributions.length === 0
-            ? `<p class="text-[10px] text-slate-600 italic text-center py-3">No contributions yet — fund this goal below.</p>`
+            ? `<p class="text-[10px] text-slate-600 italic text-center py-3">${t("No contributions yet - fund this goal below.", "No nest offerings yet - feed this egg below.")}</p>`
             : g.contributions.slice().reverse().map(c => `
                 <div class="flex items-center gap-2 bg-slate-950/60 rounded-xl px-2.5 py-2" id="contrib-row-${c.id}">
                     <div class="flex-1 min-w-0">
@@ -159,7 +159,7 @@ function saveGoalContribution(goalId, cid) {
     const newNote = document.getElementById(`contrib-note-${cid}`).value.trim();
     const newDate = document.getElementById(`contrib-date-${cid}`).value;
 
-    if (isNaN(newAmt) || newAmt <= 0) { showNotification("Enter a valid amount."); return; }
+    if (isNaN(newAmt) || newAmt <= 0) { showNotification(t("Enter a valid amount.", "Feed the nest a real amount.")); return; }
 
     const g = state.savingGoals.find(g => g.id === goalId);
     if (!g) return;
@@ -176,7 +176,7 @@ function saveGoalContribution(goalId, cid) {
     renderSavingGoalsDedicated();
     // Re-open the accordion after re-render
     setTimeout(() => toggleGoalAccordion(goalId), 10);
-    showNotification("Contribution updated.");
+    showNotification(t("Contribution updated.", "Nest contribution updated."));
 }
 
 async function deleteGoalContribution(goalId, cid) {
@@ -184,13 +184,13 @@ async function deleteGoalContribution(goalId, cid) {
     if (!g) return;
     const c = g.contributions.find(c => c.id === cid);
     if (!c) return;
-    if (!await customConfirm(`Remove this contribution of ${state.currencySymbol}${c.amount} from "${g.name}"? This cannot be undone.`, "Remove Contribution", "Remove")) return;
+    if (!await customConfirm(t(`Remove this contribution of ${state.currencySymbol}${c.amount} from "${g.name}"? This cannot be undone.`, `Remove this nest offering of ${state.currencySymbol}${c.amount} from "${g.name}"? This cannot be undone.`), t("Remove Contribution", "Remove nest offering?"), t("Remove", "Remove offering"))) return;
     g.current = Math.max(0, g.current - c.amount);
     g.contributions = g.contributions.filter(c => c.id !== cid);
     saveStateToLocalStorage();
     renderSavingGoalsDedicated();
     setTimeout(() => toggleGoalAccordion(goalId), 10);
-    showNotification("Contribution removed.");
+    showNotification(t("Contribution removed.", "Nest offering removed."));
 }
 
 function createNewSavingGoalDedicated() {
@@ -198,7 +198,7 @@ function createNewSavingGoalDedicated() {
     const target = parseFloat(document.getElementById("newGoalTargetDedicated").value);
     const dateEl = document.getElementById("newGoalDateDedicated");
     const targetDate = dateEl ? dateEl.value : "";
-    if (!name || isNaN(target) || target <= 0) { showNotification("Please provide valid goal parameters."); return; }
+    if (!name || isNaN(target) || target <= 0) { showNotification(t("Please provide valid goal parameters.", "This egg needs a name and a real target.")); return; }
     state.savingGoals.push({ id: "goal_" + Date.now(), name, target, current: 0, targetDate: targetDate || "", contributions: [] });
     saveStateToLocalStorage();
     document.getElementById("newGoalNameDedicated").value = "";
@@ -212,7 +212,7 @@ function fundSavingGoalDedicated(id) {
     const amtInput  = document.getElementById(`depositInputDedicated_${id}`);
     const noteInput = document.getElementById(`depositNoteInput_${id}`);
     const depositVal = parseFloat(amtInput.value);
-    if (isNaN(depositVal) || depositVal <= 0) { showNotification("Please enter a valid amount."); return; }
+    if (isNaN(depositVal) || depositVal <= 0) { showNotification(t("Please enter a valid amount.", "TReX needs a real amount.")); return; }
 
     const idx = state.savingGoals.findIndex(g => g.id === id);
     if (idx === -1) return;
@@ -234,18 +234,18 @@ function fundSavingGoalDedicated(id) {
     renderSavingGoalsDedicated();
     setTimeout(() => toggleGoalAccordion(id), 10);
 
-    if (newPercent >= 100 && prevPercent < 100) showNotification("🎉 Goal fully funded!");
-    else showNotification("Contribution added.");
+    if (newPercent >= 100 && prevPercent < 100) showNotification(t("Goal fully funded!", "Goal hatched! TReX is proud."));
+    else showNotification(t("Contribution added.", "Egg fed."));
 }
 
 async function removeSavingGoalDedicated(id) {
     const g = state.savingGoals.find(g => g.id === id);
     const label = g ? `"${g.name}"` : "this goal";
-    if (!await customConfirm(`Delete goal ${label}? All contributions will be lost.`, t("Delete goal?", "Abandon the hunt?"), t("Delete", "Abandon"))) return;
+    if (!await customConfirm(t(`Delete goal ${label}? All contributions will be lost.`, `Abandon hunt ${label}? All nest offerings will be lost.`), t("Delete goal?", "Abandon the hunt?"), t("Delete", "Abandon"))) return;
     state.savingGoals = state.savingGoals.filter(g => g.id !== id);
     saveStateToLocalStorage();
     renderSavingGoalsDedicated();
-    showNotification("Goal removed.");
+    showNotification(t("Goal removed.", "Egg removed from the nest."));
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -356,11 +356,11 @@ function submitTripQuickAdd() {
     const date       = document.getElementById("tripQuickDate").value;
     const categoryId = document.getElementById("tripQuickCategoryId").value;
     const paymentId  = document.getElementById("tripQuickPaymentId").value;
-    if (!tripId)                      { showNotification("No active trip."); return; }
-    if (!desc)                        { showNotification("Please enter a note."); return; }
-    if (isNaN(amount) || amount <= 0) { showNotification("Please enter a valid amount."); return; }
-    if (!date)                        { showNotification("Please select a date."); return; }
-    if (date > getTodayISO())         { showNotification("Expense date cannot be in the future."); return; }
+    if (!tripId)                      { showNotification(t("No active trip.", "No active migration right now.")); return; }
+    if (!desc)                        { showNotification(t("Please enter a note.", "Name this fossil before logging it.")); return; }
+    if (isNaN(amount) || amount <= 0) { showNotification(t("Please enter a valid amount.", "TReX needs a real amount.")); return; }
+    if (!date)                        { showNotification(t("Please select a date.", "Pick a date for this fossil.")); return; }
+    if (date > getTodayISO())         { showNotification(t("Expense date cannot be in the future.", "TReX cannot hunt in tomorrow yet.")); return; }
 
     const idx = state.trips.findIndex(t => t.id === tripId);
     if (idx === -1) return;
@@ -368,7 +368,7 @@ function submitTripQuickAdd() {
     const trip = state.trips[idx];
     // determine type based on date
     const det = determineTripExpenseType(trip, date);
-    if (det.error) { showNotification(det.error); return; }
+    if (det.error) { showNotification(t(det.error, det.error)); return; }
     const type = det.type;
     let ledgerTxId = null;
     if (type === 'pre') {
@@ -393,7 +393,7 @@ function submitTripQuickAdd() {
     saveStateToLocalStorage();
     closeTripQuickAdd();
     renderActiveTripBanner();
-    showNotification(`"${desc}" added to ${state.trips[idx].name}.${type === 'pre' ? ' Logged to ledger.' : ''}`);
+    showNotification(t(`"${desc}" added to ${state.trips[idx].name}.${type === 'pre' ? ' Logged to ledger.' : ''}`, `"${desc}" packed into ${state.trips[idx].name}.${type === 'pre' ? ' Fossil logged to ledger.' : ''}`));
 }
 
 function bannerSyncTrip(tripId) {
@@ -549,8 +549,8 @@ function createNewTrip() {
     const budget = parseFloat(document.getElementById("newTripBudget").value);
     const start  = document.getElementById("newTripStart").value;
     const end    = document.getElementById("newTripEnd").value;
-    if (!name)           { showNotification("Please enter a trip name."); return; }
-    if (isNaN(budget) || budget <= 0) { showNotification("Please enter a valid budget."); return; }
+    if (!name)           { showNotification(t("Please enter a trip name.", "Name this migration.")); return; }
+    if (isNaN(budget) || budget <= 0) { showNotification(t("Please enter a valid budget.", "This migration needs a real budget.")); return; }
     const trip = { id: "trip_" + Date.now(), emoji, name, budget, startDate: start || null, endDate: end || null, expenses: [], createdAt: getTodayISO() };
     if (!state.trips) state.trips = [];
     state.trips.unshift(trip);
@@ -563,11 +563,11 @@ function createNewTrip() {
     document.getElementById("newTripEnd").value    = "";
     renderTripsList();
     renderActiveTripBanner();
-    showNotification(`Trip "${name}" created!`);
+    showNotification(t(`Trip "${name}" created!`, `Migration "${name}" planned!`));
 }
 
 function openTripEdit() {
-    if (!activeTripId) { showNotification('No trip selected to edit.'); return; }
+    if (!activeTripId) { showNotification(t("No trip selected to edit.", "No migration selected to edit.")); return; }
     const trip = (state.trips || []).find(t => t.id === activeTripId);
     if (!trip) return;
     editingTripId = trip.id;
@@ -593,16 +593,16 @@ function openTripEdit() {
 }
 
 function saveEditedTrip() {
-    if (!editingTripId) { showNotification('No trip in edit mode.'); return; }
+    if (!editingTripId) { showNotification(t("No trip in edit mode.", "No migration is being edited.")); return; }
     const emoji  = document.getElementById('newTripEmoji').value.trim() || '✈️';
     const name   = document.getElementById('newTripName').value.trim();
     const budget = parseFloat(document.getElementById('newTripBudget').value);
     const start  = document.getElementById('newTripStart').value;
     const end    = document.getElementById('newTripEnd').value;
-    if (!name)           { showNotification('Please enter a trip name.'); return; }
-    if (isNaN(budget) || budget <= 0) { showNotification('Please enter a valid budget.'); return; }
+    if (!name)           { showNotification(t("Please enter a trip name.", "Name this migration.")); return; }
+    if (isNaN(budget) || budget <= 0) { showNotification(t("Please enter a valid budget.", "This migration needs a real budget.")); return; }
     const idx = state.trips.findIndex(t => t.id === editingTripId);
-    if (idx === -1) { showNotification('Trip not found.'); editingTripId = null; return; }
+    if (idx === -1) { showNotification(t("Trip not found.", "Migration not found.")); editingTripId = null; return; }
     state.trips[idx] = {
         ...state.trips[idx],
         emoji, name, budget, startDate: start || null, endDate: end || null, updatedAt: new Date().toISOString()
@@ -610,7 +610,7 @@ function saveEditedTrip() {
     saveStateToLocalStorage();
     renderActiveTripBanner();
     renderTripsList();
-    showNotification(`Trip "${name}" updated.`);
+    showNotification(t(`Trip "${name}" updated.`, `Migration "${name}" updated.`));
     // restore create button
     const btn = document.getElementById('createTripButton');
     if (btn) {
@@ -767,6 +767,7 @@ function renderTripExpenses() {
     const preEmpty = document.getElementById("tripPreEmpty");
     const preItems = expenses.filter(e => e.type === "pre").sort((a,b) => a.date.localeCompare(b.date));
     if (preItems.length === 0) {
+        if (preEmpty) preEmpty.textContent = t("No pre-trip expenses", "No pre-migration fossils yet");
         preList.innerHTML = ""; preEmpty.classList.remove("hidden");
     } else {
         preEmpty.classList.add("hidden");
@@ -789,6 +790,7 @@ function renderTripExpenses() {
     const onList   = document.getElementById("tripDaysList");
     const onEmpty  = document.getElementById("tripOnEmpty");
     if (onItems.length === 0) {
+        if (onEmpty) onEmpty.textContent = t("No on-trip expenses", "No on-migration fossils yet");
         onList.innerHTML = ""; onEmpty.classList.remove("hidden");
     } else {
         onEmpty.classList.add("hidden");
@@ -879,7 +881,7 @@ function populateTripExpenseDropdowns() {
 }
 
 function determineTripExpenseType(trip, dateStr) {
-    if (!trip) return { error: 'No trip selected.' };
+    if (!trip) return { error: t("No trip selected.", "No migration selected.") };
     const d = parseISODate(dateStr);
     let s = trip.startDate ? parseISODate(trip.startDate) : null;
     let e = trip.endDate ? parseISODate(trip.endDate) : null;
@@ -888,7 +890,7 @@ function determineTripExpenseType(trip, dateStr) {
     if (e) { e.setHours(23,59,59,999); }
 
     if (s && d < s) return { type: 'pre' };
-    if (e && d > e) return { error: 'Cannot add expense beyond trip end date.' };
+    if (e && d > e) return { error: t("Cannot add expense beyond trip end date.", "This fossil is beyond the migration trail.") };
     return { type: 'on' };
 }
 
@@ -918,12 +920,12 @@ function addTripExpense() {
     const date       = document.getElementById("tripExpenseDate").value;
     const categoryId = document.getElementById("tripExpenseCategoryId").value;
     const paymentId  = document.getElementById("tripExpensePaymentId").value;
-    if (!desc)                        { showNotification("Please enter a note."); return; }
-    if (isNaN(amount) || amount <= 0) { showNotification("Please enter a valid amount."); return; }
-    if (!date)                        { showNotification("Please select a date."); return; }
-    if (date > getTodayISO())         { showNotification("Expense date cannot be in the future."); return; }
-    if (!categoryId)                  { showNotification("Please select a category."); return; }
-    if (!paymentId)                   { showNotification("Please select a payment method."); return; }
+    if (!desc)                        { showNotification(t("Please enter a note.", "Name this fossil before logging it.")); return; }
+    if (isNaN(amount) || amount <= 0) { showNotification(t("Please enter a valid amount.", "TReX needs a real amount.")); return; }
+    if (!date)                        { showNotification(t("Please select a date.", "Pick a date for this fossil.")); return; }
+    if (date > getTodayISO())         { showNotification(t("Expense date cannot be in the future.", "TReX cannot hunt in tomorrow yet.")); return; }
+    if (!categoryId)                  { showNotification(t("Please select a category.", "Pick a territory for this fossil.")); return; }
+    if (!paymentId)                   { showNotification(t("Please select a payment method.", "Pick a hunting weapon for this fossil.")); return; }
 
     const idx = state.trips.findIndex(t => t.id === activeTripId);
     if (idx === -1) return;
@@ -932,14 +934,14 @@ function addTripExpense() {
 
     // Determine expense type based on chosen date relative to trip dates
     const det = determineTripExpenseType(trip, date);
-    if (det.error) { showNotification(det.error); return; }
+    if (det.error) { showNotification(t(det.error, det.error)); return; }
     const type = det.type;
     setTripExpenseType(type);
 
     // ── EDIT MODE ────────────────────────────────────────────────────
     if (editingTripExpenseId) {
         const expIdx = trip.expenses.findIndex(e => e.id === editingTripExpenseId);
-        if (expIdx === -1) { showNotification("Expense not found."); cancelEditTripExpense(); return; }
+        if (expIdx === -1) { showNotification(t("Expense not found.", "Fossil not found.")); cancelEditTripExpense(); return; }
         const existing = trip.expenses[expIdx];
 
         // If it was a pre-trip expense with a ledger entry, update that too
@@ -976,7 +978,7 @@ function addTripExpense() {
         cancelEditTripExpense();
         renderTripDetailStats();
         renderTripExpenses();
-        showNotification(`Expense "${desc}" updated.`);
+        showNotification(t(`Expense "${desc}" updated.`, `Fossil "${desc}" updated.`));
         switchTripTab(type === "pre" ? "pre" : "on");
         return;
     }
@@ -1012,7 +1014,7 @@ function addTripExpense() {
     document.getElementById("tripExpenseAmount").value = "";
     renderTripDetailStats();
     renderTripExpenses();
-    showNotification(`Expense "${desc}" added${type === "pre" ? " & logged to ledger" : ""}.`);
+    showNotification(t(`Expense "${desc}" added${type === "pre" ? " & logged to ledger" : ""}.`, `Fossil "${desc}" added${type === "pre" ? " and etched into the ledger" : ""}.`));
     switchTripTab(type === "pre" ? "pre" : "on");
 }
 
@@ -1021,7 +1023,7 @@ async function deleteTripExpense(expenseId) {
     if (idx === -1) return;
     const exp = (state.trips[idx].expenses || []).find(e => e.id === expenseId);
     const label = exp ? `"${exp.desc}"` : "this expense";
-    if (!await customConfirm(`Delete ${label}?${exp && exp.type === 'pre' ? ' Its ledger entry will also be removed.' : ''} This cannot be undone.`)) return;
+    if (!await customConfirm(t(`Delete ${label}?${exp && exp.type === 'pre' ? ' Its ledger entry will also be removed.' : ''} This cannot be undone.`, `Send ${label} extinct?${exp && exp.type === 'pre' ? ' Its ledger fossil will also be removed.' : ''} This cannot be undone.`), t("Delete expense?", "Send this fossil extinct?"), t("Delete", "Extinct it"))) return;
     if (exp && exp.type === "pre" && exp.ledgerTxId) {
         state.transactions = state.transactions.filter(t => t.id !== exp.ledgerTxId);
     }
@@ -1029,14 +1031,14 @@ async function deleteTripExpense(expenseId) {
     saveStateToLocalStorage();
     renderTripDetailStats();
     renderTripExpenses();
-    showNotification("Expense removed.");
+    showNotification(t("Expense removed.", "Fossil removed."));
 }
 
 function openEditTripExpense(expenseId) {
     const idx = state.trips.findIndex(t => t.id === activeTripId);
     if (idx === -1) return;
     const exp = (state.trips[idx].expenses || []).find(e => e.id === expenseId);
-    if (!exp) { showNotification("Expense not found."); return; }
+    if (!exp) { showNotification(t("Expense not found.", "Fossil not found.")); return; }
 
     editingTripExpenseId = expenseId;
     populateTripExpenseDropdowns();
@@ -1086,7 +1088,7 @@ function syncTripToLedger() {
     // 2. Get all on-trip expenses
     const onExpenses = (trip.expenses || []).filter(e => e.type === "on");
     if (onExpenses.length === 0) {
-        showNotification("No on-trip expenses to sync.");
+        showNotification(t("No on-trip expenses to sync.", "No on-migration fossils to sync."));
         return;
     }
 
@@ -1129,20 +1131,20 @@ function syncTripToLedger() {
         statusEl.classList.remove("hidden");
     }
     renderTripDetailStats();
-    showNotification(`Synced ${txCount} rollup entr${txCount === 1 ? "y" : "ies"} to ledger.`);
+    showNotification(t(`Synced ${txCount} rollup entr${txCount === 1 ? "y" : "ies"} to ledger.`, `Synced ${txCount} migration fossil${txCount === 1 ? "" : "s"} to ledger.`));
 }
 
 async function deleteTripConfirm() {
     if (!activeTripId) return;
     const trip = (state.trips || []).find(t => t.id === activeTripId);
     if (!trip) return;
-    if (!await customConfirm(`Delete trip "${trip.name}"? All expenses and ledger entries will be removed.`, t("Delete trip?", "Cancel the migration?"), t("Delete", "Cancel trip"))) return;
+    if (!await customConfirm(t(`Delete trip "${trip.name}"? All expenses and ledger entries will be removed.`, `Cancel migration "${trip.name}"? All expenses and ledger fossils will be removed.`), t("Delete trip?", "Cancel the migration?"), t("Delete", "Cancel trip"))) return;
     // Remove all ledger transactions linked to this trip
     state.transactions = state.transactions.filter(t => t.tripId !== activeTripId);
     state.trips = state.trips.filter(t => t.id !== activeTripId);
     saveStateToLocalStorage();
     renderActiveTripBanner();
-    showNotification(`Trip "${trip.name}" deleted.`);
+    showNotification(t(`Trip "${trip.name}" deleted.`, `Migration "${trip.name}" went extinct.`));
     closeTripDetail();
 }
 

@@ -232,11 +232,11 @@ function submitLockedQuickExpense(event) {
     const date       = (dateEl && dateEl.value) ? dateEl.value : getTodayISO();
 
     if (isNaN(amount) || amount <= 0) {
-        showNotification("Please enter a valid amount.");
+        showNotification(t("Please enter a valid amount.", "🦖 TReX needs a real amount to chomp."));
         return;
     }
     if (!categoryId || !paymentId) {
-        showNotification("Choose a category and payment method.");
+        showNotification(t("Choose a category and payment method.", "Pick a hunting ground and payment claw."));
         return;
     }
 
@@ -261,7 +261,7 @@ function submitLockedQuickExpense(event) {
         try { renderActiveTripBanner(); } catch (e) {}
         try { renderTripDetailStats(); } catch (e) {}
         try { renderTripExpenses(); } catch (e) {}
-        showNotification(`Added to ${activeTrip.name}.`);
+        showNotification(t(`Added to ${activeTrip.name}.`, `🦖 Packed into ${activeTrip.name}.`));
     } else {
         // Save as normal ledger expense
         const tx = {
@@ -281,13 +281,13 @@ function submitLockedQuickExpense(event) {
         closeLockedExpenseSheet();
         try { renderDashboard(); } catch (e) {}
         try { renderHistory(); } catch (e) {}
-        showNotification("Expense saved.");
+        showNotification(t("Expense saved.", "🦖 Devoured! Expense saved."));
     }
 }
 
 function lockApp() {
     if (!state.pinEnabled) {
-        showNotification("Enable Security PIN in Settings first.");
+        showNotification(t("Enable Security PIN in Settings first.", "Secure the lair in Settings first."));
         return;
     }
 
@@ -304,7 +304,7 @@ function lockApp() {
     document.querySelectorAll("#recurringModal, #pinSuccessModal, #inlineCategoryModal, #inlinePaymentModal, #editCategoryModal, #editPaymentModal")
         .forEach(el => el.classList.add("hidden"));
 
-    showNotification("App protected. PIN required.");
+    showNotification(t("App protected. PIN required.", "🦖 Lair sealed. PIN required."));
     initLucideIcons();
 }
 
@@ -339,16 +339,18 @@ function togglePinSetting() {
     updateAppLockButton();
     saveStateToLocalStorage();
     syncBiometricSettingsUI();
-    showNotification(state.pinEnabled ? "Passcode lock activated." : "Passcode lock deactivated.");
+    showNotification(state.pinEnabled
+        ? t("Passcode lock activated.", "🔒 Lair lock activated.")
+        : t("Passcode lock deactivated.", "Lair lock relaxed."));
 }
 
 async function registerBiometricCredential() {
     if (!state.pinEnabled) {
-        showNotification("Enable Security PIN before biometric unlock.");
+        showNotification(t("Enable Security PIN before biometric unlock.", "Set the lair PIN before adding a clawprint."));
         return false;
     }
     if (!await isBiometricUnlockSupported()) {
-        showNotification("Biometric unlock is not available on this device/browser.");
+        showNotification(t("Biometric unlock is not available on this device/browser.", "This device has no usable clawprint scanner."));
         return false;
     }
 
@@ -385,11 +387,11 @@ async function registerBiometricCredential() {
         state.biometricRegisteredAt = new Date().toISOString();
         saveStateToLocalStorage();
         await syncBiometricSettingsUI();
-        showNotification("Biometric unlock enabled on this device.");
+        showNotification(t("Biometric unlock enabled on this device.", "🦖 Clawprint unlock registered."));
         return true;
     } catch (e) {
         console.warn("Biometric registration failed:", e);
-        showNotification("Biometric setup was cancelled or failed.");
+        showNotification(t("Biometric setup was cancelled or failed.", "Clawprint setup wandered off."));
         return false;
     }
 }
@@ -402,7 +404,7 @@ async function toggleBiometricSetting() {
         clearBiometricState();
         saveStateToLocalStorage();
         await syncBiometricSettingsUI();
-        showNotification("Biometric unlock disabled.");
+        showNotification(t("Biometric unlock disabled.", "Clawprint unlock retired."));
         return;
     }
 
@@ -425,10 +427,10 @@ function pressPin(char) {
         setTimeout(() => {
             if (pinAttemptBuffer === (state.pinCode || "1234")) {
                 unlockApp();
-                showNotification("Passcode verified. Storage unlocked.");
+                showNotification(t("Passcode verified. Storage unlocked.", "🦖 Lair opened. Welcome back."));
                 pinAttemptBuffer = "";
             } else {
-                showNotification("Incorrect passcode. Try again.");
+                showNotification(t("Incorrect passcode. Try again.", "Wrong roar. Try the PIN again."));
                 clearPin();
             }
         }, 200);
@@ -442,11 +444,11 @@ function clearPin() {
 
 async function simulateBiometrics() {
     if (!state.biometricEnabled || !state.biometricCredentialId) {
-        showNotification("Enable biometric unlock in Settings first.");
+        showNotification(t("Enable biometric unlock in Settings first.", "Register a clawprint in Settings first."));
         return;
     }
     if (!await isBiometricUnlockSupported()) {
-        showNotification("Biometric unlock is not available in this browser.");
+        showNotification(t("Biometric unlock is not available in this browser.", "This browser cannot read clawprints."));
         return;
     }
 
@@ -463,12 +465,12 @@ async function simulateBiometrics() {
         if (!assertion) throw new Error("No assertion returned");
 
         unlockApp();
-        showNotification("Unlocked with biometrics.");
+        showNotification(t("Unlocked with biometrics.", "🦖 Clawprint accepted."));
         pinAttemptBuffer = "";
         updatePinVisualDots();
     } catch (e) {
         console.warn("Biometric unlock failed:", e);
-        showNotification("Biometric unlock failed. Use PIN instead.");
+        showNotification(t("Biometric unlock failed. Use PIN instead.", "Clawprint missed. Use the lair PIN."));
     }
 }
 
@@ -490,18 +492,18 @@ function changePin() {
     const storedPin = state.pinCode || "1234";
 
     if (currentPin !== storedPin) {
-        showNotification("Current PIN is incorrect.");
+        showNotification(t("Current PIN is incorrect.", "That old lair code is not right."));
         document.getElementById("currentPinInput").value = "";
         return;
     }
 
     if (!/^\d{4}$/.test(newPin)) {
-        showNotification("New PIN must be exactly 4 digits.");
+        showNotification(t("New PIN must be exactly 4 digits.", "The new lair code needs exactly 4 digits."));
         return;
     }
 
     if (newPin !== confirmPin) {
-        showNotification("Confirm PIN does not match.");
+        showNotification(t("Confirm PIN does not match.", "The second lair code does not match."));
         document.getElementById("confirmPinInput").value = "";
         return;
     }

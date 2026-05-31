@@ -1,4 +1,4 @@
-﻿# TReX - Function Index
+# TReX - Function Index
 
 Searchable reference of app functions. Format: `functionName` — what it does.
 
@@ -6,7 +6,7 @@ To find where to add/edit something, scan the relevant section header then go to
 
 ---
 
-## core.js — App Core (12 functions)
+## core.js — App Core (18 functions)
 
 | Function | Description |
 |---|---|
@@ -20,6 +20,10 @@ To find where to add/edit something, scan the relevant section header then go to
 | `customConfirm(message, title?, okLabel?)` | Promise-based confirm dialog replacing `window.confirm`. Returns `true`/`false` |
 | `applyTheme(theme)` | Sets `data-theme` attribute on `<html>` for light/dark CSS switching |
 | `toggleThemeSetting()` | Reads the theme toggle checkbox and calls `applyTheme()` + saves state |
+| `openDrawer()` | Opens the hamburger side drawer and refreshes the drawer sync status pill |
+| `closeDrawer()` | Closes the side drawer/backdrop and resets any open drawer sub-panel |
+| `dp(key)` | Safely reads a value from `state.dinoPrefs` |
+| `t(neutral, dino)` | Returns Dino Mode copy when `dinoPrefs.dinoMode` is enabled, otherwise neutral copy |
 | `switchScreen(viewName)` | Main router — hides all view panels, shows target, updates nav tabs, calls init render |
 | `registerTrexServiceWorker()` | Registers `sw.js` on secure origins/localhost for PWA notification handling |
 | `checkAndShowOnboardingModal()` | Called from `window.onload`; delegates to `sync.js` to show the Drive onboarding prompt if sync is disabled and not yet seen this session |
@@ -161,7 +165,7 @@ To find where to add/edit something, scan the relevant section header then go to
 
 ---
 
-## settings.js — Settings, Categories & Payments (37 functions)
+## settings.js — Settings, Categories & Payments (47 functions)
 
 | Function | Description |
 |---|---|
@@ -194,6 +198,16 @@ To find where to add/edit something, scan the relevant section header then go to
 | `applyExpensePaymentLock(paymentId)` | Locks the expense form payment to a specific payment id |
 | `saveBudgetAndCycleSettings()` | Reads budget/cycle form fields, validates, saves to state |
 | `renderSettingsLists()` | Renders categories list, payments list, recurring list, EMI list |
+| `openDrawerSection(sectionName)` | Opens a drawer sub-panel and renders Budget, Categories, Payments, Credit Cards, Recurring, EMI, or backup content |
+| `closeDrawerSection()` | Closes the drawer content sub-panel and returns to the drawer nav list |
+| `syncPersonalitySettings()` | Syncs Personality section controls from `state.dinoPrefs` |
+| `syncDinoDependentControls()` | Disables/enables Dino Mode dependent controls from the master toggle while preserving saved values |
+| `toggleDinoMode()` | Saves the Dino Mode master toggle |
+| `toggleRoarSounds()` | Saves the Roar Sounds toggle and shows/hides the volume row |
+| `saveSoundVolume()` | Persists the roar sound volume slider value |
+| `toggleFossilMode()` | Saves Fossil Mode preference for the future visual phase |
+| `toggleDinoFootprints()` | Saves footprint preference and refreshes the heatmap |
+| `toggleExtinctionWarnings()` | Saves dramatic budget-warning copy preference |
 | `openEditCategoryModal(catId)` | Populates and opens the edit category modal |
 | `closeEditCategoryModal()` | Closes the edit category modal |
 | `saveEditCategory()` | Saves edited category fields to state |

@@ -41,7 +41,7 @@ function renderCreditCardTransactionRows(container, txs, pay) {
     if (txs.length === 0) {
         container.innerHTML = `
             <div class="bg-slate-900/40 border border-slate-850 rounded-2xl p-4 text-center">
-                <p class="text-[11px] text-slate-500">No spends in this bucket yet.</p>
+                <p class="text-[11px] text-slate-500">${t("No spends in this bucket yet.", "No fossils in this card bucket yet.")}</p>
             </div>
         `;
         return;
@@ -69,7 +69,7 @@ function renderCreditCardTransactionRows(container, txs, pay) {
                     <div class="min-w-0 flex-1 space-y-2">
                         ${badgesHtml}
                         <div class="min-w-0">
-                            <p class="text-[11px] font-bold text-slate-100 truncate">${tx.note || "No note"}</p>
+                            <p class="text-[11px] font-bold text-slate-100 truncate">${tx.note || t("No note", "No fossil note")}</p>
                             <p class="text-[9px] text-slate-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
                                 <span class="inline-flex items-center gap-1 rounded-md bg-slate-950 px-1.5 py-0.5">${dateText}</span>
                                 <span class="inline-flex items-center gap-1 rounded-md bg-slate-950 px-1.5 py-0.5">
@@ -157,7 +157,7 @@ function renderCreditCardDetailView(pay, snapshot) {
         if (cardEmis.length === 0) {
             // Hide container if no EMIs
             if (cardEMIContainer) cardEMIContainer.classList.add("hidden");
-            cardEMIList.innerHTML = `<p class="text-[10px] text-slate-500 italic text-center py-2">No active EMIs on this card.</p>`;
+            cardEMIList.innerHTML = `<p class="text-[10px] text-slate-500 italic text-center py-2">${t("No active EMIs on this card.", "No active EMI trails on this card cave.")}</p>`;
         } else {
             // Show container if EMIs exist
             if (cardEMIContainer) cardEMIContainer.classList.remove("hidden");
@@ -403,7 +403,7 @@ function renderCardAnalyticsChart() {
             const ctx = canvas.getContext("2d");
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
-        document.getElementById("cardAnalyticsCategoryBreakdown").innerHTML = `<p class="text-[10px] text-slate-500 italic text-center py-4">No data to display chart.</p>`;
+        document.getElementById("cardAnalyticsCategoryBreakdown").innerHTML = `<p class="text-[10px] text-slate-500 italic text-center py-4">${t("No data to display chart.", "No fossils to chart yet.")}</p>`;
         return;
     }
 

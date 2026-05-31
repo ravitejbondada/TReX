@@ -84,7 +84,7 @@ function applyCategoryDefaultPayment() {
 function loadExpenseToFormForEdit(txId, returnCardId = "") {
     const tx = state.transactions.find(t => t.id === txId);
     if (!tx) return;
-    if (tx.tripRef) { showNotification("Edit this expense inside the Trip."); return; }
+    if (tx.tripRef) { showNotification(t("Edit this expense inside the Trip.", "This fossil belongs to a trip. Edit it there.")); return; }
     pendingExpensePaymentLockId = "";
     expenseFormReturnCardId = returnCardId || "";
     switchScreen('addExpense');
@@ -113,12 +113,12 @@ function handleExpenseSubmit(e) {
     const editId = document.getElementById("editExpenseId").value;
 
     if (isNaN(amount) || amount <= 0) {
-        showNotification("Please supply a valid amount.");
+        showNotification(t("Please supply a valid amount.", "TReX needs a real amount to devour."));
         return;
     }
 
     if (date > getTodayISO()) {
-        showNotification("Expense date cannot be in the future.");
+        showNotification(t("Expense date cannot be in the future.", "TReX cannot hunt in tomorrow yet."));
         return;
     }
 
@@ -131,8 +131,8 @@ function handleExpenseSubmit(e) {
                 amount, categoryId: catId, paymentId: payId, date, note
             };
             showNotification(existing.isRecurring
-                ? "Recurring ledger entry updated."
-                : "Transaction updated successfully.");
+                ? t("Recurring ledger entry updated.", "Stampede entry updated.")
+                : t("Transaction updated successfully.", "Ledger fossil updated."));
         }
     } else {
         const newTx = {
@@ -205,7 +205,7 @@ function saveInlineCategory() {
     const defaultPaymentId = document.getElementById("inlineCatDefaultPayment").value || "";
 
     if (!name) {
-        showNotification("Please enter a category name.");
+        showNotification(t("Please enter a category name.", "Name this new territory."));
         return;
     }
 
@@ -243,7 +243,7 @@ function saveInlineCategory() {
 
     inlineCategoryModalMode = "";
     closeInlineCategoryModal();
-    showNotification(`Category "${name}" added.`);
+    showNotification(t(`Category "${name}" added.`, `Territory "${name}" claimed.`));
 }
 
 function openInlinePaymentModal(mode = null) {
@@ -259,7 +259,7 @@ function openInlinePaymentModal(mode = null) {
     if (mode === "cardEMI") {
         // Hide the entire payment creation form for card EMI context
         // Since EMIs must be CC, we don't allow new payment method creation
-        showNotification("Only Credit Cards can be used for EMIs. Please add a Credit Card in Payment Settings.");
+        showNotification(t("Only Credit Cards can be used for EMIs. Please add a Credit Card in Payment Settings.", "EMI trails need a credit card cave. Add one in Payment Settings."));
         return;
     }
     
@@ -280,11 +280,11 @@ function saveInlinePayment() {
     const color = document.getElementById("inlinePayColor").value;
 
     if (!name) {
-        showNotification("Please enter a payment name.");
+        showNotification(t("Please enter a payment name.", "Name this hunting weapon."));
         return;
     }
     if (isCreditCardBillingDayRequired(type) && billingDay === null) {
-        showNotification("Billing day is required for credit cards.");
+        showNotification(t("Billing day is required for credit cards.", "Credit card caves need a billing day."));
         return;
     }
 
@@ -313,7 +313,7 @@ function saveInlinePayment() {
     refreshCreditCardViews();
 
     closeInlinePaymentModal();
-    showNotification(`Payment method "${name}" added.`);
+    showNotification(t(`Payment method "${name}" added.`, `Hunting weapon "${name}" added.`));
 }
 
 /* LEDGER WORKFLOW FILTER MODULE */
@@ -484,9 +484,9 @@ function filterHistory() {
 
 async function deleteTransaction(id) {
     const tx = state.transactions.find(t => t.id === id);
-    if (tx && tx.tripRef) { showNotification("Edit this expense inside the Trip."); return; }
+    if (tx && tx.tripRef) { showNotification(t("Edit this expense inside the Trip.", "This fossil belongs to a trip. Edit it there.")); return; }
     const label = tx ? (tx.note ? `"${tx.note}"` : `₹${tx.amount}`) : "this transaction";
-    if (!await customConfirm(`Delete ${label}? This cannot be undone.`, t("Delete this?", "Send it extinct?"), t("Delete", "Extinct it"))) return;
+    if (!await customConfirm(t(`Delete ${label}? This cannot be undone.`, `Send ${label} extinct? This cannot be undone.`), t("Delete this?", "Send it extinct?"), t("Delete", "Extinct it"))) return;
     state.transactions = state.transactions.filter(t => t.id !== id);
     saveStateToLocalStorage();
     showNotification(t("Deleted.", "🦴 Gone extinct."));

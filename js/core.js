@@ -404,7 +404,9 @@ function toggleThemeSetting() {
     const isLight = document.getElementById("settingLightTheme").checked;
     applyTheme(isLight ? "light" : "dark");
     saveStateToLocalStorage();
-    showNotification(isLight ? "Light theme applied." : "Dark theme applied.");
+    showNotification(isLight
+        ? t("Light theme applied.", "☀️ Daylight era applied.")
+        : t("Dark theme applied.", "🌙 Night hunt applied."));
     initLucideIcons();
 }
 /* ── SIDE DRAWER ─────────────────────────────────────────────────────────────

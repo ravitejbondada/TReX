@@ -113,7 +113,7 @@ function saveRecurring() {
     const editId = document.getElementById("recurringEditId").value;
 
     if (!name || isNaN(amount) || amount <= 0 || !startDate) {
-        showNotification("Please provide a name, amount, and start date.");
+        showNotification(t("Please provide a name, amount, and start date.", "This stampede needs a name, amount, and start date."));
         return;
     }
 
@@ -128,7 +128,7 @@ function saveRecurring() {
                 name, amount, freq, startDate, categoryId, paymentId, note,
                 updatedAt: new Date().toISOString()
             };
-            showNotification(`Recurring schedule "${name}" updated.`);
+            showNotification(t(`Recurring schedule "${name}" updated.`, `Stampede "${name}" redirected.`));
         }
     } else {
         const newRec = {
@@ -150,13 +150,13 @@ async function deleteRecurring(id) {
     const rec = state.recurringExpenses.find(r => r.id === id);
     if (!rec) return;
     const label = rec.note ? `"${rec.note}"` : "this recurring schedule";
-    if (!await customConfirm(`Delete ${label}? Future scheduled entries will also be removed.`, t("Stop this schedule?", "Stop the stampede?"), t("Stop", "Stop it"))) return;
+    if (!await customConfirm(t(`Delete ${label}? Future scheduled entries will also be removed.`, `Stop ${label}? Future herd tracks will also be removed.`), t("Stop this schedule?", "Stop the stampede?"), t("Stop", "Stop it"))) return;
     removeFutureRecurringTransactions(id);
     state.recurringExpenses = state.recurringExpenses.filter(r => r.id !== id);
     saveStateToLocalStorage();
     renderRecurringExpenses();
     updateAppDashboardView();
-    showNotification("Recurring schedule removed.");
+    showNotification(t("Recurring schedule removed.", "Stampede stopped."));
 }
 
 function renderRecurringExpenses() {
@@ -325,7 +325,7 @@ function openEMIModal(emiId = "") {
     paySel.innerHTML = "";
     const ccCards = state.payments.filter(p => !p.archived && (p.type === "Credit Card" || p.type === "CC"));
     if (ccCards.length === 0) {
-        showNotification("Please add a Credit Card payment method first.");
+        showNotification(t("Please add a Credit Card payment method first.", "Add a credit card cave before creating an EMI."));
         return;
     }
     ccCards.forEach(pay => {
@@ -524,7 +524,7 @@ function saveEMI() {
     const editId = document.getElementById("emiEditId").value;
 
     if (!name || isNaN(principal) || principal <= 0 || !startDate) {
-        showNotification("Please provide an item name, principal amount, and start date.");
+        showNotification(t("Please provide an item name, principal amount, and start date.", "This EMI trail needs an item, principal, and start date."));
         return;
     }
 
@@ -545,7 +545,7 @@ function saveEMI() {
                 totalPayable: calc.totalPayable,
                 updatedAt: new Date().toISOString()
             };
-            showNotification(`EMI schedule "${name}" updated.`);
+            showNotification(t(`EMI schedule "${name}" updated.`, `EMI trail "${name}" updated.`));
         }
     } else {
         const newEMI = {
@@ -571,14 +571,14 @@ function saveEMI() {
 async function deleteEMI(id) {
     const emi = state.emis.find(e => e.id === id);
     if (!emi) return;
-    if (!await customConfirm(`Cancel and pre-close EMI "${emi.name}"? Future installment postings will be cancelled.`)) return;
+    if (!await customConfirm(t(`Cancel and pre-close EMI "${emi.name}"? Future installment postings will be cancelled.`, `Collapse EMI trail "${emi.name}"? Future tracks will be cancelled.`), t("Cancel EMI?", "Collapse this EMI trail?"), t("Cancel EMI", "Collapse trail"))) return;
     removeFutureEMITransactions(id);
     state.emis = state.emis.filter(e => e.id !== id);
     saveStateToLocalStorage();
     renderEMIsList();
     refreshCreditCardViews();
     updateAppDashboardView();
-    showNotification(`EMI "${emi.name}" cancelled.`);
+    showNotification(t(`EMI "${emi.name}" cancelled.`, `EMI trail "${emi.name}" collapsed.`));
 }
 
 function removeFutureEMITransactions(emiId) {
