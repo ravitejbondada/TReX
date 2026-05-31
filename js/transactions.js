@@ -1,6 +1,6 @@
 /**
  * transactions.js — Expense Form & Ledger
- * TReX � Devour Your Expenses
+ * TReX � Devour Your Expenses
  *
  * Add/edit expense form setup, form submission, category/payment dropdowns,
  * inline category & payment modals, history list renderer, ledger date
@@ -359,23 +359,40 @@ function saveInlinePayment() {
 /* LEDGER WORKFLOW FILTER MODULE */
 
 // Sort state
-let _ledgerSort = { field: 'createdAt', dir: 'desc' };
-const _LEDGER_SORT_CYCLE = [
-    { field: 'createdAt', dir: 'desc', label: 'Date \u2193' },
-    { field: 'createdAt', dir: 'asc',  label: 'Date \u2191' },
-    { field: 'amount',    dir: 'desc', label: 'Amt \u2193'  },
-    { field: 'amount',    dir: 'asc',  label: 'Amt \u2191'  },
-    { field: 'date',      dir: 'desc', label: 'Day \u2193'  },
-    { field: 'date',      dir: 'asc',  label: 'Day \u2191'  },
+let _ledgerSort = { field: 'date', dir: 'desc', key: 'date_desc' };
+const _LEDGER_SORT_OPTIONS = [
+    { field: 'date',   dir: 'desc', label: 'Dated ↓', key: 'date_desc'   },
+    { field: 'date',   dir: 'asc',  label: 'Dated ↑', key: 'date_asc'    },
+    { field: 'amount', dir: 'desc', label: 'Amt ↓',   key: 'amount_desc' },
+    { field: 'amount', dir: 'asc',  label: 'Amt ↑',   key: 'amount_asc'  },
 ];
-let _ledgerSortIdx = 0;
 
-function cycleLedgerSort() {
-    _ledgerSortIdx = (_ledgerSortIdx + 1) % _LEDGER_SORT_CYCLE.length;
-    _ledgerSort = _LEDGER_SORT_CYCLE[_ledgerSortIdx];
-    const lbl = document.getElementById('ledgerSortLabel');
-    if (lbl) lbl.textContent = _ledgerSort.label;
-    filterHistory();
+function openLedgerSortPicker() {
+    let panel = document.getElementById('ledgerSortPanel');
+    if (panel) { panel.remove(); return; }
+    panel = document.createElement('div');
+    panel.id = 'ledgerSortPanel';
+    panel.className = 'absolute right-0 top-full mt-1 z-50 bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden min-w-[130px]';
+    _LEDGER_SORT_OPTIONS.forEach(opt => {
+        const btn = document.createElement('button');
+        const isActive = opt.key === _ledgerSort.key;
+        btn.className = 'w-full text-left px-3 py-2 text-[10px] font-bold transition-all ' +
+            (isActive ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800');
+        btn.textContent = opt.label;
+        btn.onclick = () => {
+            _ledgerSort = opt;
+            const lbl = document.getElementById('ledgerSortLabel');
+            if (lbl) lbl.textContent = opt.label;
+            panel.remove();
+            filterHistory();
+        };
+        panel.appendChild(btn);
+    });
+    const anchor = document.getElementById('ledgerSortAnchor');
+    anchor.appendChild(panel);
+    setTimeout(() => document.addEventListener('click', function handler(e) {
+        if (!panel.contains(e.target)) { panel.remove(); document.removeEventListener('click', handler); }
+    }), 0);
 }
 
 function toggleLedgerFilterSheet() {
@@ -414,21 +431,21 @@ function _renderLedgerChips(catId, payId, from, to) {
     const fmt = d => d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
     const cycleFrom = fmt(cycle.startDate), cycleTo = fmt(cycle.endDate);
     if (from !== cycleFrom || to !== cycleTo) {
-        chip(from + ' \u2192 ' + to, () => resetLedgerToCycle());
+        chip(from + ' → ' + to, () => resetLedgerToCycle());
     }
     const dot = document.getElementById('ledgerFilterDot');
     if (dot) dot.classList.toggle('hidden', wrap.children.length === 0);
 }
 
 function renderHistoryList() {
-    // Reset sort to default (Date desc) on each open
-    _ledgerSortIdx = 0;
-    _ledgerSort = _LEDGER_SORT_CYCLE[0];
+    // Reset sort to default (Added desc) on each open
+    _ledgerSort = _LEDGER_SORT_OPTIONS[0];
     const lbl = document.getElementById('ledgerSortLabel');
     if (lbl) lbl.textContent = _ledgerSort.label;
 
     // Always reset date pickers to current cycle on open
     initLedgerMonthSelector();
+
 
     const catFilter = document.getElementById("historyFilterCategory");
     catFilter.innerHTML = '<option value="">All Categories</option>';
@@ -475,7 +492,7 @@ function getLedgerDateRange() {
 }
 
 function openLedgerWithDate(dateISO) {
-    // Called from heatmap — switch screen first (resets to cycle), then override to single day
+    // Called from heatmap — switch screen first (resets sort + cycle dates), then override to single day
     switchScreen("history");
     document.getElementById("ledgerDateFrom").value = dateISO;
     document.getElementById("ledgerDateTo").value   = dateISO;
@@ -519,13 +536,9 @@ function filterHistory() {
         if (_ledgerSort.field === 'amount') {
             va = parseFloat(a.amount) || 0;
             vb = parseFloat(b.amount) || 0;
-        } else if (_ledgerSort.field === 'date') {
+        } else {
             va = new Date(a.date).getTime();
             vb = new Date(b.date).getTime();
-        } else {
-            // createdAt with date fallback
-            va = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date).getTime();
-            vb = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date).getTime();
         }
         return _ledgerSort.dir === 'desc' ? vb - va : va - vb;
     });
