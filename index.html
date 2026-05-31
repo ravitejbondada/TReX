@@ -1186,12 +1186,68 @@
                     </div>
                 </div>
 
-                <!-- PERSONALITY (placeholder — Phase 2) -->
-                <div class="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <!-- PERSONALITY -->
+                <div class="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-4">
                     <h3 class="text-[10px] font-extrabold text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
                         <i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Personality
                     </h3>
-                    <p class="text-[10px] text-slate-500 leading-relaxed">Dino Mode, Roar Sounds, Fossil Theme and more — coming in the next update.</p>
+
+                    <!-- Dino Mode -->
+                    <div class="flex justify-between items-center text-xs">
+                        <div>
+                            <span class="text-slate-300 font-medium flex items-center gap-1.5">🦖 Dino Mode</span>
+                            <p class="text-[9px] text-slate-500 mt-0.5">Full dino copy, flavor text &amp; animations</p>
+                        </div>
+                        <input type="checkbox" id="dinoModeToggle" onchange="toggleDinoMode()"
+                            class="w-5 h-5 accent-indigo-500 bg-slate-900 border-slate-800 rounded shrink-0 ml-3" />
+                    </div>
+
+                    <!-- Roar Sounds -->
+                    <div class="flex justify-between items-center text-xs">
+                        <div>
+                            <span class="text-slate-300 font-medium flex items-center gap-1.5">🔊 Roar Sounds</span>
+                            <p class="text-[9px] text-slate-500 mt-0.5">Audio micro-feedback on actions</p>
+                        </div>
+                        <input type="checkbox" id="roarSoundsToggle" onchange="toggleRoarSounds()"
+                            class="w-5 h-5 accent-indigo-500 bg-slate-900 border-slate-800 rounded shrink-0 ml-3" />
+                    </div>
+
+                    <!-- Volume slider — hidden until Roar Sounds is enabled -->
+                    <div id="soundVolumeRow" class="flex justify-between items-center text-xs" style="display:none">
+                        <span class="text-slate-300 font-medium">Volume</span>
+                        <input type="range" min="0" max="100" id="soundVolumeSlider" oninput="saveSoundVolume()"
+                            class="w-32 accent-indigo-500" />
+                    </div>
+
+                    <!-- Fossil Mode -->
+                    <div class="flex justify-between items-center text-xs">
+                        <div>
+                            <span class="text-slate-300 font-medium flex items-center gap-1.5">🦴 Fossil Mode</span>
+                            <p class="text-[9px] text-slate-500 mt-0.5">Dark amber &amp; charcoal color theme</p>
+                        </div>
+                        <input type="checkbox" id="fossilModeToggle" onchange="toggleFossilMode()"
+                            class="w-5 h-5 accent-indigo-500 bg-slate-900 border-slate-800 rounded shrink-0 ml-3" />
+                    </div>
+
+                    <!-- Dino Footprints -->
+                    <div class="flex justify-between items-center text-xs">
+                        <div>
+                            <span class="text-slate-300 font-medium flex items-center gap-1.5">🦶 Dino Footprints</span>
+                            <p class="text-[9px] text-slate-500 mt-0.5">Mark high-spend days on the calendar</p>
+                        </div>
+                        <input type="checkbox" id="dinoFootprintsToggle" onchange="toggleDinoFootprints()"
+                            class="w-5 h-5 accent-indigo-500 bg-slate-900 border-slate-800 rounded shrink-0 ml-3" />
+                    </div>
+
+                    <!-- Extinction Warnings -->
+                    <div class="flex justify-between items-center text-xs">
+                        <div>
+                            <span class="text-slate-300 font-medium flex items-center gap-1.5">☄️ Extinction Warnings</span>
+                            <p class="text-[9px] text-slate-500 mt-0.5">Dramatic language when over budget</p>
+                        </div>
+                        <input type="checkbox" id="extinctionWarningsToggle" onchange="toggleExtinctionWarnings()"
+                            class="w-5 h-5 accent-indigo-500 bg-slate-900 border-slate-800 rounded shrink-0 ml-3" />
+                    </div>
                 </div>
 
                 <!-- SECURITY -->

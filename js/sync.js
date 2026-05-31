@@ -124,7 +124,12 @@ function buildFreshStateAfterReset(marker) {
         biometricCredentialId: "",
         biometricUserId: "",
         biometricLabel: "",
-        biometricRegisteredAt: ""
+        biometricRegisteredAt: "",
+        dinoPrefs: {
+            dinoMode: true, roarSounds: false, soundVolume: 0.6,
+            fossilMode: false, extinctionWarnings: true,
+            dinoFootprints: true, herdMode: true, recentActivityLabel: "dino"
+        }
     };
 }
 
@@ -725,6 +730,13 @@ function normalizeSyncState(remoteState) {
     if (next.syncUserEmail === undefined) next.syncUserEmail = "";
     if (next.syncDriveFileId === undefined) next.syncDriveFileId = "";
     ensureSyncIdentity(next);
+    if (!next.dinoPrefs || typeof next.dinoPrefs !== "object") {
+        next.dinoPrefs = {
+            dinoMode: true, roarSounds: false, soundVolume: 0.6,
+            fossilMode: false, extinctionWarnings: true,
+            dinoFootprints: true, herdMode: true, recentActivityLabel: "dino"
+        };
+    }
     return next;
 }
 

@@ -76,7 +76,17 @@ let state = {
     syncEpoch: `trex_epoch_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
     syncResetLineage: null,
     syncResetHistory: [],
-    pendingCloudResetEpoch: ""
+    pendingCloudResetEpoch: "",
+    dinoPrefs: {
+        dinoMode: true,             // Full dino personality (copy + animations)
+        roarSounds: false,          // Audio micro-feedback (default OFF — never surprise with sound)
+        soundVolume: 0.6,           // Master volume scalar (0.0–1.0)
+        fossilMode: false,          // Fossil color theme (amber/charcoal)
+        extinctionWarnings: true,   // Dramatic overspend language
+        dinoFootprints: true,       // Heatmap footprint markers
+        herdMode: true,             // Sync copy uses "herd" metaphors
+        recentActivityLabel: "dino" // 'dino' = "Recent Kills" / 'neutral' = "Recent Transactions"
+    }
 };
 
 let trendChartInstance = null;
@@ -153,6 +163,16 @@ window.onload = function () {
     if (state.syncResetLineage === undefined) state.syncResetLineage = null;
     if (!Array.isArray(state.syncResetHistory)) state.syncResetHistory = [];
     if (state.pendingCloudResetEpoch === undefined) state.pendingCloudResetEpoch = "";
+    if (!state.dinoPrefs) state.dinoPrefs = {
+        dinoMode: true,
+        roarSounds: false,
+        soundVolume: 0.6,
+        fossilMode: false,
+        extinctionWarnings: true,
+        dinoFootprints: true,
+        herdMode: true,
+        recentActivityLabel: "dino"
+    };
 
     /* ── v1.01 MIGRATION ─────────────────────────────────────
        Ensure every trip expense has categoryId + paymentId.
@@ -419,6 +439,15 @@ function closeDrawer() {
     const content = document.getElementById('drawerContent');
     if (nav) nav.classList.remove('hidden-nav');
     if (content) content.classList.remove('open');
+}
+
+/* ── DINO PREFS HELPER ───────────────────────────────────────────────────────
+   dp(key) — safe read from state.dinoPrefs.
+   Returns undefined (falsy) if dinoPrefs hasn't been initialised yet,
+   so every feature defaults to off on first boot of old state (safe default).
+────────────────────────────────────────────────────────────────────────────── */
+function dp(key) {
+    return (state.dinoPrefs || {})[key];
 }
 
 function switchScreen(viewName) {

@@ -47,6 +47,7 @@ function syncSettingsFormFields() {
 
     toggleCycleDateSelector();
     syncNotificationSettings();
+    syncPersonalitySettings();
 }
 
 function toggleCycleDateSelector() {
@@ -985,6 +986,81 @@ function openDrawerSection(sectionName) {
     content.classList.add('open');
     initLucideIcons(content);
     wrapAllSelects(content);
+}
+
+/* ── PERSONALITY SETTINGS (Phase 2) ─────────────────────────────────────────
+   syncPersonalitySettings() — called from syncSettingsFormFields() to populate
+   all dinoPrefs toggles. Uses null-safe reads so it's safe to call even when
+   the Settings view is not currently visible (e.g. from applyRemoteState /
+   syncFromDrive). getElementById returns null for off-screen elements in some
+   renderers, so every assignment is guarded.
+────────────────────────────────────────────────────────────────────────────── */
+function syncPersonalitySettings() {
+    const p = state.dinoPrefs || {};
+
+    const dinoModeEl = document.getElementById('dinoModeToggle');
+    if (dinoModeEl) dinoModeEl.checked = p.dinoMode ?? true;
+
+    const roarSoundsEl = document.getElementById('roarSoundsToggle');
+    if (roarSoundsEl) roarSoundsEl.checked = p.roarSounds ?? false;
+
+    const volumeSliderEl = document.getElementById('soundVolumeSlider');
+    if (volumeSliderEl) volumeSliderEl.value = Math.round((p.soundVolume ?? 0.6) * 100);
+
+    const volumeRowEl = document.getElementById('soundVolumeRow');
+    if (volumeRowEl) volumeRowEl.style.display = (p.roarSounds ?? false) ? 'flex' : 'none';
+
+    const fossilEl = document.getElementById('fossilModeToggle');
+    if (fossilEl) fossilEl.checked = p.fossilMode ?? false;
+
+    const footprintsEl = document.getElementById('dinoFootprintsToggle');
+    if (footprintsEl) footprintsEl.checked = p.dinoFootprints ?? true;
+
+    const extinctionEl = document.getElementById('extinctionWarningsToggle');
+    if (extinctionEl) extinctionEl.checked = p.extinctionWarnings ?? true;
+}
+
+function toggleDinoMode() {
+    if (!state.dinoPrefs) state.dinoPrefs = {};
+    state.dinoPrefs.dinoMode = document.getElementById('dinoModeToggle').checked;
+    saveStateToLocalStorage();
+    showNotification('Personality updated.');
+}
+
+function toggleRoarSounds() {
+    if (!state.dinoPrefs) state.dinoPrefs = {};
+    state.dinoPrefs.roarSounds = document.getElementById('roarSoundsToggle').checked;
+    const volumeRowEl = document.getElementById('soundVolumeRow');
+    if (volumeRowEl) volumeRowEl.style.display = state.dinoPrefs.roarSounds ? 'flex' : 'none';
+    saveStateToLocalStorage();
+}
+
+function saveSoundVolume() {
+    if (!state.dinoPrefs) state.dinoPrefs = {};
+    const sliderEl = document.getElementById('soundVolumeSlider');
+    if (sliderEl) state.dinoPrefs.soundVolume = sliderEl.value / 100;
+    saveStateToLocalStorage();
+}
+
+function toggleFossilMode() {
+    if (!state.dinoPrefs) state.dinoPrefs = {};
+    state.dinoPrefs.fossilMode = document.getElementById('fossilModeToggle').checked;
+    // ⚠️ applyTheme() signature is not updated until Phase 9 — save only.
+    saveStateToLocalStorage();
+    showNotification('Fossil Mode saved. Visual theme applies in a future update.');
+}
+
+function toggleDinoFootprints() {
+    if (!state.dinoPrefs) state.dinoPrefs = {};
+    state.dinoPrefs.dinoFootprints = document.getElementById('dinoFootprintsToggle').checked;
+    saveStateToLocalStorage();
+    if (typeof renderSpendHeatmap === 'function') renderSpendHeatmap();
+}
+
+function toggleExtinctionWarnings() {
+    if (!state.dinoPrefs) state.dinoPrefs = {};
+    state.dinoPrefs.extinctionWarnings = document.getElementById('extinctionWarningsToggle').checked;
+    saveStateToLocalStorage();
 }
 
 function closeDrawerSection() {

@@ -106,7 +106,21 @@ function normalizeImportedState(raw) {
                 type:       exp.type       || "on",
                 ledgerTxId: exp.ledgerTxId || null
             })) : []
-        })) : []
+        })) : [],
+        dinoPrefs: (src.dinoPrefs && typeof src.dinoPrefs === "object") ? {
+            dinoMode:             src.dinoPrefs.dinoMode             ?? true,
+            roarSounds:           src.dinoPrefs.roarSounds           ?? false,
+            soundVolume:          src.dinoPrefs.soundVolume          ?? 0.6,
+            fossilMode:           src.dinoPrefs.fossilMode           ?? false,
+            extinctionWarnings:   src.dinoPrefs.extinctionWarnings   ?? true,
+            dinoFootprints:       src.dinoPrefs.dinoFootprints       ?? true,
+            herdMode:             src.dinoPrefs.herdMode             ?? true,
+            recentActivityLabel:  src.dinoPrefs.recentActivityLabel  ?? "dino"
+        } : {
+            dinoMode: true, roarSounds: false, soundVolume: 0.6,
+            fossilMode: false, extinctionWarnings: true,
+            dinoFootprints: true, herdMode: true, recentActivityLabel: "dino"
+        }
     };
 }
 
