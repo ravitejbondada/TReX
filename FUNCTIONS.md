@@ -268,7 +268,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `isRecurringDateDue(rec, dateStr)` | Returns true when a recurring rule qualifies for a specific date; monthly rules clamp to month-end |
 | `getRecurringDueDates(rec, upToDate?)` | Returns every due date from `lastPostedDate + 1` or `startDate` through the target date |
 | `isRecurringDueToday(rec)` | Returns true when there is at least one due recurring date through today |
-| `toggleRecurringPause(id)` | Pauses or resumes a recurring schedule without deleting it |
+| `toggleRecurringPause(id)` | Pauses a recurring schedule; on resume, asks for a resume date and restarts catch-up from that date |
 | `openRecurringModal(editId?)` | Opens the recurring expense create/edit modal |
 | `closeRecurringModal()` | Closes the recurring modal |
 | `saveRecurring()` | Creates or updates a recurring expense rule in state |

@@ -17,7 +17,7 @@ Completed implementation-plan phases:
 - Phase 3 - Dino Copy & Micro-text: `t(neutral, dino)` and dino-mode copy across toasts, confirms, empty states, and contextual labels.
 - Phase 3.5 - Dino Mode master toggle: dependent dino controls are disabled when Dino Mode is off, with saved choices preserved.
 - Phase 8 - Sound Engine: shared `js/sounds.js`, normal/dino sound banks, App Sounds setting under Appearance, and key action sound cues.
-- Recurring engine simplification: recurring schedules catch up qualified due dates, monthly dates clamp to month-end, and inserted rows behave like manual expenses.
+- Recurring engine simplification: recurring schedules catch up qualified due dates, monthly dates clamp to month-end, pause skips processing, resume restarts from a chosen date, and inserted rows behave like manual expenses.
 
 ---
 

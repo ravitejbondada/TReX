@@ -467,8 +467,8 @@ function filterHistory() {
         const cat = state.categories.find(c => c.id === t.categoryId) || { name: "Other", color: "#64748b" };
         const pay = state.payments.find(p => p.id === t.paymentId) || { name: "Cash" };
         const dateStr = formatDateReadable(new Date(t.date), { year: '2-digit' });
-        const recurringBadge = t.isRecurring
-            ? `<span class="text-[8px] px-1.5 py-0.5 rounded-full bg-violet-950 text-violet-400 font-bold uppercase shrink-0">Sched</span>`
+        const recurringBadge = (t.source === "recurring" || t.isRecurring)
+            ? `<span class="text-[8px] px-1.5 py-0.5 rounded-full bg-violet-950 text-violet-400 font-bold uppercase shrink-0" title="${t.sourceName || 'Recurring'}">Recurring</span>`
             : "";
         const tripBadge = t.tripRef
             ? `<span class="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-950 text-amber-400 font-bold uppercase shrink-0">${t.tripType === "pre" ? "Pre-Trip" : "Trip"}</span>`

@@ -73,9 +73,25 @@ function isRecurringDueToday(rec) {
 function toggleRecurringPause(id) {
     const rec = state.recurringExpenses.find(r => r.id === id);
     if (!rec) return;
-    rec.paused = !rec.paused;
+
+    if (rec.paused) {
+        const today = getTodayISO();
+        const minDate = rec.lastPostedDate ? addDaysISO(rec.lastPostedDate, 1) : rec.startDate;
+        const resumeDate = (window.prompt("Resume from date (YYYY-MM-DD)", today) || "").trim();
+        if (!resumeDate) return;
+        if (resumeDate < minDate || resumeDate > today) {
+            showNotification(t(`Resume date must be between ${minDate} and ${today}.`, `Resume trail must be between ${minDate} and ${today}.`));
+            return;
+        }
+        rec.paused = false;
+        rec.lastPostedDate = addDaysISO(resumeDate, -1);
+    } else {
+        rec.paused = true;
+    }
+
     rec.updatedAt = new Date().toISOString();
     saveStateToLocalStorage();
+    processRecurringExpenses();
     renderRecurringExpenses();
     playSound(S.SYSTEM);
     showNotification(t(rec.paused ? "Schedule paused." : "Schedule resumed.", rec.paused ? "Stampede paused." : "Stampede resumed."));
@@ -319,6 +335,8 @@ function postRecurringEntry(rec, dateStr) {
         paymentId: rec.paymentId,
         date: dateStr,
         note: (rec.note ? rec.note + " " : "") + `[Auto: ${rec.name}]`,
+        source: "recurring",
+        sourceName: rec.name,
         createdAt: new Date().toISOString()
     };
     state.transactions.push(newTx);
