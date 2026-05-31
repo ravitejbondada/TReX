@@ -168,10 +168,12 @@ function updateAppDashboardView() {
         // Over-budget alert
         const overAlert = document.getElementById("overBudgetAlert");
         const overAmount = document.getElementById("overBudgetAmount");
+        const overLabel = document.getElementById("overBudgetLabel");
         if (overAlert && overAmount) {
             if (metrics.totalSpent > state.monthlyBudget) {
                 const excess = metrics.totalSpent - state.monthlyBudget;
                 overAmount.textContent = `${symbol}${Math.round(excess).toLocaleString()}`;
+                if (overLabel) overLabel.textContent = t("Budget drift", "Extra fossils devoured");
                 overAlert.classList.remove("hidden");
                 overAlert.classList.add("flex");
             } else {
