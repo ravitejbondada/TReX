@@ -134,7 +134,7 @@ window.onload = function () {
     updateAppLockButton();
     buildCurrencySelectorOptions();
     syncSettingsFormFields();
-    applyTheme(state.theme || "dark", state.dinoPrefs?.fossilMode);
+    applyTheme(state.theme || "dark", (state.dinoPrefs?.dinoMode ?? true) && state.dinoPrefs?.fossilMode);
 
     if (!state.recurringExpenses) state.recurringExpenses = [];
     if (!state.emis) state.emis = [];
@@ -396,7 +396,7 @@ function customConfirm(message, title = "Confirm Action", okLabel = "Delete") {
 function applyTheme(theme, fossilMode) {
     state.theme = theme;
     const html = document.documentElement;
-    const useFossil = fossilMode ?? dp('fossilMode');
+    const useFossil = dp('dinoMode') && (fossilMode ?? dp('fossilMode'));
     if (useFossil) {
         html.setAttribute('data-theme', 'fossil');
     } else if (theme === 'light') {
@@ -422,8 +422,12 @@ function toggleThemeSetting() {
    Defined before switchScreen so switchScreen can call closeDrawer().
 ────────────────────────────────────────────────────────────────────────────── */
 function openDrawer() {
-    document.getElementById('sideDrawer').classList.add('open');
+    const drawer = document.getElementById('sideDrawer');
+    const nav = document.getElementById('drawerNav');
+    drawer.classList.add('open');
     document.getElementById('drawerBackdrop').classList.add('open');
+    drawer.scrollTop = 0;
+    if (nav) nav.scrollTop = 0;
     const drawerDinoModeEl = document.getElementById('drawerDinoModeToggle');
     if (drawerDinoModeEl) drawerDinoModeEl.checked = state.dinoPrefs?.dinoMode ?? true;
 
@@ -546,6 +550,8 @@ let _logoTapTimer = null;
 let _logoLongPressTimer = null;
 
 function handleLogoTap() {
+    clearTimeout(_logoTapTimer);
+    _logoTapCount = 0;
     const logo = document.getElementById('appHeaderLogo');
     if (logo) {
         logo.classList.remove('logo-tap-pulse');
@@ -553,27 +559,9 @@ function handleLogoTap() {
         logo.classList.add('logo-tap-pulse');
         setTimeout(() => logo.classList.remove('logo-tap-pulse'), 350);
     }
-
-    _logoTapCount++;
-    clearTimeout(_logoTapTimer);
-
-    if (_logoTapCount >= 7) {
-        _logoTapCount = 0;
-        triggerLogoEasterEgg();
-        return;
-    }
-
-    if (_logoTapCount === 3 && typeof showDinoStatsSheet === 'function') {
-        _logoTapTimer = setTimeout(() => {
-            if (_logoTapCount === 3) {
-                _logoTapCount = 0;
-                showDinoStatsSheet();
-            }
-        }, 400);
-        return;
-    }
-
-    _logoTapTimer = setTimeout(() => { _logoTapCount = 0; }, 600);
+    switchScreen('dashboard');
+    const screen = document.getElementById('screenContainer');
+    if (screen) screen.scrollTop = 0;
 }
 
 function handleLogoLongPress(e) {

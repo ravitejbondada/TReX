@@ -120,8 +120,7 @@ function updateAppDashboardView() {
             `<span class="text-indigo-400 text-xs font-bold cursor-pointer underline underline-offset-2" onclick="switchScreen('settings')">Tap to set your budget →</span>`;
         document.getElementById("budgetProgressBar").style.width = "0%";
         document.getElementById("budgetProgressBar").className = "bg-slate-700 h-full rounded-full transition-all duration-700";
-        const emojiEl = document.getElementById("budgetHealthEmoji");
-        if (emojiEl) emojiEl.textContent = "🎯";
+        renderBudgetHealthVisual(0, true);
         const overAlert = document.getElementById("overBudgetAlert");
         if (overAlert) { overAlert.classList.add("hidden"); overAlert.classList.remove("flex"); }
         document.getElementById("safeToSpendDisplay").textContent = `– / day`;
@@ -145,21 +144,7 @@ function updateAppDashboardView() {
             progressEl.className = "bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-full transition-all duration-700 shadow-sm shadow-emerald-500/20";
         }
 
-        // Health emoji — dino mode swaps to dino emojis
-        const emojiEl = document.getElementById("budgetHealthEmoji");
-        if (emojiEl) {
-            if (dp('dinoMode')) {
-                emojiEl.textContent = DINO_EMOJI_STATES[getDinoState(rawPercent)];
-            } else {
-                let emoji = "😄";
-                if (rawPercent >= 100) emoji = "😱";
-                else if (rawPercent >= 85) emoji = "😰";
-                else if (rawPercent >= 70) emoji = "😟";
-                else if (rawPercent >= 50) emoji = "😐";
-                else if (rawPercent >= 25) emoji = "🙂";
-                emojiEl.textContent = emoji;
-            }
-        }
+        renderBudgetHealthVisual(rawPercent, false);
 
         // Over-budget alert
         const overAlert = document.getElementById("overBudgetAlert");
@@ -211,6 +196,43 @@ function getDinoState(pct) {
     if (pct <= 80)  return 'dino-hungry';
     if (pct < 100)  return 'dino-ravenous';
     return 'dino-extinct';
+}
+
+function renderBudgetHealthVisual(rawPercent, noBudget = false) {
+    const el = document.getElementById("budgetHealthEmoji");
+    if (!el) return;
+
+    if (!dp('dinoMode')) {
+        const neutralState = noBudget || rawPercent < 70 ? 'budget-neutral-good'
+            : rawPercent < 85 ? 'budget-neutral-watch'
+            : rawPercent < 100 ? 'budget-neutral-warn'
+            : 'budget-neutral-danger';
+        el.className = `budget-health-visual budget-neutral ${neutralState}`;
+        el.innerHTML = '<span class="budget-neutral-face"></span>';
+        return;
+    }
+
+    const dinoState = getDinoState(rawPercent).replace('dino-', 'budget-dino-');
+    const mouthPath = rawPercent >= 100 ? 'M43 46 Q52 58 61 46'
+        : rawPercent >= 80 ? 'M43 45 Q52 52 61 45'
+        : rawPercent >= 60 ? 'M43 48 Q52 49 61 48'
+        : 'M43 49 Q52 44 61 49';
+    el.className = `budget-health-visual ${dinoState}`;
+    el.innerHTML = `
+        <svg class="budget-dino-svg" viewBox="0 0 96 96" aria-hidden="true">
+            <path class="budget-dino-body" d="M21 63 C21 39 38 22 58 24 C75 26 84 42 78 60 C73 77 54 84 37 78 C27 75 21 70 21 63 Z"/>
+            <path class="budget-dino-body" d="M23 58 C12 54 9 43 17 36 C23 44 27 50 31 58 Z" opacity="0.82"/>
+            <path class="budget-dino-body" d="M64 29 C69 17 79 13 87 17 C77 23 73 30 73 39 Z" opacity="0.9"/>
+            <ellipse class="budget-dino-belly" cx="48" cy="61" rx="18" ry="15"/>
+            <circle class="budget-dino-eye" cx="57" cy="35" r="3.2"/>
+            <path class="budget-dino-brow" d="M52 29 L62 27"/>
+            <path class="budget-dino-mouth" d="${mouthPath}"/>
+            <path class="budget-dino-teeth" d="M47 48 L50 54 L53 48 L56 54 L59 48"/>
+            <path class="budget-dino-arm" d="M35 56 Q28 59 31 65"/>
+            <path class="budget-dino-arm" d="M66 56 Q73 60 69 66"/>
+            <ellipse cx="38" cy="79" rx="8" ry="3" fill="rgba(15,23,42,0.3)"/>
+            <ellipse cx="62" cy="79" rx="8" ry="3" fill="rgba(15,23,42,0.3)"/>
+        </svg>`;
 }
 
 function renderForecastCard(metrics) {
@@ -1239,20 +1261,14 @@ let _smileyTurnedAway = false;
 let _smileyTurnedAwayTimer = null;
 
 function attachSmileyTapHandler(el, metrics) {
-    _smileyAnnoyanceCount = 0;
-    _smileyTurnedAway = false;
-    _smileyTapCount = 0;
     clearTimeout(_smileyTapTimer);
     clearTimeout(_smileyTurnedAwayTimer);
-
-    el.style.cursor = 'pointer';
-    el.style.userSelect = 'none';
-
-    const pct = metrics.budget > 0 ? (metrics.spent / metrics.budget * 100) : 0;
-    let pressTimer = null;
-
     const newEl = el.cloneNode(true);
     el.parentNode.replaceChild(newEl, el);
+
+    newEl.style.cursor = 'pointer';
+    newEl.style.userSelect = 'none';
+    let pressTimer = null;
 
     newEl.addEventListener('pointerdown', () => {
         pressTimer = setTimeout(() => {
@@ -1265,20 +1281,10 @@ function attachSmileyTapHandler(el, metrics) {
         if (!pressTimer) return;
         clearTimeout(pressTimer);
         pressTimer = null;
-        if (_smileyTurnedAway) return;
-
-        _smileyTapCount++;
-        clearTimeout(_smileyTapTimer);
-        _smileyTapTimer = setTimeout(() => {
-            const count = _smileyTapCount;
-            _smileyTapCount = 0;
-            if (count === 1)      handleSmiley1Tap(newEl, pct, metrics);
-            else if (count === 2) handleSmiley2Tap(newEl, pct, metrics);
-            else                  handleSmileyAnnoyance(newEl, pct, metrics, count);
-        }, 350);
     });
 
     newEl.addEventListener('pointercancel', () => clearTimeout(pressTimer));
+    newEl.addEventListener('pointerleave', () => clearTimeout(pressTimer));
 }
 
 function getPctState(pct) {

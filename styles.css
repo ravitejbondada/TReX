@@ -718,15 +718,99 @@
 
         /* === PHASE 5 — DINO VISUAL LAYER === */
 
-        /* Budget dino container */
-        .budget-dino-container { position: relative; display: inline-flex; flex-direction: column; align-items: center; }
-
-        /* Dino hunger states */
-        .dino-fed      { color: #4ade80; }
-        .dino-prowl    { color: #a3e635; }
-        .dino-hungry   { color: #fb923c; }
-        .dino-ravenous { color: #f87171; }
-        .dino-extinct  { color: #dc2626; animation: trex-hungry-pulse 0.8s ease infinite; }
+        /* Budget health visual */
+        .budget-health-visual {
+          width: 86px;
+          height: 86px;
+          flex: 0 0 86px;
+          display: grid;
+          place-items: center;
+          position: relative;
+          border-radius: 22px;
+          background: radial-gradient(circle at 38% 28%, rgba(255,255,255,0.16), rgba(15,23,42,0.14) 48%, rgba(15,23,42,0.38));
+        }
+        .budget-neutral-face {
+          width: 64px;
+          height: 64px;
+          border-radius: 999px;
+          position: relative;
+          display: block;
+          background: linear-gradient(145deg, #f8fafc, #cbd5e1);
+          box-shadow: inset 0 -6px 10px rgba(15,23,42,0.18), 0 10px 22px rgba(15,23,42,0.22);
+        }
+        .budget-neutral-face::before {
+          content: "";
+          position: absolute;
+          left: 17px;
+          top: 21px;
+          width: 7px;
+          height: 7px;
+          border-radius: 999px;
+          background: #0f172a;
+          box-shadow: 23px 0 0 #0f172a;
+        }
+        .budget-neutral-face::after {
+          content: "";
+          position: absolute;
+          left: 19px;
+          top: 39px;
+          width: 26px;
+          height: 12px;
+          border-bottom: 4px solid #0f172a;
+          border-radius: 0 0 999px 999px;
+        }
+        .budget-neutral-good .budget-neutral-face { background: linear-gradient(145deg, #d1fae5, #6ee7b7); animation: dino-idle-bob 2.4s ease-in-out infinite; }
+        .budget-neutral-watch .budget-neutral-face { background: linear-gradient(145deg, #fef3c7, #fbbf24); }
+        .budget-neutral-warn .budget-neutral-face { background: linear-gradient(145deg, #fed7aa, #fb923c); }
+        .budget-neutral-danger .budget-neutral-face { background: linear-gradient(145deg, #fecaca, #fb7185); animation: trex-hungry-pulse 1.4s ease infinite; }
+        .budget-neutral-watch .budget-neutral-face::after {
+          left: 20px;
+          top: 42px;
+          width: 24px;
+          height: 0;
+          border-bottom-width: 4px;
+          border-radius: 999px;
+        }
+        .budget-neutral-warn .budget-neutral-face::after {
+          left: 20px;
+          top: 41px;
+          width: 24px;
+          height: 10px;
+          border-top: 4px solid #0f172a;
+          border-bottom: 0;
+          border-radius: 999px 999px 0 0;
+        }
+        .budget-neutral-danger .budget-neutral-face::after {
+          left: 25px;
+          top: 38px;
+          width: 14px;
+          height: 18px;
+          border: 4px solid #0f172a;
+          border-radius: 999px;
+          background: rgba(15,23,42,0.08);
+        }
+        .budget-dino-svg {
+          width: 82px;
+          height: 82px;
+          overflow: visible;
+          filter: drop-shadow(0 10px 16px rgba(0,0,0,0.22));
+        }
+        .budget-dino-body { fill: currentColor; }
+        .budget-dino-belly { fill: rgba(255,255,255,0.34); }
+        .budget-dino-eye { fill: #0f172a; }
+        .budget-dino-mouth, .budget-dino-brow { stroke: #0f172a; stroke-width: 3; stroke-linecap: round; fill: none; }
+        .budget-dino-teeth { fill: #fff7ed; opacity: 0; }
+        .budget-dino-arm { stroke: rgba(15,23,42,0.75); stroke-width: 3; stroke-linecap: round; fill: none; }
+        .budget-dino-fed      { color: #34d399; }
+        .budget-dino-prowl    { color: #a3e635; }
+        .budget-dino-hungry   { color: #f59e0b; }
+        .budget-dino-ravenous { color: #fb7185; animation: dino-idle-bob 1.4s ease-in-out infinite; }
+        .budget-dino-extinct  { color: #ef4444; animation: trex-hungry-pulse 0.8s ease infinite; }
+        .budget-dino-hungry .budget-dino-brow,
+        .budget-dino-ravenous .budget-dino-brow,
+        .budget-dino-extinct .budget-dino-brow { transform: translateY(-2px) rotate(-8deg); transform-origin: 48px 24px; }
+        .budget-dino-ravenous .budget-dino-teeth,
+        .budget-dino-extinct .budget-dino-teeth { opacity: 1; }
 
         /* Sync egg states */
         .sync-egg-svg { display: block; }

@@ -1043,6 +1043,7 @@ function syncDinoDependentControls() {
         el.disabled = !dinoEnabled;
         const row = el.closest('.flex');
         if (row) {
+            row.style.display = dinoEnabled ? '' : 'none';
             row.classList.toggle('opacity-45', !dinoEnabled);
             row.classList.toggle('pointer-events-none', !dinoEnabled);
         }
@@ -1064,6 +1065,7 @@ function toggleDinoMode(sourceEl = null) {
     if (dinoModeEl) dinoModeEl.checked = checked;
     if (drawerDinoModeEl) drawerDinoModeEl.checked = checked;
     syncDinoDependentControls();
+    applyTheme(state.theme, checked && state.dinoPrefs.fossilMode);
     saveStateToLocalStorage();
     showNotification(t("Personality updated.", "Personality evolved."));
 }
@@ -1086,7 +1088,7 @@ function toggleFossilMode() {
     if (!state.dinoPrefs) state.dinoPrefs = {};
     state.dinoPrefs.fossilMode = document.getElementById('fossilModeToggle').checked;
     saveStateToLocalStorage();
-    applyTheme(state.theme, state.dinoPrefs.fossilMode);
+    applyTheme(state.theme, state.dinoPrefs.dinoMode && state.dinoPrefs.fossilMode);
     showNotification(t("Fossil Mode updated.", "🦴 The amber era has arrived."));
 }
 

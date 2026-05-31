@@ -66,7 +66,7 @@
                 alt="TReX" class="w-9 h-9 rounded-xl object-cover cursor-pointer"
                 onclick="handleLogoTap()" oncontextmenu="handleLogoLongPress(event)" />
 
-            <div class="flex flex-col items-start leading-none">
+            <div class="flex flex-col items-start leading-none cursor-pointer" onclick="handleLogoTap()" oncontextmenu="handleLogoLongPress(event)">
                 <span class="text-base font-extrabold text-white tracking-tight">TReX</span>
                 <span class="text-[8px] font-bold text-indigo-400/90 uppercase tracking-[0.14em] mt-0.5">Devour Your Expenses</span>
             </div>
@@ -399,8 +399,10 @@
                             <h3 id="budgetTotalDisplay" class="text-3xl font-black tracking-tight mt-0.5">₹50,000.00
                             </h3>
                         </div>
-                        <!-- Health emoji — no panel, floats freely -->
-                        <span id="budgetHealthEmoji" class="text-8xl leading-none" title="Budget health">😄</span>
+                        <!-- Budget health indicator -->
+                        <div id="budgetHealthEmoji" class="budget-health-visual budget-neutral" title="Budget health">
+                            <span class="budget-neutral-face">:)</span>
+                        </div>
                     </div>
 
                     <!-- Safe-to-spend sub-row -->
