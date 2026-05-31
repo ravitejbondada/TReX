@@ -133,7 +133,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `populateEMIFormDropdowns()` | Populates EMI form category and payment dropdowns |
 | `applyCategoryDefaultPayment()` | Auto-selects the default payment when a category is chosen |
 | `loadExpenseToFormForEdit(txId, returnCardId?)` | Populates the expense form for editing an existing transaction |
-| `handleExpenseSubmit(e)` | Form submit handler — validates, creates/updates transaction, saves state; stamps `createdAt` on create; on edit, preserves `createdAt` if date unchanged, updates to now if date changes; if editing a recurring/EMI-generated tx, adds original date to `rec.skippedDates` and strips `isRecurring`/`recurringId`/`isEMI`/`emiId` so the tx becomes a plain transaction |
+| `handleExpenseSubmit(e)` | Form submit handler - validates, creates/updates normal transactions, saves state; stamps `createdAt` on create; on edit, preserves `createdAt` if date unchanged and updates it when the date changes |
 | `populateInlineCategoryPaymentOptions()` | Populates dropdowns inside the inline add category/payment modals |
 | `openInlineCategoryModal(mode?)` | Opens the quick-add category modal from the expense form |
 | `closeInlineCategoryModal()` | Closes the inline category modal |
@@ -147,7 +147,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `getLedgerDateRange()` | Returns `{ startDate, endDate }` based on active ledger selection |
 | `openLedgerWithDate(dateISO)` | Switches to history view and filters to the month containing the date |
 | `filterHistory()` | Applies search text + category/payment filters to the history list |
-| `deleteTransaction(id)` | Async — confirms then removes a transaction; if the tx has a `recurringId`, adds its date to `rec.skippedDates` so `processRecurringExpenses` does not re-post it |
+| `deleteTransaction(id)` | Async - confirms then removes a transaction; recurring-created transactions are plain ledger rows, so delete behavior is the same as manual expenses |
 
 ---
 
@@ -263,16 +263,15 @@ To find where to add/edit something, scan the relevant section header then go to
 
 | Function | Description |
 |---|---|
-| `getRecurringOccurrenceDates(rec, upToDate)` | Returns all occurrence dates for a recurring rule up to a date |
-| `hasRecurringTxOnDate(recurringId, dateStr)` | Returns true if a recurring transaction already exists for that date |
-| `removeFutureRecurringTransactions(recurringId)` | Removes all future-dated transactions for a recurring rule |
+| `isRecurringDueToday(rec)` | Returns true when an active recurring rule should post today based on `startDate`, `lastPostedDate`, and frequency |
+| `toggleRecurringPause(id)` | Pauses or resumes a recurring schedule without deleting it |
 | `openRecurringModal(editId?)` | Opens the recurring expense create/edit modal |
 | `closeRecurringModal()` | Closes the recurring modal |
 | `saveRecurring()` | Creates or updates a recurring expense rule in state |
-| `deleteRecurring(id)` | Async — confirms, removes future transactions, removes rule |
+| `deleteRecurring(id)` | Async - confirms and removes the recurring rule; past inserted transactions remain in the ledger |
 | `renderRecurringExpenses()` | Renders the recurring schedules list in settings |
-| `processRecurringExpenses()` | Posts any missing recurring transaction entries up to today |
-| `postRecurringEntry(rec, dateStr)` | Creates and saves one transaction entry for a recurring rule; stamps `createdAt` with full ISO timestamp |
+| `processRecurringExpenses()` | Checks recurring rules and inserts today's due transaction, then updates `lastPostedDate` |
+| `postRecurringEntry(rec, dateStr)` | Creates one plain transaction for a recurring rule; no recurring metadata is attached to the ledger row |
 
 **EMI (Equated Monthly Installments)**
 

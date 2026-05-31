@@ -5,18 +5,18 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ---
 
-## [v4.2] 2026-05-31 — Recurring/EMI transactions are now plain after edit or delete
+## [v4.2] 2026-05-31 - Recurring engine simplified
 
-**What changed:** Editing or deleting a recurring- or EMI-generated transaction now persists correctly — edits are no longer reverted and deleted entries no longer come back.
+**What changed:** Recurring schedules now only insert ledger records when due. Once inserted, the transaction is treated like any other normal transaction.
 
 **Files modified:**
-- `js/transactions.js` — `handleExpenseSubmit`: when editing a tx that carries `recurringId`, the original date is added to `rec.skippedDates` before saving (prevents `processRecurringExpenses` re-posting it on next boot), then `isRecurring`, `recurringId`, `isEMI`, and `emiId` are stripped so the tx is stored as a plain transaction. `deleteTransaction`: existing `skippedDates` logic was already correct — no change needed.
-- `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md` — updated transaction shape docs and function descriptions.
+- `js/recurring.js` - recurring rules use `lastPostedDate` and `postRecurringEntry()` creates plain transactions without recurring metadata.
+- `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`, `working.md` - documented the simplified recurring behavior.
 
 **Behavior:**
-- Editing a recurring-generated tx: original occurrence date is skipped in the rule; the edited tx is detached and treated as a normal transaction going forward.
-- Deleting a recurring-generated tx: date is added to `skippedDates`; `processRecurringExpenses` will not re-post it.
-- The recurring schedule itself is unaffected — future occurrences continue to auto-post as normal.
+- Recurring rules decide when to insert the next transaction.
+- Inserted transactions are normal ledger rows: edit/delete/history/report behavior is the same as manual expenses.
+- Deleting a recurring schedule does not remove past ledger entries.
 
 ---
 

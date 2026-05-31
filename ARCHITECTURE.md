@@ -141,7 +141,7 @@ let state = {
   transactions: [
     // Starts empty [] (no mock/dummy transactions)
     { id, amount, categoryId, paymentId, date, note,
-      isRecurring, recurringId, tripId, tripType, tripRef, createdAt }
+      tripId, tripType, tripRef, createdAt }
     // date: "YYYY-MM-DD" ISO string — the user-facing expense date
     // createdAt: full ISO 8601 timestamp (e.g. "2026-05-31T14:23:07.412Z") — set at creation time;
     //   preserved on edit if the date field is unchanged, updated to now if the date changes.
@@ -149,6 +149,7 @@ let state = {
     //   Old transactions without createdAt fall back to sorting by date. Stamped by all
     //   transaction creation paths: handleExpenseSubmit, submitLockedQuickExpense,
     //   postRecurringEntry, postEMIEntry, and all goals-trips.js ledger pushes.
+    // Recurring-created transactions are intentionally plain transactions with no recurringId.
     // tripRef: true if this tx was synced from a trip expense (read-only in ledger)
     // tripType: "pre" | "on" | null
   ],
@@ -302,11 +303,10 @@ When `state.creditCardsEnabled` is true:
 ## Recurring & EMI Processing (recurring.js)
 
 Called on every `window.onload`:
-1. `processRecurringExpenses()` — checks each recurring rule, posts missing entries up to today
-2. `processEMIs()` — checks each EMI, posts missing monthly installments up to today
+1. `processRecurringExpenses()` checks each recurring rule and inserts a transaction only when the rule is due. It updates the rule's `lastPostedDate` after insertion.
+2. `processEMIs()` checks each EMI and posts due monthly installments.
 
-Both use `postRecurringEntry()` / `postEMIEntry()` which push directly to `state.transactions`
-and call `saveStateToLocalStorage()`.
+Recurring is only a scheduler. `postRecurringEntry()` pushes a normal transaction into `state.transactions` with `amount`, `categoryId`, `paymentId`, `date`, `note`, and `createdAt`; it does not set `isRecurring` or `recurringId`. After insertion, edit/delete/report/history behavior is identical to a manually added transaction. Deleting a recurring rule leaves past transactions untouched.
 
 ---
 
