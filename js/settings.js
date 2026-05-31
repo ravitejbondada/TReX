@@ -1001,7 +1001,10 @@ function syncPersonalitySettings() {
     const p = state.dinoPrefs || {};
 
     const dinoModeEl = document.getElementById('dinoModeToggle');
-    if (dinoModeEl) dinoModeEl.checked = p.dinoMode ?? true;
+    const drawerDinoModeEl = document.getElementById('drawerDinoModeToggle');
+    const dinoOn = p.dinoMode ?? true;
+    if (dinoModeEl) dinoModeEl.checked = dinoOn;
+    if (drawerDinoModeEl) drawerDinoModeEl.checked = dinoOn;
 
     const roarSoundsEl = document.getElementById('roarSoundsToggle');
     if (roarSoundsEl) roarSoundsEl.checked = p.roarSounds ?? false;
@@ -1052,9 +1055,14 @@ function syncDinoDependentControls() {
     }
 }
 
-function toggleDinoMode() {
+function toggleDinoMode(sourceEl = null) {
     if (!state.dinoPrefs) state.dinoPrefs = {};
-    state.dinoPrefs.dinoMode = document.getElementById('dinoModeToggle').checked;
+    const checked = sourceEl ? sourceEl.checked : (document.getElementById('dinoModeToggle')?.checked ?? true);
+    state.dinoPrefs.dinoMode = checked;
+    const dinoModeEl = document.getElementById('dinoModeToggle');
+    const drawerDinoModeEl = document.getElementById('drawerDinoModeToggle');
+    if (dinoModeEl) dinoModeEl.checked = checked;
+    if (drawerDinoModeEl) drawerDinoModeEl.checked = checked;
     syncDinoDependentControls();
     saveStateToLocalStorage();
     showNotification(t("Personality updated.", "Personality evolved."));

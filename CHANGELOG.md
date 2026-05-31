@@ -15,6 +15,7 @@ Files listed are the ones modified. Always update this on any meaningful change.
 - `js/auth.js`, `js/transactions.js`, `js/dashboard.js`, `js/settings.js`, `js/goals-trips.js`, `js/recurring.js`, `js/reports.js`, `js/sync.js`, `js/backup.js`, `js/credit-cards.js` - finished Phase 3 dino/neutral copy wrapping for remaining toasts, confirms, empty states, and contextual labels.
 - `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`, `working.md` - reconciled docs for Phase 1-3 completion and Phase 4 readiness.
 - `js/settings.js` - added a Dino Mode master-toggle gate that disables dependent dino controls while preserving their saved choices.
+- `index.html`, `styles.css`, `js/core.js`, `js/settings.js`, `js/transactions.js` - refined the drawer/Personality UI: Dino Mode toggles in Settings and drawer header, top gear plus retained Settings row, drawer sync email pill, and drawer close before add category/payment modals.
 
 **Verification:**
 - All app JS files pass `node --check` using the bundled Codex Node runtime.

@@ -92,12 +92,24 @@
     <div id="sideDrawer" role="navigation" aria-label="App menu">
 
         <!-- Drawer Header: avatar + app name + sync status -->
-        <div class="drawer-profile">
+        <div class="drawer-profile" style="position:relative;">
+            <button type="button" onclick="closeDrawer(); switchScreen('settings')" title="Settings"
+                aria-label="Settings"
+                class="absolute top-0 right-0 w-8 h-8 rounded-lg bg-slate-950/70 hover:bg-slate-850 border border-slate-800 text-slate-400 hover:text-indigo-300 flex items-center justify-center transition-all">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+            </button>
             <div class="drawer-avatar">
                 <img src="assets/favicon.png" alt="TReX" style="width:100%;height:100%;object-fit:cover;border-radius:0.75rem;" />
             </div>
             <div class="drawer-profile-info">
-                <span class="drawer-app-name">TReX</span>
+                <div class="flex items-center gap-2">
+                    <span class="drawer-app-name">TReX</span>
+                    <label class="relative inline-flex items-center cursor-pointer" title="Dino Mode">
+                        <input type="checkbox" id="drawerDinoModeToggle" onchange="toggleDinoMode(this)" class="sr-only peer" />
+                        <span class="w-8 h-4 bg-slate-800 peer-checked:bg-indigo-500 rounded-full transition-all"></span>
+                        <span class="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4"></span>
+                    </label>
+                </div>
                 <span id="drawerSyncPill" class="drawer-sync-pill drawer-sync-offline">&#9679; Offline</span>
             </div>
         </div>
@@ -1198,8 +1210,11 @@
                             <span class="text-slate-300 font-medium flex items-center gap-1.5">🦖 Dino Mode</span>
                             <p class="text-[9px] text-slate-500 mt-0.5">Full dino copy, flavor text &amp; animations</p>
                         </div>
-                        <input type="checkbox" id="dinoModeToggle" onchange="toggleDinoMode()"
-                            class="w-5 h-5 accent-indigo-500 bg-slate-900 border-slate-800 rounded shrink-0 ml-3" />
+                        <label class="relative inline-flex items-center cursor-pointer ml-3" title="Dino Mode">
+                            <input type="checkbox" id="dinoModeToggle" onchange="toggleDinoMode(this)" class="sr-only peer" />
+                            <span class="w-10 h-5 bg-slate-800 peer-checked:bg-indigo-500 rounded-full transition-all"></span>
+                            <span class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
+                        </label>
                     </div>
 
                     <!-- Roar Sounds -->

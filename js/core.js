@@ -416,18 +416,20 @@ function toggleThemeSetting() {
 function openDrawer() {
     document.getElementById('sideDrawer').classList.add('open');
     document.getElementById('drawerBackdrop').classList.add('open');
-    // Update sync pill to reflect current state
+    const drawerDinoModeEl = document.getElementById('drawerDinoModeToggle');
+    if (drawerDinoModeEl) drawerDinoModeEl.checked = state.dinoPrefs?.dinoMode ?? true;
+
     const pill = document.getElementById('drawerSyncPill');
     if (pill) {
-        if (state.syncEnabled && state.syncStatus === 'idle') {
-            pill.className = 'drawer-sync-pill drawer-sync-online';
-            pill.textContent = '● Synced';
-        } else if (state.syncEnabled && state.syncStatus === 'syncing') {
-            pill.className = 'drawer-sync-pill drawer-sync-syncing';
-            pill.textContent = '● Syncing…';
+        if (state.syncEnabled) {
+            const email = state.syncUserEmail || (state.syncStatus === 'syncing' ? 'Syncing...' : 'Synced');
+            pill.className = state.syncStatus === 'syncing'
+                ? 'drawer-sync-pill drawer-sync-syncing'
+                : 'drawer-sync-pill drawer-sync-online';
+            pill.innerHTML = `<i data-lucide="cloud" class="w-3 h-3"></i><span>${email}</span>`;
         } else {
             pill.className = 'drawer-sync-pill drawer-sync-offline';
-            pill.textContent = '● Offline';
+            pill.innerHTML = `<i data-lucide="cloud-off" class="w-3 h-3"></i><span>Offline</span>`;
         }
     }
     initLucideIcons(document.getElementById('sideDrawer'));

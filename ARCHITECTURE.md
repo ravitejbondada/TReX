@@ -220,10 +220,12 @@ Key element IDs:
 - `#drawerBackdrop` — tap/click backdrop that calls `closeDrawer()`
 - `#drawerNav` — top-level drawer navigation list
 - `#drawerContent` / `#drawerContentBody` / `#drawerContentTitle` — sliding sub-panel host
+- `#drawerDinoModeToggle` — optional drawer-header mirror of the Settings Dino Mode toggle
+- `#drawerSyncPill` — drawer sync identity pill; shows connected email with cloud icon when sync is enabled
 - `#appHeaderLogo` — header logo image, reserved for Phase 6 tap handling
 
 Key functions:
-- `openDrawer()` / `closeDrawer()` live in `core.js`
+- `openDrawer()` / `closeDrawer()` live in `core.js`; `openDrawer()` refreshes drawer sync identity and the drawer Dino Mode toggle
 - `openDrawerSection(sectionName)` / `closeDrawerSection()` live in `settings.js`
 - `switchScreen(viewName)` always calls `closeDrawer()` before navigation
 
@@ -263,6 +265,8 @@ Returns a Promise resolving to `true` (confirmed) or `false` (cancelled).
 `dp(key)` safely reads `state.dinoPrefs`. `t(neutral, dino)` returns Dino Mode copy when `dp("dinoMode")` is true and neutral copy otherwise.
 
 Phase 3 uses `t(...)` for toasts, confirm dialog labels/messages, empty states, and contextual labels without changing layout or data behavior.
+
+Dino Mode is the master preference. `toggleDinoMode(sourceEl?)` keeps the Settings toggle and drawer-header toggle in sync, while `syncDinoDependentControls()` disables dependent controls when Dino Mode is off without clearing their saved values.
 
 ---
 

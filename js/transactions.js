@@ -182,6 +182,7 @@ function populateInlineCategoryPaymentOptions() {
 let inlineCategoryModalMode = "";
 
 function openInlineCategoryModal(mode = null) {
+    if (typeof closeDrawer === "function") closeDrawer();
     inlineCategoryModalMode = mode || "";
     document.getElementById("inlineCategoryModalTitle").textContent = "Add New Category";
     document.getElementById("inlineCatName").value = "";
@@ -247,6 +248,7 @@ function saveInlineCategory() {
 }
 
 function openInlinePaymentModal(mode = null) {
+    if (typeof closeDrawer === "function") closeDrawer();
     document.getElementById("inlinePaymentModalTitle").textContent = "Add New Payment Method";
     document.getElementById("inlinePayName").value = "";
     document.getElementById("inlinePayType").value = "UPI";
