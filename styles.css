@@ -850,3 +850,49 @@
           cursor: pointer; transition: background 0.15s;
         }
         .deep-dive-cta:hover { background: rgba(99,102,241,0.25); }
+
+        /* === PHASE 9 — FOSSIL MODE & POLISH === */
+
+        html[data-theme="fossil"] {
+          --bg:               #1a1612;
+          --surface:          #2a221c;
+          --surface-elevated: #332a22;
+          --surface-hover:    #3d3025;
+          --primary:          #d97706;
+          --primary-light:    #f59e0b;
+          --text:             #f5f0e8;
+          --text-muted:       #a8956e;
+          --border:           #3d3025;
+          --danger:           #dc2626;
+          --success:          #86efac;
+          --accent:           #86efac;
+        }
+        html[data-theme="fossil"] body {
+          background-color: #1a1612;
+          color: #f5f0e8;
+        }
+        html[data-theme="fossil"] .bg-slate-950 { background-color: #1a1612 !important; }
+        html[data-theme="fossil"] .bg-slate-900 { background-color: #2a221c !important; }
+        html[data-theme="fossil"] .bg-slate-800 { background-color: #332a22 !important; }
+        html[data-theme="fossil"] .border-slate-800,
+        html[data-theme="fossil"] .border-slate-900 { border-color: #3d3025 !important; }
+        html[data-theme="fossil"] .text-indigo-400 { color: #d97706 !important; }
+        html[data-theme="fossil"] .bg-indigo-600  { background-color: #b45309 !important; }
+        html[data-theme="fossil"] header { background-color: #1a1612 !important; border-color: #3d3025 !important; }
+
+        /* Heatmap footprint markers */
+        .heatmap-egg, .heatmap-foot {
+          position: absolute; bottom: 1px; right: 1px;
+          font-size: 0.45rem; line-height: 1; pointer-events: none;
+        }
+
+        /* Egg hatching animation */
+        @keyframes egg-crack {
+          0%   { transform: scale(1) rotate(0deg); }
+          25%  { transform: scale(1.1) rotate(-5deg); }
+          50%  { transform: scale(1.15) rotate(5deg); }
+          75%  { transform: scale(1.05) rotate(-2deg); }
+          100% { transform: scale(1) rotate(0deg); }
+        }
+        .egg-crack-transition { animation: egg-crack 0.6s ease; }
+        .goal-egg-icon { display:inline-block; line-height:1; }
