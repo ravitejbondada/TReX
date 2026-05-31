@@ -329,6 +329,10 @@ function processRecurringExpenses() {
 }
 
 function postRecurringEntry(rec, dateStr) {
+    // Use end-of-day on dateStr as createdAt so catch-up batches sort correctly
+    // (multiple entries posted at once would otherwise share the same "now" timestamp)
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const entryTs = new Date(y, m - 1, d, 23, 59, 59, 0).toISOString();
     const newTx = {
         id: "tx_rec_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9),
         amount: rec.amount,
@@ -338,7 +342,7 @@ function postRecurringEntry(rec, dateStr) {
         note: (rec.note ? rec.note + " " : "") + `[Auto: ${rec.name}]`,
         source: "recurring",
         sourceName: rec.name,
-        createdAt: new Date().toISOString()
+        createdAt: entryTs
     };
     state.transactions.push(newTx);
 }

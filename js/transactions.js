@@ -357,10 +357,78 @@ function saveInlinePayment() {
 }
 
 /* LEDGER WORKFLOW FILTER MODULE */
+
+// Sort state
+let _ledgerSort = { field: 'createdAt', dir: 'desc' };
+const _LEDGER_SORT_CYCLE = [
+    { field: 'createdAt', dir: 'desc', label: 'Date \u2193' },
+    { field: 'createdAt', dir: 'asc',  label: 'Date \u2191' },
+    { field: 'amount',    dir: 'desc', label: 'Amt \u2193'  },
+    { field: 'amount',    dir: 'asc',  label: 'Amt \u2191'  },
+    { field: 'date',      dir: 'desc', label: 'Day \u2193'  },
+    { field: 'date',      dir: 'asc',  label: 'Day \u2191'  },
+];
+let _ledgerSortIdx = 0;
+
+function cycleLedgerSort() {
+    _ledgerSortIdx = (_ledgerSortIdx + 1) % _LEDGER_SORT_CYCLE.length;
+    _ledgerSort = _LEDGER_SORT_CYCLE[_ledgerSortIdx];
+    const lbl = document.getElementById('ledgerSortLabel');
+    if (lbl) lbl.textContent = _ledgerSort.label;
+    filterHistory();
+}
+
+function toggleLedgerFilterSheet() {
+    const sheet = document.getElementById('ledgerFilterSheet');
+    if (!sheet) return;
+    sheet.classList.toggle('hidden');
+    initLucideIcons(sheet);
+}
+
+function clearLedgerSearch() {
+    const inp = document.getElementById('historySearchInput');
+    if (inp) { inp.value = ''; filterHistory(); }
+}
+
+function _renderLedgerChips(catId, payId, from, to) {
+    const wrap = document.getElementById('ledgerActiveChips');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    const chip = (label, clearFn) => {
+        const el = document.createElement('span');
+        el.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800';
+        el.innerHTML = label + '<button class="ml-0.5 text-indigo-400 hover:text-white">x</button>';
+        el.querySelector('button').onclick = clearFn;
+        wrap.appendChild(el);
+    };
+    if (catId) {
+        const cat = state.categories.find(c => c.id === catId);
+        if (cat) chip(cat.name, () => { document.getElementById('historyFilterCategory').value = ''; filterHistory(); });
+    }
+    if (payId) {
+        const pay = state.payments.find(p => p.id === payId);
+        if (pay) chip(pay.name, () => { document.getElementById('historyFilterPayment').value = ''; filterHistory(); });
+    }
+    const cycle = calculateActiveCycleRange();
+    const pad = n => String(n).padStart(2, '0');
+    const fmt = d => d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+    const cycleFrom = fmt(cycle.startDate), cycleTo = fmt(cycle.endDate);
+    if (from !== cycleFrom || to !== cycleTo) {
+        chip(from + ' \u2192 ' + to, () => resetLedgerToCycle());
+    }
+    const dot = document.getElementById('ledgerFilterDot');
+    if (dot) dot.classList.toggle('hidden', wrap.children.length === 0);
+}
+
 function renderHistoryList() {
-    // Always seed date pickers with current cycle on fresh open (only if blank)
-    const fromEl = document.getElementById("ledgerDateFrom");
-    if (!fromEl.value) initLedgerMonthSelector();
+    // Reset sort to default (Date desc) on each open
+    _ledgerSortIdx = 0;
+    _ledgerSort = _LEDGER_SORT_CYCLE[0];
+    const lbl = document.getElementById('ledgerSortLabel');
+    if (lbl) lbl.textContent = _ledgerSort.label;
+
+    // Always reset date pickers to current cycle on open
+    initLedgerMonthSelector();
 
     const catFilter = document.getElementById("historyFilterCategory");
     catFilter.innerHTML = '<option value="">All Categories</option>';
@@ -407,11 +475,11 @@ function getLedgerDateRange() {
 }
 
 function openLedgerWithDate(dateISO) {
-    // Called from heatmap — set both From and To to a single day
-    initLedgerMonthSelector(); // reset first so fields exist
+    // Called from heatmap — switch screen first (resets to cycle), then override to single day
+    switchScreen("history");
     document.getElementById("ledgerDateFrom").value = dateISO;
     document.getElementById("ledgerDateTo").value   = dateISO;
-    switchScreen("history");
+    filterHistory();
 }
 
 function filterHistory() {
@@ -445,11 +513,27 @@ function filterHistory() {
         return matchesCat && matchesPay && matchesDate && matchesText;
     });
 
+    // Dynamic sort
     items.sort((a, b) => {
-        const ta = a.createdAt ? new Date(a.createdAt) : new Date(a.date);
-        const tb = b.createdAt ? new Date(b.createdAt) : new Date(b.date);
-        return tb - ta;
+        let va, vb;
+        if (_ledgerSort.field === 'amount') {
+            va = parseFloat(a.amount) || 0;
+            vb = parseFloat(b.amount) || 0;
+        } else if (_ledgerSort.field === 'date') {
+            va = new Date(a.date).getTime();
+            vb = new Date(b.date).getTime();
+        } else {
+            // createdAt with date fallback
+            va = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date).getTime();
+            vb = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date).getTime();
+        }
+        return _ledgerSort.dir === 'desc' ? vb - va : va - vb;
     });
+
+    // Active filter chips + search clear button
+    _renderLedgerChips(catId, payId, from, to);
+    const clearBtn = document.getElementById('ledgerSearchClear');
+    if (clearBtn) clearBtn.classList.toggle('hidden', !search);
 
     // Update summary bar
     const total = items.reduce((s, t) => s + t.amount, 0);
