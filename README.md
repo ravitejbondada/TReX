@@ -93,7 +93,7 @@ On boot, `window.onload` reads it back. If the key is missing, seed data (defaul
 
 **localStorage key:** `androidWalletState_v4`
 
-**Transaction sort order:** Every transaction carries a `createdAt` full ISO 8601 timestamp (e.g. `"2026-05-31T14:23:07.412Z"`) stamped at creation time. The ledger and recent activity feed sort by `createdAt` descending so multiple expenses on the same day appear in the order they were entered. The timestamp is never shown in the UI. Existing transactions without `createdAt` fall back to sorting by `date`.
+**Transaction sort order:** Every transaction carries a `createdAt` full ISO 8601 timestamp stamped at creation time. The ledger and recent activity feed sort by `createdAt` descending by default. Recurring catch-up entries use end-of-day (`23:59:59`) on their due date as `createdAt` so multi-day batches posted at once sort correctly. Existing transactions without `createdAt` fall back to sorting by `date`.
 
 > ⚠️ Local-only data is lost if the browser cache is cleared. Enable Google Drive sync in Settings to keep a persistent backup.
 
@@ -148,6 +148,7 @@ The Reports / Premium Insights screen includes a **Download PDF Summary Report**
 
 ## UX Notes
 
-- **Set budget shortcut:** Tapping "Tap to set your budget →" on the dashboard opens the drawer Budget & Cycle panel directly (`openDrawer(); openDrawerSection('budget')`), not the Settings screen.
+- **Ledger header:** Compact three-row design — title + Sort button + Filter icon button / search bar / summary + active filter chips. Filter sheet (date range, category, payment) is collapsed by default; tap the filter icon to expand. Sort cycles through 6 modes (Date ↓↑, Amt ↓↑, Day ↓↑) and resets to Date ↓ on each ledger open. Active filters appear as dismissible chips; a dot on the filter icon signals active filters.
+- **Heatmap → Ledger:** Tapping a heatmap day opens the ledger scoped to that single day, sorted Date ↓ by default.
 - **Budget save flow:** After submitting a budget in the drawer, a confirmation dialog appears. Tapping OK closes the drawer and navigates to the dashboard.
 - **Nav scroll-to-top:** Every bottom nav tab switch resets the view scroll position to the top (both `screenContainer` and the active view panel).

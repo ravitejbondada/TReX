@@ -724,21 +724,54 @@
             </div>
 
             <!-- VIEW 3: LEDGER ACTIVITY -->
-            <div id="historyView" class="view-panel hidden flex flex-col space-y-5">
-                <div class="flex items-center justify-between">
+            <div id="historyView" class="view-panel hidden flex flex-col space-y-3">
+
+                <!-- Row 1: Title + Sort + Filter buttons -->
+                <div class="flex items-center justify-between gap-2">
                     <button onclick="switchScreen('dashboard')"
-                        class="p-2.5 bg-slate-900 hover:bg-slate-850 rounded-xl text-slate-400 border border-slate-850">
+                        class="p-2.5 bg-slate-900 hover:bg-slate-850 rounded-xl text-slate-400 border border-slate-850 shrink-0">
                         <i data-lucide="arrow-left" class="w-4 h-4"></i>
                     </button>
-                    <h2 class="text-sm font-extrabold text-white">Transaction Ledger</h2>
-                    <div class="w-10"></div>
+                    <h2 id="historyViewTitle" class="text-sm font-extrabold text-white flex-1 text-center">Transaction History</h2>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <!-- Sort button -->
+                        <button onclick="cycleLedgerSort()" id="ledgerSortBtn"
+                            class="flex items-center gap-1 px-2.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-850 rounded-xl text-slate-400 transition-all active:scale-95">
+                            <i data-lucide="arrow-up-down" class="w-3.5 h-3.5"></i>
+                            <span id="ledgerSortLabel" class="text-[9px] font-bold uppercase tracking-wide">Date ↓</span>
+                        </button>
+                        <!-- Filter button -->
+                        <button onclick="toggleLedgerFilterSheet()" id="ledgerFilterBtn"
+                            class="relative p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-850 rounded-xl text-slate-400 transition-all active:scale-95">
+                            <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                            <span id="ledgerFilterDot" class="hidden absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Date Range Selector -->
-                <div class="bg-slate-900/40 p-3 rounded-2xl border border-slate-855/80 space-y-2.5">
-                    <div class="flex items-center justify-between">
-                        <span
-                            class="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                <!-- Row 2: Search -->
+                <div class="bg-slate-900 rounded-xl px-3 py-2.5 flex items-center gap-2.5 border border-slate-850">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-500 shrink-0"></i>
+                    <input type="text" id="historySearchInput" oninput="filterHistory()"
+                        placeholder="Search transactions…"
+                        class="bg-transparent text-xs text-white focus:outline-none w-full" />
+                    <button onclick="clearLedgerSearch()" id="ledgerSearchClear" class="hidden text-slate-600 hover:text-slate-400 shrink-0">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+
+                <!-- Row 3: Summary + active filter chips -->
+                <div class="flex items-center gap-2 flex-wrap min-h-[20px]">
+                    <span class="text-[9px] text-slate-500 font-bold" id="ledgerTxCount">— transactions</span>
+                    <span class="text-[9px] text-slate-700">·</span>
+                    <span class="text-[9px] font-extrabold text-indigo-300" id="ledgerPeriodTotal">—</span>
+                    <div id="ledgerActiveChips" class="flex items-center gap-1.5 flex-wrap ml-auto"></div>
+                </div>
+
+                <!-- Filter bottom sheet (hidden by default) -->
+                <div id="ledgerFilterSheet" class="hidden bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 space-y-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1">
                             <i data-lucide="calendar-range" class="w-3 h-3 text-indigo-400"></i> Date Range
                         </span>
                         <button onclick="resetLedgerToCycle()"
@@ -758,22 +791,7 @@
                                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-[10px] text-white focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                         </div>
                     </div>
-                    <!-- Summary line -->
-                    <div class="flex justify-between items-center pt-1 border-t border-slate-800">
-                        <span class="text-[9px] text-slate-500 font-bold" id="ledgerTxCount">— transactions</span>
-                        <span class="text-[9px] font-extrabold text-indigo-300" id="ledgerPeriodTotal">—</span>
-                    </div>
-                </div>
-
-                <!-- Search and Filters -->
-                <div class="space-y-3 bg-slate-900/40 p-4 rounded-2xl border border-slate-855/80">
-                    <div class="bg-slate-950 rounded-xl px-3 py-2.5 flex items-center gap-2.5">
-                        <i data-lucide="search" class="w-4 h-4 text-slate-500"></i>
-                        <input type="text" id="historySearchInput" oninput="filterHistory()"
-                            placeholder="Search comments, category tags..."
-                            class="bg-transparent text-xs text-white focus:outline-none w-full" />
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div class="grid grid-cols-2 gap-2">
                         <select id="historyFilterCategory" onchange="filterHistory()"
                             class="w-full app-dropdown rounded-lg text-[11px] text-white focus:outline-none"></select>
                         <select id="historyFilterPayment" onchange="filterHistory()"
@@ -781,8 +799,8 @@
                     </div>
                 </div>
 
-                <!-- Scrolled List Container -->
-                <div class="space-y-2.5 max-h-[480px] overflow-y-auto no-scrollbar" id="allHistoryList"></div>
+                <!-- Transaction List -->
+                <div class="space-y-2.5" id="allHistoryList"></div>
             </div>
 
             <!-- VIEW 4: ANALYTICS & SMART ACCORDION REPORTS -->

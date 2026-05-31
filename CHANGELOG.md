@@ -5,7 +5,39 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ---
 
-## [v4.5] 2026-06-01 — Drawer modal z-order fix
+## [v4.8] 2026-06-01 — Ledger header revamp + sort
+
+**What changed:** Collapsed the ledger top controls from ~6 rows into a compact 3-row header. Added a sort mode button and a collapsible filter sheet.
+
+**Files modified:**
+- `index.html` — replaced date-range block + search/filter block with: title row (back · title · sort button · filter icon), full-width search bar with inline clear button, summary row with active filter chips, and a hidden filter sheet containing date pickers + category + payment dropdowns.
+- `js/transactions.js` — added `_ledgerSort`, `_LEDGER_SORT_CYCLE`, `_ledgerSortIdx` state; added `cycleLedgerSort()`, `toggleLedgerFilterSheet()`, `clearLedgerSearch()`, `_renderLedgerChips()`; `filterHistory()` now uses dynamic sort and renders chips + search-clear; `renderHistoryList()` resets sort to Date ↓ and date range to current cycle on every open; `openLedgerWithDate()` reordered to call `switchScreen` first then override dates, so heatmap single-day drill-down works correctly.
+- `styles.css` — no changes; filter sheet and chips use Tailwind utility classes only.
+- `ARCHITECTURE.md`, `FUNCTIONS.md`, `README.md`, `CHANGELOG.md` — updated docs.
+
+**Behavior:**
+- Filter sheet is collapsed by default; tapping the sliders icon expands it.
+- Sort button cycles: Date ↓ → Date ↑ → Amt ↓ → Amt ↑ → Day ↓ → Day ↑. Resets to Date ↓ on every ledger open.
+- Active category/payment/date-range filters appear as dismissible chips; a dot on the filter icon signals active filters.
+- Heatmap → ledger drill-down correctly shows only the tapped day, sorted Date ↓.
+
+---
+
+## [v4.7] 2026-06-01 — Recurring catch-up sort fix
+
+**What changed:** Recurring transactions posted in a catch-up batch (multiple missed dates posted at once) were all receiving `createdAt = new Date()` — the same millisecond — causing them to sort in insertion order (ascending) rather than newest-first. Fixed by stamping `createdAt` as end-of-day (`23:59:59`) on each entry's due date instead of wall-clock time.
+
+**Files modified:**
+- `js/recurring.js` — `postRecurringEntry`: replaced `createdAt: new Date().toISOString()` with end-of-day timestamp derived from `dateStr` (`new Date(y, m-1, d, 23, 59, 59, 0).toISOString()`).
+- `ARCHITECTURE.md`, `FUNCTIONS.md`, `README.md`, `CHANGELOG.md` — updated docs.
+
+**Behavior:**
+- Recurring catch-up entries (e.g. 8 May, 9 May, 10 May posted together) now sort correctly newest-first in both the ledger and the home Recent Logs feed.
+- Existing already-posted recurring transactions retain their old `createdAt`; only new postings benefit.
+
+---
+
+
 
 **What changed:** Modals opened from the side drawer no longer appear behind it. `closeDrawer()` is now called at the entry point of every modal that can be triggered from a drawer action.
 

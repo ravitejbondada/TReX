@@ -141,12 +141,16 @@ To find where to add/edit something, scan the relevant section header then go to
 | `openInlinePaymentModal(mode?)` | Calls `closeDrawer()` then opens the quick-add payment modal; works from expense form and drawer |
 | `closeInlinePaymentModal()` | Closes the inline payment modal |
 | `saveInlinePayment()` | Creates a new payment method from the inline modal, updates dropdowns |
-| `renderHistoryList()` | Renders the full ledger/history list for the current date range; sorted by `createdAt` desc (falls back to `date` for transactions without `createdAt`) |
-| `initLedgerMonthSelector()` | Populates the ledger month/cycle dropdown |
-| `resetLedgerToCycle()` | Resets ledger date range to the current active cycle |
-| `getLedgerDateRange()` | Returns `{ startDate, endDate }` based on active ledger selection |
-| `openLedgerWithDate(dateISO)` | Switches to history view and filters to the month containing the date |
-| `filterHistory()` | Applies search text + category/payment filters to the history list |
+| `renderHistoryList()` | Renders the full ledger/history list; resets sort to Date ↓ and date range to current cycle on every open |
+| `initLedgerMonthSelector()` | Populates the ledger date range pickers with the current active cycle |
+| `resetLedgerToCycle()` | Resets ledger date range to the current active cycle and re-runs filterHistory |
+| `getLedgerDateRange()` | Returns `{ from, to }` ISO strings from the ledger date pickers |
+| `openLedgerWithDate(dateISO)` | Switches to history view (resetting sort + cycle dates), then overrides both date pickers to a single day and calls filterHistory; used by the spend heatmap |
+| `filterHistory()` | Applies search text + category/payment filters, dynamic sort, active chip rendering, and search-clear button visibility |
+| `cycleLedgerSort()` | Cycles through 6 sort modes (Date ↓↑, Amt ↓↑, Day ↓↑) updating the sort button label and re-running filterHistory |
+| `toggleLedgerFilterSheet()` | Toggles the collapsed filter sheet (date range + category + payment dropdowns) |
+| `clearLedgerSearch()` | Clears the search input and re-runs filterHistory |
+| `_renderLedgerChips(catId, payId, from, to)` | Renders dismissible active-filter chips below the summary bar; shows/hides the filter dot indicator on the filter button |
 | `deleteTransaction(id)` | Async - confirms then removes a transaction; recurring-created transactions are plain ledger rows, so delete behavior is the same as manual expenses |
 
 ---
@@ -275,7 +279,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `deleteRecurring(id)` | Async - confirms and removes the recurring rule; past inserted transactions remain in the ledger |
 | `renderRecurringExpenses()` | Renders the recurring schedules list in settings |
 | `processRecurringExpenses()` | Checks recurring rules, inserts all missed qualified due dates through today, then updates `lastPostedDate` |
-| `postRecurringEntry(rec, dateStr)` | Creates one plain transaction for a recurring rule; no recurring metadata is attached to the ledger row |
+| `postRecurringEntry(rec, dateStr)` | Creates one plain transaction for a recurring rule; stamps `createdAt` as end-of-day (23:59:59) on `dateStr` so catch-up batches posted in the same run sort correctly by date rather than all sharing the same wall-clock timestamp |
 
 **EMI (Equated Monthly Installments)**
 

@@ -149,6 +149,8 @@ let state = {
     //   Old transactions without createdAt fall back to sorting by date. Stamped by all
     //   transaction creation paths: handleExpenseSubmit, submitLockedQuickExpense,
     //   postRecurringEntry, postEMIEntry, and all goals-trips.js ledger pushes.
+    //   postRecurringEntry stamps createdAt as end-of-day (23:59:59) on the due dateStr,
+    //   NOT the current wall-clock time, so catch-up batches sort correctly across days.
     // Recurring-created transactions are intentionally plain transactions with no recurringId.
     // tripRef: true if this tx was synced from a trip expense (read-only in ledger)
     // tripType: "pre" | "on" | null
