@@ -5,6 +5,24 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ---
 
+## [v4.4] 2026-06-01 — Cycle-aware spend heatmap with salary nav
+
+**What changed:** The spend heatmap now behaves differently based on `state.cycleType`. Calendar mode renders a rolling current-month grid with no navigation (unchanged UX). Salary mode renders the active payday window (e.g. Jun 10–Jul 9) with `‹ ›` arrows to page through previous cycles; days outside the payday window are shown with a subtle crosshatch tint and are non-interactive.
+
+**Files modified:**
+- `js/dashboard.js` — `renderSpendHeatmap()` fully rewritten: branches on `cycleType`; salary mode uses `_heatmapGetCycleWindow(offset)` to compute cycle boundaries, iterates the full calendar range and marks out-of-cycle days with `.heatmap-crosshatch`; spend map re-keyed from day-of-month integer to full ISO date string (fixes cross-month salary cycles). Added `_heatmapCycleOffset` module-level var, `_heatmapGetCycleWindow(offset)` helper, and `heatmapNavigate(delta)` global for nav buttons.
+- `index.html` — heatmap card header updated: added `#heatmapNavWrap` (hidden by default) containing `#heatmapPrevBtn`, `#heatmapMonthLabel`, `#heatmapNextBtn`; hidden for calendar mode, shown for salary mode.
+- `styles.css` — added `.heatmap-crosshatch` (diagonal stripe tint) and `.heatmap-nav-btn` (18 px bare button, disabled state).
+- `CHANGELOG.md`, `FUNCTIONS.md`, `README.md`, `ARCHITECTURE.md` — updated docs.
+
+**Behavior:**
+- Calendar cycle: heatmap shows current month as before; no arrows, no crosshatch.
+- Salary cycle: heatmap shows the active payday window; `‹` pages back through previous cycles, `›` is disabled at the current cycle. Header label reads e.g. "Jun 10 – Jul 9".
+- Days outside the payday window in a salary cycle show a subtle crosshatch and have no tap/hover interaction.
+- Navigating to a past salary cycle shows that window's spend data scoped correctly to those dates.
+
+---
+
 ## [v4.3] 2026-05-31 — Budget link fix, save confirmation, nav scroll-to-top
 
 **What changed:** "Tap to set your budget" now opens the drawer budget panel directly. Saving budget shows a confirmation dialog and navigates home on OK. All bottom nav tab switches scroll the view to the top.

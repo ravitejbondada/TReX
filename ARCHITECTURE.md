@@ -205,6 +205,7 @@ let pendingExpensePaymentLockId   // set before switching to addExpense screen
 let expenseFormReturnCardId       // card to return to after expense save
 let activeCardAnalyticsVisible    // bool, card analytics chart open/closed
 let emiFormPaymentLockId          // paymentId locked on EMI form
+let _heatmapCycleOffset           // int ≤ 0; salary-cycle heatmap page offset (0 = active cycle, -1 = prev, etc.)
 ```
 
 ---
@@ -308,6 +309,22 @@ Called on every `window.onload`:
 2. `processEMIs()` checks each EMI and posts due monthly installments.
 
 Recurring is only a scheduler. Daily and weekly schedules catch up missed due dates; monthly schedules use the original start day and clamp to the month's last day when that day does not exist. `postRecurringEntry()` pushes a normal transaction into `state.transactions` with `amount`, `categoryId`, `paymentId`, `date`, `note`, and `createdAt`; it does not set `isRecurring` or `recurringId`. After insertion, edit/delete/report/history behavior is identical to a manually added transaction. Pausing skips processing. Resuming asks for a resume date, defaults to today, sets `lastPostedDate` to the day before that date, and then runs the normal catch-up engine, so month-end clamp behavior remains consistent. Deleting a recurring rule leaves past transactions untouched.
+
+---
+
+## Spend Heatmap (dashboard.js)
+
+Behaviour is determined by `state.cycleType`:
+
+**Calendar mode** — renders the current calendar month as a rolling grid. No navigation arrows shown. Out-of-cycle concept does not apply.
+
+**Salary mode** — renders the active payday window (e.g. Jun 10–Jul 9). The grid covers all calendar days from the first day of `cycleStart`'s month through the last day of `cycleEnd`'s month. Days outside the payday window receive `.heatmap-crosshatch` styling (subtle diagonal stripe, no click/hover). The `‹ ›` arrows page through previous cycles via `_heatmapCycleOffset` (module-level `let`, clamped to ≤ 0). The next-arrow is disabled when already at the active cycle. Header label updates to "Jun 10 – Jul 9" style.
+
+Spend data is scoped to `cycleStart`–`cycleEnd` and keyed by full ISO date string `"YYYY-MM-DD"` (previously keyed by day-of-month integer, which broke for salary cycles spanning two calendar months).
+
+**CSS additions (`styles.css`):**
+- `.heatmap-crosshatch` — `repeating-linear-gradient` diagonal stripe at 6% opacity over near-black bg; number still legible
+- `.heatmap-nav-btn` — 18 px bare button, slate-500 at rest, slate-400 on hover, 25% opacity when disabled
 
 ---
 

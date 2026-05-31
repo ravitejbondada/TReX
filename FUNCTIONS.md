@@ -80,7 +80,7 @@ To find where to add/edit something, scan the relevant section header then go to
 
 ---
 
-## dashboard.js — Dashboard & Budget Widgets (30 functions)
+## dashboard.js — Dashboard & Budget Widgets (33 functions)
 
 | Function | Description |
 |---|---|
@@ -90,7 +90,9 @@ To find where to add/edit something, scan the relevant section header then go to
 | `formatDateTime(dateObj)` | Formats a Date as "Today", "Yesterday", or "Mon DD" for activity feed |
 | `updateAppDashboardView()` | Master dashboard refresh — calls all widget renderers; "Tap to set your budget" link opens the drawer budget panel via `openDrawer(); openDrawerSection('budget')` |
 | `renderForecastCard(metrics)` | Renders the projected end-of-cycle forecast card |
-| `renderSpendHeatmap()` | Renders the monthly spending heatmap calendar grid |
+| `_heatmapGetCycleWindow(offset)` | Returns `{ cycleStart, cycleEnd }` for the salary cycle at the given page offset (0 = active, -1 = previous, etc.) |
+| `renderSpendHeatmap()` | Renders the cycle-aware spending heatmap. Calendar mode: rolling current month, no nav. Salary mode: paginated payday window (e.g. Jun 10–Jul 9) with `‹ ›` arrows; out-of-cycle days rendered with crosshatch tint and no interaction. Spend map keyed by full ISO date string. |
+| `heatmapNavigate(delta)` | Increments `_heatmapCycleOffset` by `delta` (clamped to ≤ 0) and re-renders the heatmap; called by the `‹ ›` nav buttons |
 | `getQuickLogs()` | Returns quick log config array from state or default seeds |
 | `renderQuickLogButtons()` | Renders the 1-tap quick log button grid on the dashboard |
 | `openQuickLogEditor()` | Opens the quick log customization modal |
