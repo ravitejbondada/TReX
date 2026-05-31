@@ -264,12 +264,12 @@ function renderForecastCard(metrics) {
 
     const toneMap = {
         overrun: {
-            card: "bg-slate-950/35 border-amber-400/25",
-            icon: "bg-amber-400/10 border-amber-400/25 text-amber-300",
+            card: "bg-rose-950/40 border-rose-500/30",
+            icon: "bg-rose-600/15 border-rose-500/30 text-rose-400",
             lucide: "trending-up",
-            title: "text-amber-200",
+            title: "text-rose-300",
             titleTxt: "Budget Overrun Projected",
-            bar: "bg-gradient-to-r from-amber-400 via-orange-300 to-yellow-200",
+            bar: "bg-gradient-to-r from-rose-600 to-red-500",
         },
         warning: {
             card: "bg-amber-950/35 border-amber-500/25",
