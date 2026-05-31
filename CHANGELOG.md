@@ -14,7 +14,8 @@ Files listed are the ones modified. Always update this on any meaningful change.
 - `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`, `working.md` - documented the simplified recurring behavior.
 
 **Behavior:**
-- Recurring rules decide when to insert the next transaction.
+- Recurring rules catch up every qualified date from `lastPostedDate + 1` or `startDate` through today.
+- Monthly recurring dates clamp to month-end when the requested day does not exist, e.g. Jan 31 -> Feb 28/29.
 - Inserted transactions are normal ledger rows: edit/delete/history/report behavior is the same as manual expenses.
 - Deleting a recurring schedule does not remove past ledger entries.
 

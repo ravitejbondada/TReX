@@ -214,7 +214,7 @@ window.onload = function () {
     state.recurringExpenses.forEach(rec => {
         if (!rec.startDate) rec.startDate = getTodayISO();
         if (rec.paused === undefined) rec.paused = false;
-        if (!rec.lastPostedDate) rec.lastPostedDate = getTodayISO();
+        if (rec.lastPostedDate === undefined) rec.lastPostedDate = null;
     });
 
     processRecurringExpenses();

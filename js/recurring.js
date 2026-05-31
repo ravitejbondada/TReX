@@ -29,21 +29,45 @@ function formatISODate(d) {
     return `${y}-${m}-${day}`;
 }
 
-function isRecurringDueToday(rec) {
-    const today = getTodayISO();
-    if (rec.paused) return false;
-    if (today < rec.startDate) return false;
-    const anchor = rec.lastPostedDate || rec.startDate;
-    if (today === anchor) return false;
-    const anchorDate = parseISODate(anchor);
-    const todayDate  = parseISODate(today);
+function addDaysISO(dateStr, days) {
+    const d = parseISODate(dateStr);
+    d.setDate(d.getDate() + days);
+    return formatISODate(d);
+}
+
+function getMonthLastDay(year, monthIndex) {
+    return new Date(year, monthIndex + 1, 0).getDate();
+}
+
+function isRecurringDateDue(rec, dateStr) {
+    if (rec.paused || !rec.startDate || dateStr < rec.startDate) return false;
     if (rec.freq === "daily") return true;
+
+    const start = parseISODate(rec.startDate);
+    const date = parseISODate(dateStr);
     if (rec.freq === "weekly") {
-        const diffDays = Math.round((todayDate - anchorDate) / 86400000);
-        return diffDays % 7 === 0;
+        const diffDays = Math.round((date - start) / 86400000);
+        return diffDays >= 0 && diffDays % 7 === 0;
     }
-    const startDay = parseISODate(rec.startDate).getDate();
-    return todayDate.getDate() === startDay;
+
+    const desiredDay = start.getDate();
+    const dueDay = Math.min(desiredDay, getMonthLastDay(date.getFullYear(), date.getMonth()));
+    return date.getDate() === dueDay;
+}
+
+function getRecurringDueDates(rec, upToDate = getTodayISO()) {
+    if (rec.paused || !rec.startDate) return [];
+    const dates = [];
+    let cursor = rec.lastPostedDate ? addDaysISO(rec.lastPostedDate, 1) : rec.startDate;
+    while (cursor <= upToDate) {
+        if (isRecurringDateDue(rec, cursor)) dates.push(cursor);
+        cursor = addDaysISO(cursor, 1);
+    }
+    return dates;
+}
+
+function isRecurringDueToday(rec) {
+    return getRecurringDueDates(rec).length > 0;
 }
 
 function toggleRecurringPause(id) {
@@ -273,9 +297,11 @@ function processRecurringExpenses() {
     let anyPosted = false;
 
     state.recurringExpenses.forEach(rec => {
-        if (!isRecurringDueToday(rec)) return;
-        postRecurringEntry(rec, today);
-        rec.lastPostedDate = today;
+        const dueDates = getRecurringDueDates(rec, today);
+        if (dueDates.length === 0) return;
+        dueDates.forEach(dateStr => postRecurringEntry(rec, dateStr));
+        rec.lastPostedDate = dueDates[dueDates.length - 1];
+        rec.updatedAt = new Date().toISOString();
         anyPosted = true;
     });
 

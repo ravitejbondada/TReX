@@ -303,10 +303,10 @@ When `state.creditCardsEnabled` is true:
 ## Recurring & EMI Processing (recurring.js)
 
 Called on every `window.onload`:
-1. `processRecurringExpenses()` checks each recurring rule and inserts a transaction only when the rule is due. It updates the rule's `lastPostedDate` after insertion.
+1. `processRecurringExpenses()` checks each recurring rule and inserts every qualified due date from `lastPostedDate + 1` or `startDate` through today. It updates the rule's `lastPostedDate` to the latest posted date.
 2. `processEMIs()` checks each EMI and posts due monthly installments.
 
-Recurring is only a scheduler. `postRecurringEntry()` pushes a normal transaction into `state.transactions` with `amount`, `categoryId`, `paymentId`, `date`, `note`, and `createdAt`; it does not set `isRecurring` or `recurringId`. After insertion, edit/delete/report/history behavior is identical to a manually added transaction. Deleting a recurring rule leaves past transactions untouched.
+Recurring is only a scheduler. Daily and weekly schedules catch up missed due dates; monthly schedules use the original start day and clamp to the month's last day when that day does not exist. `postRecurringEntry()` pushes a normal transaction into `state.transactions` with `amount`, `categoryId`, `paymentId`, `date`, `note`, and `createdAt`; it does not set `isRecurring` or `recurringId`. After insertion, edit/delete/report/history behavior is identical to a manually added transaction. Deleting a recurring rule leaves past transactions untouched.
 
 ---
 

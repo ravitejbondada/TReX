@@ -263,14 +263,18 @@ To find where to add/edit something, scan the relevant section header then go to
 
 | Function | Description |
 |---|---|
-| `isRecurringDueToday(rec)` | Returns true when an active recurring rule should post today based on `startDate`, `lastPostedDate`, and frequency |
+| `addDaysISO(dateStr, days)` | Adds days to a local ISO date string |
+| `getMonthLastDay(year, monthIndex)` | Returns the last day number for a month |
+| `isRecurringDateDue(rec, dateStr)` | Returns true when a recurring rule qualifies for a specific date; monthly rules clamp to month-end |
+| `getRecurringDueDates(rec, upToDate?)` | Returns every due date from `lastPostedDate + 1` or `startDate` through the target date |
+| `isRecurringDueToday(rec)` | Returns true when there is at least one due recurring date through today |
 | `toggleRecurringPause(id)` | Pauses or resumes a recurring schedule without deleting it |
 | `openRecurringModal(editId?)` | Opens the recurring expense create/edit modal |
 | `closeRecurringModal()` | Closes the recurring modal |
 | `saveRecurring()` | Creates or updates a recurring expense rule in state |
 | `deleteRecurring(id)` | Async - confirms and removes the recurring rule; past inserted transactions remain in the ledger |
 | `renderRecurringExpenses()` | Renders the recurring schedules list in settings |
-| `processRecurringExpenses()` | Checks recurring rules and inserts today's due transaction, then updates `lastPostedDate` |
+| `processRecurringExpenses()` | Checks recurring rules, inserts all missed qualified due dates through today, then updates `lastPostedDate` |
 | `postRecurringEntry(rec, dateStr)` | Creates one plain transaction for a recurring rule; no recurring metadata is attached to the ledger row |
 
 **EMI (Equated Monthly Installments)**
