@@ -93,6 +93,8 @@ On boot, `window.onload` reads it back. If the key is missing, seed data (defaul
 
 **localStorage key:** `androidWalletState_v4`
 
+**Transaction sort order:** Every transaction carries a `createdAt` full ISO 8601 timestamp (e.g. `"2026-05-31T14:23:07.412Z"`) stamped at creation time. The ledger and recent activity feed sort by `createdAt` descending so multiple expenses on the same day appear in the order they were entered. The timestamp is never shown in the UI. Existing transactions without `createdAt` fall back to sorting by `date`.
+
 > ⚠️ Local-only data is lost if the browser cache is cleared. Enable Google Drive sync in Settings to keep a persistent backup.
 
 ---

@@ -5,6 +5,41 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ---
 
+## [v3.9] 2026-05-31 — Transaction timestamp sort
+
+**What changed:** Added `createdAt` (full ISO 8601 timestamp) to every transaction so the ledger and recent activity feed sort by actual creation time within the same day, not just by date string. Time is never shown in the UI.
+
+**Files modified:**
+- `js/transactions.js` — `handleExpenseSubmit`: stamps `createdAt: new Date().toISOString()` on new transactions; on edit, preserves `createdAt` when the date is unchanged and updates it to now when the date changes. `renderHistoryList`: sort now uses `createdAt` desc with `date` fallback for old transactions.
+- `js/dashboard.js` — `renderRecentActivityList`: same `createdAt`-first, `date`-fallback sort.
+- `js/recurring.js` — `postRecurringEntry`, `postEMIEntry` (installment + processing fee): all stamped with `createdAt`.
+- `js/goals-trips.js` — all four `state.transactions.push(...)` sites (banner quick-add, trip expense edit on→pre, trip expense add, `syncTripToLedger` rollup): all stamped with `createdAt`.
+- `js/auth.js` — `submitLockedQuickExpense` ledger path: changed from `getTodayISO()` (date-only) to `new Date().toISOString()` (full timestamp).
+- `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md` — documented `createdAt` field on transaction shape and updated affected function descriptions.
+
+**Behavior:**
+- All new transactions get a millisecond-precision `createdAt`. Two expenses on the same day now sort newest-first by the time they were entered — in both the home Recent Logs feed and the Ledger.
+- Editing a transaction that stays on the same date retains its original `createdAt` so its position in same-day ordering is unchanged.
+- Changing a transaction's date during edit resets `createdAt` to now, placing it correctly relative to other transactions on the new date.
+- Existing transactions with no `createdAt` continue to sort by date as before; they get a proper `createdAt` the first time they are edited.
+
+---
+
+## [v3.8] 2026-05-31 — Remove dino icon flashing square; progress bar color shift
+
+**What changed:** Removed the `trex-hungry-pulse` box-shadow keyframe animation that was rendering as a flashing square around the dino icon in the budget panel at high spend. Replaced with Option B — progress bar color shift — as the sole danger signal. Dino images at `dino-ravenous` and `dino-extinct` states now use `dino-idle-bob` at faster speeds instead.
+
+**Files modified:**
+- `styles.css` — removed `@keyframes trex-hungry-pulse` and `.budget-danger` class; replaced `.budget-dino-img.dino-ravenous` and `.dino-extinct` animation with `dino-idle-bob` at 1.1 s and 0.9 s; removed `budget-danger` from the `prefers-reduced-motion` block.
+- `js/dashboard.js` — removed the Phase 4 `budget-danger` class toggle from `renderForecastCard`; progress bar color-shift (emerald → amber → orange → yellow) in `updateAppDashboardView` is unchanged and now the sole visual danger indicator.
+
+**Behavior:**
+- No flashing square appears around the dino icon at any spend level.
+- Progress bar shifts: emerald→teal (0–60%), amber (60–85%), amber→orange (85–100%), amber→orange→yellow (100%+).
+- Dino image still animates at ravenous/extinct states — faster bob instead of pulse flash.
+
+---
+
 ## [v3.7] 2026-05-31 - Phase 8 sound engine
 
 **What changed:** Added the shared Phase 8 sound engine and moved App Sounds out of the Dino/Personality section so sounds work in both normal and Dino Mode.

@@ -1153,7 +1153,11 @@ function renderRecentActivityList() {
     }
     container.innerHTML = "";
 
-    const sorted = [...state.transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const sorted = [...state.transactions].sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt) : new Date(a.date);
+        const tb = b.createdAt ? new Date(b.createdAt) : new Date(b.date);
+        return tb - ta;
+    });
     const limit = sorted.slice(0, 4);
 
     if (limit.length === 0) {

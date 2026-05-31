@@ -401,7 +401,8 @@ function submitTripQuickAdd() {
             tripType: 'pre',
             tripRef: true,
             isRecurring: false,
-            recurringId: ''
+            recurringId: '',
+            createdAt: new Date().toISOString()
         });
         ledgerTxId = txId;
     }
@@ -989,7 +990,8 @@ function addTripExpense() {
                 id: txId, amount, categoryId, paymentId, date,
                 note: `${trip.emoji || "✈️"} ${trip.name} · ${expenseLabel}`,
                 tripId: trip.id, tripType: "pre", tripRef: true,
-                isRecurring: false, recurringId: ""
+                isRecurring: false, recurringId: "",
+                createdAt: new Date().toISOString()
             });
             ledgerTxId = txId;
         }
@@ -1017,7 +1019,8 @@ function addTripExpense() {
             tripType: "pre",
             tripRef:  true,
             isRecurring: false,
-            recurringId: ""
+            recurringId: "",
+            createdAt: new Date().toISOString()
         });
         ledgerTxId = txId;
     }
@@ -1141,7 +1144,8 @@ function syncTripToLedger() {
             tripType:    "on",
             tripRef:     true,
             isRecurring: false,
-            recurringId: ""
+            recurringId: "",
+            createdAt:   new Date().toISOString()
         });
     });
 

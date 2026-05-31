@@ -272,7 +272,7 @@ function submitLockedQuickExpense(event) {
             categoryId,
             paymentId,
             type: "expense",
-            createdAt: getTodayISO(),
+            createdAt: new Date().toISOString(),
             lockedQuickAdd: true
         };
         if (!state.transactions) state.transactions = [];

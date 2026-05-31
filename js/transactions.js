@@ -126,9 +126,11 @@ function handleExpenseSubmit(e) {
         const index = state.transactions.findIndex(t => t.id === editId);
         if (index !== -1) {
             const existing = state.transactions[index];
+            const dateChanged = existing.date !== date;
             state.transactions[index] = {
                 ...existing,
-                amount, categoryId: catId, paymentId: payId, date, note
+                amount, categoryId: catId, paymentId: payId, date, note,
+                createdAt: dateChanged ? new Date().toISOString() : (existing.createdAt || new Date().toISOString())
             };
             showNotification(existing.isRecurring
                 ? t("Recurring ledger entry updated.", "Stampede entry updated.")
@@ -138,7 +140,8 @@ function handleExpenseSubmit(e) {
     } else {
         const newTx = {
             id: "tx_" + Date.now(),
-            amount, categoryId: catId, paymentId: payId, date, note
+            amount, categoryId: catId, paymentId: payId, date, note,
+            createdAt: new Date().toISOString()
         };
         state.transactions.push(newTx);
         playSound(S.SAVE);
@@ -429,7 +432,11 @@ function filterHistory() {
         return matchesCat && matchesPay && matchesDate && matchesText;
     });
 
-    items.sort((a, b) => new Date(b.date) - new Date(a.date));
+    items.sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt) : new Date(a.date);
+        const tb = b.createdAt ? new Date(b.createdAt) : new Date(b.date);
+        return tb - ta;
+    });
 
     // Update summary bar
     const total = items.reduce((s, t) => s + t.amount, 0);

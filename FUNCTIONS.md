@@ -65,7 +65,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `closeLockedExpenseSheetOutside(event)` | Closes the sheet when the backdrop (not the panel) is tapped |
 | `populateLockedQuickExpenseForm()` | Populates category and payment selects in the locked expense sheet from existing state; no add-new controls |
 | `applyLockedCategoryDefaultPayment()` | Applies category default payment inside the locked expense sheet |
-| `submitLockedQuickExpense(event)` | Saves expense from locked sheet; routes to active trip expenses if a trip is active, otherwise saves as a normal ledger transaction; both paths trigger sync via `saveStateToLocalStorage()` |
+| `submitLockedQuickExpense(event)` | Saves expense from locked sheet; routes to active trip expenses if a trip is active, otherwise saves as a normal ledger transaction with `createdAt` full ISO timestamp; both paths trigger sync via `saveStateToLocalStorage()` |
 | `lockApp()` | Shows the lock screen overlay, clears the PIN input buffer, and closes the locked expense sheet if open |
 | `unlockApp(silent?)` | Hides the lock screen after successful PIN entry and closes the locked expense sheet; skips PIN unlock sound when `silent` is true |
 | `clearBiometricState()` | Clears local WebAuthn credential metadata |
@@ -120,7 +120,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `renderDashboardPaymentHorizontalBars(startDate, endDate)` | Renders horizontal bars of spending per payment method |
 | `setTrendPeriod(period)` | Sets `activeTrendPeriod` and re-renders the trend chart |
 | `renderWeeklyTrendChartLine()` | Renders the weekly/monthly line trend chart using Chart.js |
-| `renderRecentActivityList()` | Renders the recent transactions feed at the bottom of the dashboard |
+| `renderRecentActivityList()` | Renders the recent transactions feed at the bottom of the dashboard; sorted by `createdAt` desc (falls back to `date` for transactions without `createdAt`), shows top 4 |
 
 ---
 
@@ -133,7 +133,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `populateEMIFormDropdowns()` | Populates EMI form category and payment dropdowns |
 | `applyCategoryDefaultPayment()` | Auto-selects the default payment when a category is chosen |
 | `loadExpenseToFormForEdit(txId, returnCardId?)` | Populates the expense form for editing an existing transaction |
-| `handleExpenseSubmit(e)` | Form submit handler — validates, creates/updates transaction, saves state |
+| `handleExpenseSubmit(e)` | Form submit handler — validates, creates/updates transaction, saves state; stamps `createdAt` (full ISO timestamp) on create; on edit, preserves `createdAt` if the date is unchanged, updates it to now if the date changes |
 | `populateInlineCategoryPaymentOptions()` | Populates dropdowns inside the inline add category/payment modals |
 | `openInlineCategoryModal(mode?)` | Opens the quick-add category modal from the expense form |
 | `closeInlineCategoryModal()` | Closes the inline category modal |
@@ -141,7 +141,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `openInlinePaymentModal(mode?)` | Opens the quick-add payment modal from the expense form |
 | `closeInlinePaymentModal()` | Closes the inline payment modal |
 | `saveInlinePayment()` | Creates a new payment method from the inline modal, updates dropdowns |
-| `renderHistoryList()` | Renders the full ledger/history list for the current date range |
+| `renderHistoryList()` | Renders the full ledger/history list for the current date range; sorted by `createdAt` desc (falls back to `date` for transactions without `createdAt`) |
 | `initLedgerMonthSelector()` | Populates the ledger month/cycle dropdown |
 | `resetLedgerToCycle()` | Resets ledger date range to the current active cycle |
 | `getLedgerDateRange()` | Returns `{ startDate, endDate }` based on active ledger selection |
@@ -272,7 +272,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `deleteRecurring(id)` | Async — confirms, removes future transactions, removes rule |
 | `renderRecurringExpenses()` | Renders the recurring schedules list in settings |
 | `processRecurringExpenses()` | Posts any missing recurring transaction entries up to today |
-| `postRecurringEntry(rec, dateStr)` | Creates and saves one transaction entry for a recurring rule |
+| `postRecurringEntry(rec, dateStr)` | Creates and saves one transaction entry for a recurring rule; stamps `createdAt` with full ISO timestamp |
 
 **EMI (Equated Monthly Installments)**
 
@@ -292,7 +292,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `processEMIs()` | Posts any missing EMI installment entries up to today |
 | `getEMIOccurrenceDates(emi, today)` | Returns all installment dates for an EMI up to today |
 | `hasEMITxOnDate(emiId, dateStr)` | Returns true if an EMI transaction already exists for that date |
-| `postEMIEntry(emi, dateStr, monthNumber)` | Creates and saves one EMI installment transaction |
+| `postEMIEntry(emi, dateStr, monthNumber)` | Creates and saves one EMI installment transaction (and processing fee on month 1); stamps `createdAt` with full ISO timestamp on both |
 
 ---
 
@@ -349,7 +349,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `deleteTripExpense(expenseId)` | Async — confirms and removes a trip expense |
 | `openEditTripExpense(expenseId)` | Populates the inline edit form for a trip expense |
 | `cancelEditTripExpense()` | Cancels inline trip expense editing |
-| `syncTripToLedger()` | Creates/updates main ledger transactions for all synced trip expenses |
+| `syncTripToLedger()` | Creates/updates main ledger transactions for all synced trip expenses; stamps `createdAt` with full ISO timestamp on each rollup entry |
 | `deleteTripConfirm()` | Async — confirms and removes the current trip and its synced transactions |
 
 ---

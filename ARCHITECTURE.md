@@ -141,8 +141,14 @@ let state = {
   transactions: [
     // Starts empty [] (no mock/dummy transactions)
     { id, amount, categoryId, paymentId, date, note,
-      isRecurring, recurringId, tripId, tripType, tripRef }
-    // date: "YYYY-MM-DD" ISO string
+      isRecurring, recurringId, tripId, tripType, tripRef, createdAt }
+    // date: "YYYY-MM-DD" ISO string — the user-facing expense date
+    // createdAt: full ISO 8601 timestamp (e.g. "2026-05-31T14:23:07.412Z") — set at creation time;
+    //   preserved on edit if the date field is unchanged, updated to now if the date changes.
+    //   Used for sub-day sort ordering in the ledger and recent activity feed. Never shown in UI.
+    //   Old transactions without createdAt fall back to sorting by date. Stamped by all
+    //   transaction creation paths: handleExpenseSubmit, submitLockedQuickExpense,
+    //   postRecurringEntry, postEMIEntry, and all goals-trips.js ledger pushes.
     // tripRef: true if this tx was synced from a trip expense (read-only in ledger)
     // tripType: "pre" | "on" | null
   ],

@@ -302,7 +302,8 @@ function postRecurringEntry(rec, dateStr) {
         date: dateStr,
         note: (rec.note ? rec.note + " " : "") + `[Auto: ${rec.name}]`,
         isRecurring: true,
-        recurringId: rec.id
+        recurringId: rec.id,
+        createdAt: new Date().toISOString()
     };
     state.transactions.push(newTx);
 }
@@ -714,7 +715,8 @@ function postEMIEntry(emi, dateStr, monthNumber) {
         date: dateStr,
         note: `EMI: ${emi.name} (Month ${monthNumber}/${emi.tenure})`,
         isEMI: true,
-        emiId: emi.id
+        emiId: emi.id,
+        createdAt: new Date().toISOString()
     };
     state.transactions.push(newTx);
     
@@ -729,7 +731,8 @@ function postEMIEntry(emi, dateStr, monthNumber) {
             note: `Processing Fee: ${emi.name}`,
             isEMI: true,
             emiId: emi.id,
-            isProcessingFee: true
+            isProcessingFee: true,
+            createdAt: new Date().toISOString()
         };
         state.transactions.push(feeTx);
     }
