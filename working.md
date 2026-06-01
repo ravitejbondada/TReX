@@ -8,7 +8,7 @@
 
 ## Current Item
 
-Phase 2 - Item 8: Weekly/monthly spend comparison (dashboard)
+Phase 2 - Item 9: Category spend trend (reports)
 
 ## Status
 
@@ -26,6 +26,7 @@ Phase 2 - Item 8: Weekly/monthly spend comparison (dashboard)
 - Completed inline edit for amount + note on ledger rows. Non-tripRef, non-selectMode only. Tap in-place; Escape cancels, Enter/blur commits. Running balances recomputed in-place on amount change.
 - Item 7 (payment split chart) skipped by design decision.
 - Completed spend comparison chart on dashboard. Week mode: grouped bar per day Mon–Sun, this week vs last week. Month mode: this month-to-date vs same date range last month. Toggle matches Spend Velocity style. Chart instance destroyed/recreated on toggle.
+- Completed category spend trend in reports. New Trends tab (4th tab) added to reports tab bar. Multi-line Chart.js, one line per category (top 6 by total spend). 3M/6M toggle. Empty state handled. `categoryTrendChartInstance` added to `resizeReportCharts`. `_catTrendPeriod` defaults to 3.
 
 ---
 
@@ -51,7 +52,7 @@ Phase 2 - Item 8: Weekly/monthly spend comparison (dashboard)
 
 [-] 7. Payment split chart (dashboard) — skipped
 [x] 8. Weekly/monthly comparison (dashboard)
-[ ] 9. Category spend trend (reports)
+[x] 9. Category spend trend (reports)
 [ ] 10. Goal progress bar + projected date
 [ ] 11. Trip daily budget breakdown
 

@@ -20,7 +20,7 @@ function destroyReportChart(instance) {
 }
 
 function resizeReportCharts() {
-    [reportsCategoryChartInstance, reportsPaymentChartInstance, reportsBarChartInstance, reportGaugeChartInstance]
+    [reportsCategoryChartInstance, reportsPaymentChartInstance, reportsBarChartInstance, reportGaugeChartInstance, categoryTrendChartInstance]
         .forEach(ch => { if (ch) ch.resize(); });
 }
 
@@ -277,10 +277,12 @@ function toggleReportMode(mode) {
     const chartsBtn = document.getElementById("reportModeChartsBtn");
     const accordionBtn = document.getElementById("reportModeAccordionBtn");
     const momBtn = document.getElementById("reportModeMomBtn");
+    const trendsBtn = document.getElementById("reportModeTrendsBtn");
 
     const chartsContainer = document.getElementById("reportChartsContainer");
     const accordionContainer = document.getElementById("reportAccordionContainer");
     const momContainer = document.getElementById("reportMomContainer");
+    const trendsContainer = document.getElementById("reportTrendsContainer");
 
     const activeClass = "flex-1 py-2 rounded-lg text-[10px] font-bold transition-all bg-indigo-600 text-white flex items-center justify-center gap-1";
     const inactiveClass = "flex-1 py-2 rounded-lg text-[10px] font-bold transition-all text-slate-400 hover:text-white flex items-center justify-center gap-1";
@@ -288,9 +290,11 @@ function toggleReportMode(mode) {
     chartsBtn.className = inactiveClass;
     accordionBtn.className = inactiveClass;
     momBtn.className = inactiveClass;
+    if (trendsBtn) trendsBtn.className = inactiveClass;
     chartsContainer.classList.add("hidden");
     accordionContainer.classList.add("hidden");
     momContainer.classList.add("hidden");
+    if (trendsContainer) trendsContainer.classList.add("hidden");
 
     if (mode === 'charts') {
         chartsBtn.className = activeClass;
@@ -305,6 +309,10 @@ function toggleReportMode(mode) {
         momContainer.classList.remove("hidden");
         populateMomCycleSelectors();
         setTimeout(renderMomReport, 60);
+    } else if (mode === 'trends') {
+        if (trendsBtn) trendsBtn.className = activeClass;
+        if (trendsContainer) trendsContainer.classList.remove("hidden");
+        setTimeout(renderCategoryTrendChart, 60);
     }
 }
 
@@ -511,6 +519,137 @@ function toggleAccordionItem(listId, iconId) {
         icon.style.transform = "rotate(0deg)";
     }
 }
+
+/* ── CATEGORY SPEND TREND (Phase 2 Item 9) ──────────────────────────────────────────────── */
+
+function setCategoryTrendPeriod(n) {
+    _catTrendPeriod = n;
+    const btn3 = document.getElementById("catTrend3mBtn");
+    const btn6 = document.getElementById("catTrend6mBtn");
+    const active   = "px-2.5 py-1 rounded-md text-[9px] font-black transition-all bg-indigo-600 text-white";
+    const inactive = "px-2.5 py-1 rounded-md text-[9px] font-black transition-all text-slate-400 hover:text-white";
+    if (btn3) btn3.className = n === 3 ? active : inactive;
+    if (btn6) btn6.className = n === 6 ? active : inactive;
+    renderCategoryTrendChart();
+}
+
+function renderCategoryTrendChart() {
+    const canvas = document.getElementById("categoryTrendChart");
+    if (!canvas) return;
+
+    if (categoryTrendChartInstance) {
+        categoryTrendChartInstance.destroy();
+        categoryTrendChartInstance = null;
+    }
+
+    const months = _catTrendPeriod || 3;
+    const sym = state.currencySymbol;
+
+    // Build month bucket keys in chronological order (oldest first)
+    const bucketKeys = [];
+    const bucketLabels = [];
+    const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const now = new Date();
+    for (let i = months - 1; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        bucketKeys.push(key);
+        bucketLabels.push(`${MONTHS[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`);
+    }
+
+    // Sum per category per month
+    const catTotals = {}; // catId -> { total, byMonth: {key: sum} }
+    state.categories.forEach(c => {
+        catTotals[c.id] = { total: 0, byMonth: {} };
+        bucketKeys.forEach(k => { catTotals[c.id].byMonth[k] = 0; });
+    });
+
+    state.transactions.forEach(t => {
+        if (!t.date || t.date.length < 7) return;
+        const key = t.date.substring(0, 7);
+        if (!catTotals[t.categoryId] || !catTotals[t.categoryId].byMonth.hasOwnProperty(key)) return;
+        const amt = parseFloat(t.amount || 0);
+        catTotals[t.categoryId].byMonth[key] += amt;
+        catTotals[t.categoryId].total += amt;
+    });
+
+    // Pick top 6 categories by total spend across the period
+    const activeCats = state.categories
+        .filter(c => catTotals[c.id] && catTotals[c.id].total > 0)
+        .sort((a, b) => catTotals[b.id].total - catTotals[a.id].total)
+        .slice(0, 6);
+
+    const emptyEl = document.getElementById("catTrendEmpty");
+    const chartWrap = document.getElementById("catTrendChartWrap");
+
+    if (activeCats.length === 0) {
+        if (emptyEl) emptyEl.classList.remove("hidden");
+        if (chartWrap) chartWrap.classList.add("hidden");
+        return;
+    }
+    if (emptyEl) emptyEl.classList.add("hidden");
+    if (chartWrap) chartWrap.classList.remove("hidden");
+
+    const datasets = activeCats.map(cat => ({
+        label: cat.name,
+        data: bucketKeys.map(k => catTotals[cat.id].byMonth[k]),
+        borderColor: cat.color,
+        backgroundColor: hexToRgba(cat.color, 0.08),
+        borderWidth: 2,
+        fill: false,
+        tension: 0.3,
+        pointBackgroundColor: cat.color,
+        pointBorderColor: "#020617",
+        pointBorderWidth: 1.5,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+    }));
+
+    categoryTrendChartInstance = new Chart(canvas.getContext("2d"), {
+        type: "line",
+        data: { labels: bucketLabels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 600, easing: "easeOutQuart" },
+            plugins: {
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        color: "#94a3b8",
+                        font: { family: REPORT_CHART_FONT, size: 9, weight: "600" },
+                        padding: 10,
+                        usePointStyle: true,
+                        pointStyle: "circle",
+                        boxWidth: 6,
+                    },
+                },
+                tooltip: {
+                    ...premiumChartTooltip(),
+                    callbacks: {
+                        label(ctx) { return ` ${ctx.dataset.label}: ${sym}${Math.round(ctx.parsed.y).toLocaleString()}`; },
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: "#94a3b8", font: { family: REPORT_CHART_FONT, size: 9, weight: "600" } },
+                },
+                y: {
+                    grid: { color: "rgba(255,255,255,0.04)", drawBorder: false },
+                    ticks: {
+                        color: "#64748b",
+                        font: { family: REPORT_CHART_FONT, size: 8, weight: "600" },
+                        callback: v => sym + (v >= 1000 ? Math.round(v / 1000) + "k" : Math.round(v)),
+                    },
+                },
+            },
+        },
+    });
+}
+
+/* ── END CATEGORY SPEND TREND ───────────────────────────────────────────────────────────── */
 
 /* ── MONTH-OVER-MONTH ENGINE ─────────────────────────────────────── */
 

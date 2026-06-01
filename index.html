@@ -944,7 +944,7 @@
                     </button>
                 </div>
 
-                <!-- Dual-mode toggle (now 3 tabs) -->
+                <!-- Dual-mode toggle (now 4 tabs) -->
                 <div class="bg-slate-900/30 p-1 rounded-xl border border-slate-800 flex gap-0.5">
                     <button onclick="toggleReportMode('charts')" id="reportModeChartsBtn"
                         class="flex-1 py-2 rounded-lg text-[10px] font-bold transition-all bg-indigo-600 text-white flex items-center justify-center gap-1">
@@ -957,6 +957,10 @@
                     <button onclick="toggleReportMode('mom')" id="reportModeMomBtn"
                         class="flex-1 py-2 rounded-lg text-[10px] font-bold transition-all text-slate-400 hover:text-white flex items-center justify-center gap-1">
                         <span class="icon-slot icon-slot-sm"><i data-lucide="git-compare-arrows"></i></span> MoM
+                    </button>
+                    <button onclick="toggleReportMode('trends')" id="reportModeTrendsBtn"
+                        class="flex-1 py-2 rounded-lg text-[10px] font-bold transition-all text-slate-400 hover:text-white flex items-center justify-center gap-1">
+                        <span class="icon-slot icon-slot-sm"><i data-lucide="trending-up"></i></span> Trends
                     </button>
                 </div>
 
@@ -1092,6 +1096,28 @@
                             Category Δ Breakdown (A vs B)
                         </h4>
                         <div id="momDeltaTable" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- Mode D: Category Spend Trends -->
+                <div id="reportTrendsContainer" class="hidden space-y-4">
+                    <div class="bg-gradient-to-br from-slate-900/90 to-slate-950 p-4 rounded-2xl border border-indigo-500/15 shadow-lg">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-[10px] font-extrabold text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
+                                <span class="icon-slot icon-slot-sm text-indigo-400"><i data-lucide="trending-up"></i></span>
+                                Category Trends
+                            </h4>
+                            <div class="flex bg-slate-950 p-0.5 rounded-lg border border-slate-850">
+                                <button onclick="setCategoryTrendPeriod(3)" id="catTrend3mBtn"
+                                    class="px-2.5 py-1 rounded-md text-[9px] font-black transition-all bg-indigo-600 text-white">3M</button>
+                                <button onclick="setCategoryTrendPeriod(6)" id="catTrend6mBtn"
+                                    class="px-2.5 py-1 rounded-md text-[9px] font-black transition-all text-slate-400 hover:text-white">6M</button>
+                            </div>
+                        </div>
+                        <p id="catTrendEmpty" class="hidden text-[10px] text-slate-500 text-center py-6 italic">No spend data for this period.</p>
+                        <div id="catTrendChartWrap" style="position:relative; height:16rem; width:100%;">
+                            <canvas id="categoryTrendChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
