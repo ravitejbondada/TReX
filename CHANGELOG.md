@@ -20,6 +20,7 @@ Files listed are the ones modified. Always update this on any meaningful change.
 - Split toggle icon/text now shows rose/red while off and light green/green while on.
 - Settings Appearance now uses a compact three-way segmented switch instead of a dropdown.
 - Spend heatmap cells have slightly stronger borders and a very light baseline tint for better visibility.
+- Recurring auto-posting now prevents duplicate schedule/date rows, dedupes legacy repeated recurring rows, stores `recurringId` on new auto rows, and marks edited/deleted auto dates as skipped so they are not recreated.
 - Ledger cumulative values are calculated only from the visible ledger tiles by summing bottom-to-top after the current filter/search/sort is applied. Split groups count once as grouped tiles.
 - Deleting from the parent split card warns that the entire split will be deleted. To delete one part, expand the split card and use the row-level delete action.
 
@@ -226,7 +227,7 @@ Files listed are the ones modified. Always update this on any meaningful change.
 **What changed:** Recurring schedules now only insert ledger records when due. Once inserted, the transaction is treated like any other normal transaction.
 
 **Files modified:**
-- `js/recurring.js` - recurring rules use `lastPostedDate` and `postRecurringEntry()` creates plain transactions without recurring metadata.
+- `js/recurring.js` - recurring rules use `lastPostedDate`; at this point `postRecurringEntry()` created plain transactions without recurring metadata. Later versions add lightweight recurring metadata for duplicate prevention.
 - `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`, `working.md` - documented the simplified recurring behavior.
 
 **Behavior:**

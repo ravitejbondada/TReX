@@ -41,6 +41,7 @@ function getMonthLastDay(year, monthIndex) {
 
 function isRecurringDateDue(rec, dateStr) {
     if (rec.paused || !rec.startDate || dateStr < rec.startDate) return false;
+    if (Array.isArray(rec.skippedDates) && rec.skippedDates.includes(dateStr)) return false;
     if (rec.freq === "daily") return true;
 
     const start = parseISODate(rec.startDate);
@@ -68,6 +69,43 @@ function getRecurringDueDates(rec, upToDate = getTodayISO()) {
 
 function isRecurringDueToday(rec) {
     return getRecurringDueDates(rec).length > 0;
+}
+
+function isTransactionFromRecurring(tx, rec) {
+    if (!tx || !rec || tx.source !== "recurring") return false;
+    if (tx.recurringId && tx.recurringId === rec.id) return true;
+    return !tx.recurringId &&
+        tx.sourceName === rec.name &&
+        Number(tx.amount || 0) === Number(rec.amount || 0) &&
+        tx.categoryId === rec.categoryId &&
+        tx.paymentId === rec.paymentId;
+}
+
+function hasRecurringEntryForDate(rec, dateStr) {
+    return (state.transactions || []).some(tx => isTransactionFromRecurring(tx, rec) && tx.date === dateStr);
+}
+
+function dedupeRecurringTransactions() {
+    const seen = new Set();
+    let removed = 0;
+    state.transactions = (state.transactions || []).filter(tx => {
+        if (tx.source !== "recurring") return true;
+        const key = [
+            tx.recurringId || `legacy:${tx.sourceName || ""}`,
+            tx.date || "",
+            Number(tx.amount || 0),
+            tx.categoryId || "",
+            tx.paymentId || "",
+            tx.note || ""
+        ].join("|");
+        if (seen.has(key)) {
+            removed += 1;
+            return false;
+        }
+        seen.add(key);
+        return true;
+    });
+    return removed;
 }
 
 function toggleRecurringPause(id) {
@@ -263,15 +301,18 @@ function renderRecurringExpenses() {
 function processRecurringExpenses() {
     if (!state.recurringExpenses || state.recurringExpenses.length === 0) return;
     const today = getTodayISO();
-    let anyPosted = false;
+    let anyPosted = dedupeRecurringTransactions() > 0;
 
     state.recurringExpenses.forEach(rec => {
         const dueDates = getRecurringDueDates(rec, today);
         if (dueDates.length === 0) return;
-        dueDates.forEach(dateStr => postRecurringEntry(rec, dateStr));
+        const previousLastPostedDate = rec.lastPostedDate || null;
+        dueDates.forEach(dateStr => {
+            if (postRecurringEntry(rec, dateStr)) anyPosted = true;
+        });
         rec.lastPostedDate = dueDates[dueDates.length - 1];
         rec.updatedAt = new Date().toISOString();
-        anyPosted = true;
+        if (previousLastPostedDate !== rec.lastPostedDate) anyPosted = true;
     });
 
     if (anyPosted) {
@@ -281,6 +322,7 @@ function processRecurringExpenses() {
 }
 
 function postRecurringEntry(rec, dateStr) {
+    if (hasRecurringEntryForDate(rec, dateStr)) return false;
     // Use end-of-day on dateStr as createdAt so catch-up batches sort correctly
     // (multiple entries posted at once would otherwise share the same "now" timestamp)
     const [y, m, d] = dateStr.split("-").map(Number);
@@ -293,10 +335,12 @@ function postRecurringEntry(rec, dateStr) {
         date: dateStr,
         note: (rec.note ? rec.note + " " : "") + `[Auto: ${rec.name}]`,
         source: "recurring",
+        recurringId: rec.id,
         sourceName: rec.name,
         createdAt: entryTs
     };
     state.transactions.push(newTx);
+    return true;
 }
 
 /* ═══════════════════════════════════════════════════════

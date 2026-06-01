@@ -69,6 +69,9 @@ function normalizeImportedState(raw) {
                 note: t.note || "",
                 isRecurring: !!t.isRecurring,
                 recurringId: t.recurringId || "",
+                source: t.source || "",
+                sourceName: t.sourceName || "",
+                createdAt: t.createdAt || "",
                 tripId:   t.tripId   || null,
                 tripType: t.tripType || null,
                 tripRef:  !!t.tripRef,
@@ -110,6 +113,8 @@ function normalizeImportedState(raw) {
                 paymentId: String(r.paymentId || ""),
                 note: r.note || "",
                 lastProcessed: r.lastProcessed || "",
+                lastPostedDate: r.lastPostedDate || null,
+                skippedDates: Array.isArray(r.skippedDates) ? r.skippedDates.map(d => String(d || "")).filter(Boolean) : [],
                 createdAt: r.createdAt || "",
                 updatedAt: r.updatedAt || ""
             }))
@@ -355,6 +360,9 @@ function buildStateFromCSVSections(sections) {
             note: row.note,
             isRecurring: row.isRecurring === "true",
             recurringId: row.recurringId || "",
+            source: row.source || "",
+            sourceName: row.sourceName || "",
+            createdAt: row.createdAt || "",
             splitGroupId: row.splitGroupId || null,
             splitLabel:   row.splitLabel   || null,
             tags: row.tags ? row.tags.split(";").map(tag => tag.trim()).filter(Boolean) : []
@@ -384,6 +392,8 @@ function buildStateFromCSVSections(sections) {
             paymentId: row.paymentId,
             note: row.note || "",
             lastProcessed: row.lastProcessed || "",
+            lastPostedDate: row.lastPostedDate || null,
+            skippedDates: row.skippedDates ? row.skippedDates.split(";").map(d => d.trim()).filter(Boolean) : [],
             createdAt: row.createdAt || "",
             updatedAt: row.updatedAt || ""
         });
@@ -454,11 +464,11 @@ function exportDataToCSV() {
     csv += "\n";
 
     csv += "[TRANSACTIONS]\n";
-    csv += csvRow(["id", "amount", "categoryId", "paymentId", "date", "note", "isRecurring", "recurringId", "splitGroupId", "splitLabel", "tags"]);
+    csv += csvRow(["id", "amount", "categoryId", "paymentId", "date", "note", "isRecurring", "recurringId", "source", "sourceName", "createdAt", "splitGroupId", "splitLabel", "tags"]);
     state.transactions.forEach(t => {
         csv += csvRow([
             t.id, t.amount, t.categoryId, t.paymentId, t.date, t.note || "",
-            t.isRecurring ? "true" : "false", t.recurringId || "",
+            t.isRecurring ? "true" : "false", t.recurringId || "", t.source || "", t.sourceName || "", t.createdAt || "",
             t.splitGroupId || "", t.splitLabel || "", Array.isArray(t.tags) ? t.tags.join(";") : ""
         ]);
     });
@@ -472,11 +482,11 @@ function exportDataToCSV() {
     csv += "\n";
 
     csv += "[RECURRING_EXPENSES]\n";
-    csv += csvRow(["id", "name", "amount", "freq", "startDate", "categoryId", "paymentId", "note", "lastProcessed", "createdAt", "updatedAt"]);
+    csv += csvRow(["id", "name", "amount", "freq", "startDate", "categoryId", "paymentId", "note", "lastProcessed", "lastPostedDate", "skippedDates", "createdAt", "updatedAt"]);
     (state.recurringExpenses || []).forEach(r => {
         csv += csvRow([
             r.id, r.name, r.amount, r.freq, r.startDate || "", r.categoryId, r.paymentId,
-            r.note || "", r.lastProcessed || "", r.createdAt || "", r.updatedAt || ""
+            r.note || "", r.lastProcessed || "", r.lastPostedDate || "", Array.isArray(r.skippedDates) ? r.skippedDates.join(";") : "", r.createdAt || "", r.updatedAt || ""
         ]);
     });
     csv += "\n";

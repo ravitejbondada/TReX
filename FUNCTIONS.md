@@ -318,7 +318,7 @@ To find where to add/edit something, scan the relevant section header then go to
 |---|---|
 | `addDaysISO(dateStr, days)` | Adds days to a local ISO date string |
 | `getMonthLastDay(year, monthIndex)` | Returns the last day number for a month |
-| `isRecurringDateDue(rec, dateStr)` | Returns true when a recurring rule qualifies for a specific date; monthly rules clamp to month-end |
+| `isRecurringDateDue(rec, dateStr)` | Returns true when a recurring rule qualifies for a specific date; monthly rules clamp to month-end and `skippedDates` are excluded |
 | `getRecurringDueDates(rec, upToDate?)` | Returns every due date from `lastPostedDate + 1` or `startDate` through the target date |
 | `isRecurringDueToday(rec)` | Returns true when there is at least one due recurring date through today |
 | `toggleRecurringPause(id)` | Pauses a recurring schedule; on resume, asks for a resume date and restarts catch-up from that date |
@@ -327,8 +327,9 @@ To find where to add/edit something, scan the relevant section header then go to
 | `saveRecurring()` | Creates or updates a recurring expense rule in state |
 | `deleteRecurring(id)` | Async - confirms and removes the recurring rule; past inserted transactions remain in the ledger |
 | `renderRecurringExpenses()` | Renders the recurring schedules list in settings |
-| `processRecurringExpenses()` | Checks recurring rules, inserts all missed qualified due dates through today, then updates `lastPostedDate` |
-| `postRecurringEntry(rec, dateStr)` | Creates one plain transaction for a recurring rule; stamps `createdAt` as end-of-day (23:59:59) on `dateStr` so catch-up batches posted in the same run sort correctly by date rather than all sharing the same wall-clock timestamp |
+| `dedupeRecurringTransactions()` | Removes duplicate auto-generated recurring ledger rows that share the same schedule/date/amount/category/payment/note key |
+| `processRecurringExpenses()` | Checks recurring rules, dedupes legacy repeated auto rows, inserts missed qualified due dates through today only when no matching row already exists, then updates `lastPostedDate` |
+| `postRecurringEntry(rec, dateStr)` | Creates one ledger transaction for a recurring rule with `source="recurring"`, `recurringId`, and `sourceName`; stamps `createdAt` as end-of-day (23:59:59) on `dateStr` so catch-up batches posted in the same run sort correctly by date rather than all sharing the same wall-clock timestamp |
 
 **EMI (Equated Monthly Installments)**
 

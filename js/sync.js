@@ -818,7 +818,11 @@ function normalizeSyncState(remoteState) {
     next.transactionTemplates = Array.isArray(src.transactionTemplates) ? src.transactionTemplates : [];
     next.knownTags = Array.isArray(src.knownTags) ? src.knownTags.map(tag => String(tag || "").trim()).filter(Boolean) : [];
     next.savingGoals = Array.isArray(src.savingGoals) ? src.savingGoals : [];
-    next.recurringExpenses = Array.isArray(src.recurringExpenses) ? src.recurringExpenses : [];
+    next.recurringExpenses = Array.isArray(src.recurringExpenses) ? src.recurringExpenses.map(rec => ({
+        ...rec,
+        skippedDates: Array.isArray(rec.skippedDates) ? rec.skippedDates : [],
+        lastPostedDate: rec.lastPostedDate || null
+    })) : [];
     next.emis = Array.isArray(src.emis) ? src.emis.map(emi => ({
         ...emi,
         foreclosed: !!emi.foreclosed,
