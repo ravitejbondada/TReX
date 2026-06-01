@@ -545,8 +545,8 @@ function openQuickLogEditor() {
 
 function renderQuickLogEditorRow(q, i) {
     const list = document.getElementById("quickLogEditorList");
-    const catOptions = state.categories.map(c => `<option value="${c.id}" ${c.id === q.categoryId ? 'selected' : ''}>${c.name}</option>`).join("");
-    const payOptions = state.payments.map(p => `<option value="${p.id}" ${p.id === q.paymentId ? 'selected' : ''}>${p.name}</option>`).join("");
+    const catOptions = [...state.categories].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })).map(c => `<option value="${c.id}" ${c.id === q.categoryId ? 'selected' : ''}>${c.name}</option>`).join("");
+    const payOptions = [...state.payments].filter(p => !p.archived).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })).map(p => `<option value="${p.id}" ${p.id === q.paymentId ? 'selected' : ''}>${p.name}</option>`).join("");
     const row = document.createElement("div");
     row.className = "bg-slate-950/70 border border-slate-800 rounded-xl p-3 space-y-2";
     row.dataset.qlid = q.id;

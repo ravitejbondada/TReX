@@ -93,7 +93,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `renderSpendHeatmap()` | Renders the cycle-aware heatmap. Calendar: rolling current month. Salary: active payday window only — rows with no in-cycle days are pruned; out-of-cycle days in mixed rows get crosshatch tint and no interaction. Spend map keyed by full ISO date string. Label shows cycle range or month/year. |
 | `getQuickLogs()` | Returns quick log config array from state or default seeds |
 | `renderQuickLogButtons()` | Renders the 1-tap quick log button grid on the dashboard |
-| `openQuickLogEditor()` | Opens the quick log customization modal |
+| `openQuickLogEditor()` | Opens the quick log customization modal; category and payment dropdowns sorted A→Z |
 | `renderQuickLogEditorRow(q, i)` | Renders a single editable row in the quick log editor |
 | `addNewQuickLogSlot()` | Appends a new empty quick log slot in the editor |
 | `removeQuickLogSlot(id)` | Removes a quick log slot by id in the editor |
@@ -129,7 +129,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | Function | Description |
 |---|---|
 | `setupExpenseFormForAdd()` | Resets the expense form for a new transaction |
-| `populateExpenseFormDropdowns(currentPaymentId?)` | Populates category and payment `<select>` options |
+| `populateExpenseFormDropdowns(currentPaymentId?)` | Populates category and payment `<select>` options, both sorted A→Z by name; payments filtered to non-archived |
 | `populateEMIFormDropdowns()` | Populates EMI form category and payment dropdowns |
 | `applyCategoryDefaultPayment()` | Auto-selects the default payment when a category is chosen |
 | `loadExpenseToFormForEdit(txId, returnCardId?)` | Populates the expense form for editing an existing transaction |
@@ -141,7 +141,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `openInlinePaymentModal(mode?)` | Calls `closeDrawer()` then opens the quick-add payment modal; works from expense form and drawer |
 | `closeInlinePaymentModal()` | Closes the inline payment modal |
 | `saveInlinePayment()` | Creates a new payment method from the inline modal, updates dropdowns |
-| `renderHistoryList()` | Renders the full ledger/history list; resets sort to Date ↓ and date range to current cycle on every open |
+| `renderHistoryList()` | Renders the full ledger/history list; resets sort to Dated ↓ and date range to current cycle on every open; populates category and payment filter dropdowns sorted A→Z |
 | `initLedgerMonthSelector()` | Populates the ledger date range pickers with the current active cycle |
 | `resetLedgerToCycle()` | Resets ledger date range to the current active cycle and re-runs filterHistory |
 | `getLedgerDateRange()` | Returns `{ from, to }` ISO strings from the ledger date pickers |
@@ -273,7 +273,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `getRecurringDueDates(rec, upToDate?)` | Returns every due date from `lastPostedDate + 1` or `startDate` through the target date |
 | `isRecurringDueToday(rec)` | Returns true when there is at least one due recurring date through today |
 | `toggleRecurringPause(id)` | Pauses a recurring schedule; on resume, asks for a resume date and restarts catch-up from that date |
-| `openRecurringModal(editId?)` | Calls `closeDrawer()` then opens the recurring expense create/edit modal |
+| `openRecurringModal(editId?)` | Calls `closeDrawer()` then opens the recurring expense create/edit modal; category and payment dropdowns sorted A→Z |
 | `closeRecurringModal()` | Closes the recurring modal |
 | `saveRecurring()` | Creates or updates a recurring expense rule in state |
 | `deleteRecurring(id)` | Async - confirms and removes the recurring rule; past inserted transactions remain in the ledger |

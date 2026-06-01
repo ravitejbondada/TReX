@@ -248,7 +248,7 @@ Key element IDs:
 
 Key functions:
 - `openDrawer()` / `closeDrawer()` live in `core.js`; `openDrawer()` refreshes drawer sync identity and the drawer Dino Mode toggle
-- `openDrawerSection(sectionName)` / `closeDrawerSection()` live in `settings.js`
+- `openDrawerSection(sectionName)` / `closeDrawerSection()` live in `settings.js`; supported sections: `budget`, `categories`, `payments`, `creditcards`, `recurring`, `emis`, `goals`, `trips`. Goals and Trips render live tiles with action buttons. Goals and Trips drawer nav items now open sub-panels instead of navigating directly.
 - `switchScreen(viewName)` always calls `closeDrawer()` before navigation
 - **Modal z-order rule:** every function that opens a modal reachable from a drawer action must call `closeDrawer()` (or the `typeof closeDrawer === "function"` guard) at its entry point — `openEditCategoryModal`, `openEditPaymentModal`, `openRecurringModal`, `openEMIModal`, `openInlineCategoryModal`, `openInlinePaymentModal` all conform to this.
 
@@ -325,6 +325,8 @@ Behaviour determined by `state.cycleType`:
 Spend data scoped to `cycleStart`–`cycleEnd`, keyed by full ISO date string `"YYYY-MM-DD"`.
 
 **CSS:** `.heatmap-crosshatch` — diagonal stripe at 6% opacity over near-black bg.
+
+**Heat legend:** Four colour swatches rendered below the grid in `index.html` (static HTML, no JS): emerald → amber → orange → yellow, labelled Low → High. Colours match the `heatColor()` thresholds in `renderSpendHeatmap()` (0–25% emerald, 25–55% amber, 55–80% orange, 80–100% yellow).
 
 ---
 

@@ -93,7 +93,7 @@ On boot, `window.onload` reads it back. If the key is missing, seed data (defaul
 
 **localStorage key:** `androidWalletState_v4`
 
-**Transaction sort order:** Every transaction carries a `createdAt` full ISO 8601 timestamp stamped at creation time. The ledger and recent activity feed sort by `createdAt` descending by default. Recurring catch-up entries use end-of-day (`23:59:59`) on their due date as `createdAt` so multi-day batches posted at once sort correctly. Existing transactions without `createdAt` fall back to sorting by `date`.
+**Transaction sort order:** Every transaction carries a `createdAt` full ISO 8601 timestamp stamped at creation time. The recent activity feed sorts by `createdAt` descending. The ledger defaults to **Dated ↓** (expense date field, descending) on every open — the sort dropdown offers Dated ↓↑ and Amt ↓↑. Recurring catch-up entries use end-of-day (`23:59:59`) on their due date as `createdAt` so multi-day batches posted at once sort correctly. Existing transactions without `createdAt` fall back to sorting by `date`.
 
 > ⚠️ Local-only data is lost if the browser cache is cleared. Enable Google Drive sync in Settings to keep a persistent backup.
 
@@ -149,6 +149,11 @@ The Reports / Premium Insights screen includes a **Download PDF Summary Report**
 ## UX Notes
 
 - **Ledger header:** Compact three-row design — title + Sort button + Filter icon button / search bar / summary + active filter chips. Filter sheet (date range, category, payment) is collapsed by default; tap the filter icon to expand. Sort cycles through 6 modes (Date ↓↑, Amt ↓↑, Day ↓↑) and resets to Date ↓ on each ledger open. Active filters appear as dismissible chips; a dot on the filter icon signals active filters.
-- **Heatmap → Ledger:** Tapping a heatmap day opens the ledger scoped to that single day, sorted Date ↓ by default.
+- **Heatmap legend:** Four colour swatches (Low → High: emerald, amber, orange, yellow) rendered as static HTML below the heatmap grid. Matches `heatColor()` thresholds.
+- **Heatmap → Ledger:** Tapping a heatmap day opens the ledger scoped to that single day, sorted Dated ↓ by default.
+- **Ledger sort:** Tap the sort button to open a dropdown picker with 4 options — Dated ↓, Dated ↑, Amt ↓, Amt ↑. "Dated" sorts by the expense date field; resets to Dated ↓ on every ledger open.
+- **Goal editing:** Each goal card has a pencil icon that opens an inline edit row (target amount + goal date) inside the accordion. `toggleGoalEdit` / `saveGoalEdit` handle open/save.
+- **Drawer — Goals & Trips:** Now open sub-panels (`openDrawerSection('goals'/'trips')`) showing live tiles with Fund/Edit/Delete (goals) and Add Expense/View/Edit (trips, auto-detects pre/on status). Each panel has a "View" link at top and "+ New" at bottom.
+- **Drawer — Credit Cards:** "View Cards Tab" link moved to top of the section.
 - **Budget save flow:** After submitting a budget in the drawer, a confirmation dialog appears. Tapping OK closes the drawer and navigates to the dashboard.
 - **Nav scroll-to-top:** Every bottom nav tab switch resets the view scroll position to the top (both `screenContainer` and the active view panel).

@@ -457,7 +457,7 @@ function renderSettingsLists() {
         sortedCategories.forEach(cat => {
             const defPay = state.payments.find(p => p.id === cat.defaultPaymentId) || { name: "None" };
             const row = document.createElement("div");
-            row.className = "flex items-center justify-between bg-slate-900 rounded-xl border border-slate-855 text-xs overflow-hidden";
+            row.className = "flex items-stretch justify-between bg-slate-900 rounded-xl border border-slate-855 text-xs overflow-hidden";
             row.innerHTML = `
                 <div style="width:3px;align-self:stretch;background:${cat.color};flex-shrink:0;"></div>
                 <div class="flex items-center justify-between flex-1 p-3.5 min-w-0">
@@ -494,7 +494,7 @@ function renderSettingsLists() {
         const sortedPayments = [...activePayments].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
         sortedPayments.forEach(pay => {
             const card = document.createElement("div");
-            card.className = "flex items-center justify-between bg-slate-900 rounded-xl border border-slate-855 text-xs overflow-hidden";
+            card.className = "flex items-stretch justify-between bg-slate-900 rounded-xl border border-slate-855 text-xs overflow-hidden";
             card.innerHTML = `
                 <div style="width:3px;align-self:stretch;background:${pay.color};flex-shrink:0;"></div>
                 <div class="flex items-center justify-between flex-1 p-3.5">
@@ -710,6 +710,8 @@ function openDrawerSection(sectionName) {
         creditcards: 'Credit Cards',
         recurring:   'Recurring Expenses',
         emis:        'EMIs',
+        goals:       'Saving Goals',
+        trips:       'Trips',
     };
 
     title.textContent = sectionTitles[sectionName] || 'Back';
@@ -977,6 +979,13 @@ function openDrawerSection(sectionName) {
 
             body.innerHTML = `
                 <div style="padding:16px 16px 8px;">
+                    <!-- Go to Cards tab — top -->
+                    <button onclick="closeDrawer(); switchScreen('cards');" style="
+                        width:100%;margin-bottom:14px;padding:10px;border-radius:10px;
+                        background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);
+                        color:#a5b4fc;font-size:0.75rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+                        <span>View Cards Tab</span><span style="opacity:0.6;">→</span>
+                    </button>
                     <!-- Toggle row -->
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
                         <div>
@@ -1018,13 +1027,7 @@ function openDrawerSection(sectionName) {
                     <!-- Per-card section header -->
                     <div style="font-size:0.6rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Cards</div>
                     ${_cardRows}
-                    <!-- Go to cards tab -->
-                    <button onclick="closeDrawer(); switchScreen('cards');" style="
-                        width:100%;margin-top:4px;padding:10px;border-radius:10px;
-                        background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);
-                        color:#a5b4fc;font-size:0.75rem;font-weight:600;cursor:pointer;">
-                        Open Cards Tab →
-                    </button>` : ''}
+                    ` : ''}
                 </div>`;
             break;
         }
@@ -1056,6 +1059,108 @@ function openDrawerSection(sectionName) {
             initLucideIcons(body);
             renderSettingsLists();
             break;
+
+        case 'goals': {
+            const _goals = state.savingGoals || [];
+            const _sym = state.currencySymbol || '₹';
+            const _goalRows = _goals.map(g => {
+                const pct = Math.min(100, Math.round((g.current / g.target) * 100));
+                const remaining = Math.max(0, g.target - g.current);
+                return `
+                <div style="background:#0f172a;border:1px solid rgba(99,102,241,0.18);border-radius:12px;padding:12px 14px;margin-bottom:8px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                        <span style="font-size:0.78rem;font-weight:700;color:#f1f5f9;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${g.name}</span>
+                        <div style="display:flex;gap:6px;margin-left:8px;flex-shrink:0;">
+                            <button onclick="closeDrawer(); switchScreen('goals'); switchGoalsTab('goals'); setTimeout(()=>toggleGoalAccordion('${g.id}'),150);"
+                                style="padding:4px 8px;border-radius:7px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);color:#a5b4fc;font-size:0.6rem;font-weight:700;cursor:pointer;">Fund</button>
+                            <button onclick="closeDrawer(); switchScreen('goals'); switchGoalsTab('goals'); setTimeout(()=>{ toggleGoalAccordion('${g.id}'); toggleGoalEdit('${g.id}'); },150);"
+                                style="padding:4px 6px;border-radius:7px;background:rgba(30,41,59,1);border:1px solid #334155;color:#94a3b8;font-size:0.6rem;cursor:pointer;">✏️</button>
+                            <button onclick="removeSavingGoalDedicated('${g.id}')"
+                                style="padding:4px 6px;border-radius:7px;background:rgba(30,41,59,1);border:1px solid #334155;color:#f87171;font-size:0.6rem;cursor:pointer;">🗑</button>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                        <span style="font-size:0.65rem;color:#64748b;">${_sym}${g.current.toLocaleString()} of ${_sym}${g.target.toLocaleString()}</span>
+                        <span style="font-size:0.65rem;color:#818cf8;font-weight:700;">${pct}%</span>
+                    </div>
+                    <div style="background:#1e293b;border-radius:4px;height:4px;overflow:hidden;">
+                        <div style="height:100%;border-radius:4px;background:linear-gradient(90deg,#4f46e5,#818cf8);width:${pct}%;"></div>
+                    </div>
+                    ${g.targetDate ? `<div style="font-size:0.6rem;color:#475569;margin-top:5px;">Target: ${g.targetDate}</div>` : ''}
+                </div>`;
+            }).join('') || `<p style="font-size:0.7rem;color:#475569;text-align:center;padding:16px 0;">No saving goals yet.</p>`;
+
+            body.innerHTML = `
+                <div style="padding:16px 16px 8px;">
+                    <button onclick="closeDrawer(); switchScreen('goals'); switchGoalsTab('goals');" style="
+                        width:100%;margin-bottom:14px;padding:10px;border-radius:10px;
+                        background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);
+                        color:#a5b4fc;font-size:0.75rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+                        <span>View Saving Goals</span><span style="opacity:0.6;">→</span>
+                    </button>
+                    <div style="font-size:0.6rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">${_goals.length} Target${_goals.length !== 1 ? 's' : ''}</div>
+                    ${_goalRows}
+                    <button onclick="closeDrawer(); switchScreen('goals'); switchGoalsTab('goals');" style="
+                        width:100%;margin-top:4px;padding:9px;border-radius:10px;
+                        background:rgba(30,41,59,0.8);border:1px dashed #334155;
+                        color:#64748b;font-size:0.7rem;font-weight:600;cursor:pointer;">
+                        + New Saving Goal
+                    </button>
+                </div>`;
+            break;
+        }
+
+        case 'trips': {
+            const _trips = (state.trips || []).filter(t => getTripStatus(t) !== 'completed');
+            const _sym = state.currencySymbol || '₹';
+            const _statusColor = { planning: '#f59e0b', active: '#34d399', completed: '#64748b' };
+            const _statusLabel = { planning: 'Pre-trip', active: 'On Trip', completed: 'Done' };
+            const _tripRows = _trips.map(trip => {
+                const status = getTripStatus(trip);
+                const spent  = getTripTotalSpent(trip);
+                const rem    = Math.max(0, (trip.budget || 0) - spent);
+                const canQuickAdd = status === 'active' || status === 'planning';
+                const expType = status === 'active' ? 'on' : 'pre';
+                return `
+                <div style="background:#0f172a;border:1px solid rgba(245,158,11,0.18);border-radius:12px;padding:12px 14px;margin-bottom:8px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+                        <span style="font-size:0.78rem;font-weight:700;color:#f1f5f9;">${trip.emoji || '✈️'} ${trip.name}</span>
+                        <span style="font-size:0.6rem;font-weight:700;color:${_statusColor[status]};background:${_statusColor[status]}22;padding:2px 7px;border-radius:20px;">${_statusLabel[status]}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <span style="font-size:0.65rem;color:#64748b;">${_sym}${spent.toLocaleString()} spent · ${_sym}${rem.toLocaleString()} left</span>
+                    </div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        ${canQuickAdd ? `<button onclick="closeDrawer(); openTripQuickAdd('${trip.id}');"
+                            style="padding:5px 10px;border-radius:7px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:#fbbf24;font-size:0.65rem;font-weight:700;cursor:pointer;">
+                            + Add Expense</button>` : ''}
+                        <button onclick="closeDrawer(); switchScreen('goals'); switchGoalsTab('trips'); setTimeout(()=>openTripDetail('${trip.id}'),150);"
+                            style="padding:5px 10px;border-radius:7px;background:rgba(30,41,59,1);border:1px solid #334155;color:#94a3b8;font-size:0.65rem;cursor:pointer;">View</button>
+                        <button onclick="closeDrawer(); switchScreen('goals'); switchGoalsTab('trips'); setTimeout(()=>{ openTripDetail('${trip.id}'); openTripEdit(); },200);"
+                            style="padding:5px 8px;border-radius:7px;background:rgba(30,41,59,1);border:1px solid #334155;color:#94a3b8;font-size:0.65rem;cursor:pointer;">✏️</button>
+                    </div>
+                </div>`;
+            }).join('') || `<p style="font-size:0.7rem;color:#475569;text-align:center;padding:16px 0;">No active or upcoming trips.</p>`;
+
+            body.innerHTML = `
+                <div style="padding:16px 16px 8px;">
+                    <button onclick="closeDrawer(); switchScreen('goals'); switchGoalsTab('trips');" style="
+                        width:100%;margin-bottom:14px;padding:10px;border-radius:10px;
+                        background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.25);
+                        color:#fbbf24;font-size:0.75rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+                        <span>View Trips</span><span style="opacity:0.6;">→</span>
+                    </button>
+                    <div style="font-size:0.6rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">${_trips.length} Active / Upcoming</div>
+                    ${_tripRows}
+                    <button onclick="closeDrawer(); switchScreen('goals'); switchGoalsTab('trips');" style="
+                        width:100%;margin-top:4px;padding:9px;border-radius:10px;
+                        background:rgba(30,41,59,0.8);border:1px dashed #334155;
+                        color:#64748b;font-size:0.7rem;font-weight:600;cursor:pointer;">
+                        + New Trip
+                    </button>
+                </div>`;
+            break;
+        }
 
         default:
             body.innerHTML = `<p class="text-xs text-slate-500 p-4">${t("Nothing here yet.", "No fossils in this drawer yet.")}</p>`;

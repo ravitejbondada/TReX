@@ -5,7 +5,18 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ---
 
-## [v4.8] 2026-06-01 — Ledger header revamp + sort
+## [v4.12] 2026-06-01 — Sorted cat/pay dropdowns across all forms
+
+**What changed:** Category and payment options now sorted A→Z by name in every dropdown that wasn't already sorted.
+
+**Files modified:**
+- `js/transactions.js` — ledger filter dropdowns (category, payment) now sorted A→Z; payments also filtered to non-archived. Recurring form category and payment dropdowns sorted A→Z.
+- `js/dashboard.js` — quick log editor category and payment dropdowns sorted A→Z; payments filtered to non-archived.
+- `js/transactions.js` `populateExpenseFormDropdowns` and `populateEMIFormDropdowns` — already sorted, no change needed.
+
+---
+
+
 
 **What changed:** Collapsed the ledger top controls from ~6 rows into a compact 3-row header. Added a sort mode button and a collapsible filter sheet.
 

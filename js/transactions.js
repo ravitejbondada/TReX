@@ -1,6 +1,6 @@
 /**
  * transactions.js — Expense Form & Ledger
- * TReX � Devour Your Expenses
+ * TReX � Devour Your Expenses
  *
  * Add/edit expense form setup, form submission, category/payment dropdowns,
  * inline category & payment modals, history list renderer, ledger date
@@ -268,7 +268,7 @@ function saveInlineCategory() {
     if (!document.getElementById("recurringModal").classList.contains("hidden")) {
         const recurringCatSel = document.getElementById("recurringCategory");
         if (recurringCatSel) {
-            recurringCatSel.innerHTML = state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+            recurringCatSel.innerHTML = [...state.categories].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })).map(c => `<option value="${c.id}">${c.name}</option>`).join("");
             recurringCatSel.value = newId;
         }
     }
@@ -341,7 +341,7 @@ function saveInlinePayment() {
     if (!document.getElementById("recurringModal").classList.contains("hidden")) {
         const recurringPaySel = document.getElementById("recurringPayment");
         if (recurringPaySel) {
-            recurringPaySel.innerHTML = state.payments.filter(p => !p.archived).map(p => `<option value="${p.id}">${p.name}</option>`).join("");
+            recurringPaySel.innerHTML = [...state.payments].filter(p => !p.archived).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })).map(p => `<option value="${p.id}">${p.name}</option>`).join("");
             recurringPaySel.value = newId;
         }
     }
@@ -357,99 +357,14 @@ function saveInlinePayment() {
 }
 
 /* LEDGER WORKFLOW FILTER MODULE */
-
-// Sort state
-let _ledgerSort = { field: 'date', dir: 'desc', key: 'date_desc' };
-const _LEDGER_SORT_OPTIONS = [
-    { field: 'date',   dir: 'desc', label: 'Dated ↓', key: 'date_desc'   },
-    { field: 'date',   dir: 'asc',  label: 'Dated ↑', key: 'date_asc'    },
-    { field: 'amount', dir: 'desc', label: 'Amt ↓',   key: 'amount_desc' },
-    { field: 'amount', dir: 'asc',  label: 'Amt ↑',   key: 'amount_asc'  },
-];
-
-function openLedgerSortPicker() {
-    let panel = document.getElementById('ledgerSortPanel');
-    if (panel) { panel.remove(); return; }
-    panel = document.createElement('div');
-    panel.id = 'ledgerSortPanel';
-    panel.className = 'absolute right-0 top-full mt-1 z-50 bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden min-w-[130px]';
-    _LEDGER_SORT_OPTIONS.forEach(opt => {
-        const btn = document.createElement('button');
-        const isActive = opt.key === _ledgerSort.key;
-        btn.className = 'w-full text-left px-3 py-2 text-[10px] font-bold transition-all ' +
-            (isActive ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800');
-        btn.textContent = opt.label;
-        btn.onclick = () => {
-            _ledgerSort = opt;
-            const lbl = document.getElementById('ledgerSortLabel');
-            if (lbl) lbl.textContent = opt.label;
-            panel.remove();
-            filterHistory();
-        };
-        panel.appendChild(btn);
-    });
-    const anchor = document.getElementById('ledgerSortAnchor');
-    anchor.appendChild(panel);
-    setTimeout(() => document.addEventListener('click', function handler(e) {
-        if (!panel.contains(e.target)) { panel.remove(); document.removeEventListener('click', handler); }
-    }), 0);
-}
-
-function toggleLedgerFilterSheet() {
-    const sheet = document.getElementById('ledgerFilterSheet');
-    if (!sheet) return;
-    sheet.classList.toggle('hidden');
-    initLucideIcons(sheet);
-}
-
-function clearLedgerSearch() {
-    const inp = document.getElementById('historySearchInput');
-    if (inp) { inp.value = ''; filterHistory(); }
-}
-
-function _renderLedgerChips(catId, payId, from, to) {
-    const wrap = document.getElementById('ledgerActiveChips');
-    if (!wrap) return;
-    wrap.innerHTML = '';
-    const chip = (label, clearFn) => {
-        const el = document.createElement('span');
-        el.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800';
-        el.innerHTML = label + '<button class="ml-0.5 text-indigo-400 hover:text-white">x</button>';
-        el.querySelector('button').onclick = clearFn;
-        wrap.appendChild(el);
-    };
-    if (catId) {
-        const cat = state.categories.find(c => c.id === catId);
-        if (cat) chip(cat.name, () => { document.getElementById('historyFilterCategory').value = ''; filterHistory(); });
-    }
-    if (payId) {
-        const pay = state.payments.find(p => p.id === payId);
-        if (pay) chip(pay.name, () => { document.getElementById('historyFilterPayment').value = ''; filterHistory(); });
-    }
-    const cycle = calculateActiveCycleRange();
-    const pad = n => String(n).padStart(2, '0');
-    const fmt = d => d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
-    const cycleFrom = fmt(cycle.startDate), cycleTo = fmt(cycle.endDate);
-    if (from !== cycleFrom || to !== cycleTo) {
-        chip(from + ' → ' + to, () => resetLedgerToCycle());
-    }
-    const dot = document.getElementById('ledgerFilterDot');
-    if (dot) dot.classList.toggle('hidden', wrap.children.length === 0);
-}
-
 function renderHistoryList() {
-    // Reset sort to default (Added desc) on each open
-    _ledgerSort = _LEDGER_SORT_OPTIONS[0];
-    const lbl = document.getElementById('ledgerSortLabel');
-    if (lbl) lbl.textContent = _ledgerSort.label;
-
-    // Always reset date pickers to current cycle on open
-    initLedgerMonthSelector();
-
+    // Always seed date pickers with current cycle on fresh open (only if blank)
+    const fromEl = document.getElementById("ledgerDateFrom");
+    if (!fromEl.value) initLedgerMonthSelector();
 
     const catFilter = document.getElementById("historyFilterCategory");
     catFilter.innerHTML = '<option value="">All Categories</option>';
-    state.categories.forEach(cat => {
+    [...state.categories].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })).forEach(cat => {
         const opt = document.createElement("option");
         opt.value = cat.id;
         opt.textContent = cat.name;
@@ -458,7 +373,7 @@ function renderHistoryList() {
 
     const payFilter = document.getElementById("historyFilterPayment");
     payFilter.innerHTML = '<option value="">All Accounts</option>';
-    state.payments.forEach(pay => {
+    [...state.payments].filter(p => !p.archived).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })).forEach(pay => {
         const opt = document.createElement("option");
         opt.value = pay.id;
         opt.textContent = pay.name;
@@ -492,11 +407,11 @@ function getLedgerDateRange() {
 }
 
 function openLedgerWithDate(dateISO) {
-    // Called from heatmap — switch screen first (resets sort + cycle dates), then override to single day
-    switchScreen("history");
+    // Called from heatmap — set both From and To to a single day
+    initLedgerMonthSelector(); // reset first so fields exist
     document.getElementById("ledgerDateFrom").value = dateISO;
     document.getElementById("ledgerDateTo").value   = dateISO;
-    filterHistory();
+    switchScreen("history");
 }
 
 function filterHistory() {
@@ -530,23 +445,11 @@ function filterHistory() {
         return matchesCat && matchesPay && matchesDate && matchesText;
     });
 
-    // Dynamic sort
     items.sort((a, b) => {
-        let va, vb;
-        if (_ledgerSort.field === 'amount') {
-            va = parseFloat(a.amount) || 0;
-            vb = parseFloat(b.amount) || 0;
-        } else {
-            va = new Date(a.date).getTime();
-            vb = new Date(b.date).getTime();
-        }
-        return _ledgerSort.dir === 'desc' ? vb - va : va - vb;
+        const ta = a.createdAt ? new Date(a.createdAt) : new Date(a.date);
+        const tb = b.createdAt ? new Date(b.createdAt) : new Date(b.date);
+        return tb - ta;
     });
-
-    // Active filter chips + search clear button
-    _renderLedgerChips(catId, payId, from, to);
-    const clearBtn = document.getElementById('ledgerSearchClear');
-    if (clearBtn) clearBtn.classList.toggle('hidden', !search);
 
     // Update summary bar
     const total = items.reduce((s, t) => s + t.amount, 0);
