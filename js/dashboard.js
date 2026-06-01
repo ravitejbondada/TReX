@@ -139,13 +139,13 @@ function updateAppDashboardView() {
         progressEl.style.width = `${progressPercent}%`;
 
         if (progressPercent > 100 || rawPercent > 100) {
-            progressEl.className = "bg-gradient-to-r from-amber-400 via-orange-300 to-yellow-200 h-full rounded-full transition-all duration-700 shadow-sm shadow-amber-400/25";
+            progressEl.className = "bg-gradient-to-r from-rose-500 to-red-400 h-full rounded-full transition-all duration-700 shadow-sm shadow-rose-500/25";
         } else if (progressPercent > 85) {
-            progressEl.className = "bg-gradient-to-r from-amber-500 to-orange-300 h-full rounded-full transition-all duration-700 shadow-sm shadow-amber-500/20";
+            progressEl.className = "bg-gradient-to-r from-orange-400 to-amber-300 h-full rounded-full transition-all duration-700 shadow-sm shadow-orange-500/20";
         } else if (progressPercent > 60) {
-            progressEl.className = "bg-gradient-to-r from-amber-500 to-amber-300 h-full rounded-full transition-all duration-700 shadow-sm shadow-amber-500/20";
+            progressEl.className = "bg-gradient-to-r from-yellow-300 to-amber-200 h-full rounded-full transition-all duration-700 shadow-sm shadow-yellow-400/20";
         } else {
-            progressEl.className = "bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-full transition-all duration-700 shadow-sm shadow-emerald-500/20";
+            progressEl.className = "bg-gradient-to-r from-emerald-300 to-green-200 h-full rounded-full transition-all duration-700 shadow-sm shadow-emerald-400/20";
         }
 
         // Health emoji - dino mode swaps to dino emojis
@@ -390,12 +390,12 @@ function renderSpendHeatmap() {
     const maxSpend = Math.max(1, ...Object.values(dailySpend).filter(v => v > 0));
 
     function heatColor(amount) {
-        if (!amount) return { bg: "bg-slate-800/60", border: "border-slate-800" };
+        if (!amount) return { bg: "bg-slate-800/60", border: "border-slate-800", text: "text-slate-600" };
         const r = amount / maxSpend;
-        if (r < 0.25) return { bg: "bg-emerald-900/70", border: "border-emerald-800/50" };
-        if (r < 0.55) return { bg: "bg-amber-700/70",   border: "border-amber-600/50"  };
-        if (r < 0.80) return { bg: "bg-orange-600/80",  border: "border-orange-500/50" };
-        return             { bg: "bg-yellow-300/80",  border: "border-yellow-200/50" };
+        if (r < 0.25) return { bg: "bg-emerald-300/85", border: "border-emerald-200/80", text: "text-emerald-950" };
+        if (r < 0.55) return { bg: "bg-yellow-200/90",  border: "border-yellow-100/80",  text: "text-yellow-950" };
+        if (r < 0.80) return { bg: "bg-amber-300/90",   border: "border-amber-200/80",   text: "text-amber-950" };
+        return             { bg: "bg-rose-300/90",    border: "border-rose-200/80",    text: "text-rose-950" };
     }
 
     // ── Build flat list of all cells the grid will show ───────────────────────
@@ -469,7 +469,7 @@ function renderSpendHeatmap() {
                         : `cursor-pointer hover:scale-110 hover:z-10 hover:ring-1 hover:ring-indigo-400/60 hover:ring-offset-1 hover:ring-offset-slate-950 ${colors.bg} ${colors.border}`,
                     isToday ? "ring-1 ring-indigo-400 ring-offset-1 ring-offset-slate-950" : "",
                 ].join(" ");
-                cell.innerHTML = `<span class="text-[8px] font-bold ${isToday ? 'text-indigo-300' : isFuture ? 'text-slate-700' : spend > 0 ? 'text-white' : 'text-slate-600'}">${cDay}</span>`;
+                cell.innerHTML = `<span class="text-[8px] font-bold ${isToday ? 'text-indigo-300' : isFuture ? 'text-slate-700' : colors.text}">${cDay}</span>`;
 
                 cell.addEventListener("mouseenter", () => {
                     if (isFuture) { tooltip.textContent = ""; return; }

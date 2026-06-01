@@ -10,6 +10,7 @@ Files listed are the ones modified. Always update this on any meaningful change.
 **Files modified:**
 - `js/core.js` — added picker page scroll lock/unlock so the page behind the custom picker cannot scroll on mobile; added `resetAppScrollToTop(viewName)` so navigation resets `window`, document/body, `<main>`, `#screenContainer`, and the active panel; changed clean-start `dinoPrefs.dinoMode` default to `false`.
 - `styles.css` — added `overscroll-behavior` and `touch-action` guards to the custom picker overlay/panel/list so picker scrolling stays inside the sheet.
+- `js/dashboard.js`, `index.html` — updated heatmap and budget-progress risk colors to light green → light yellow → amber/orange → rose/red; compacted and right-aligned the heatmap legend.
 - `index.html` — labelled Dino Mode as `(experimental)` in Settings.
 - `js/dashboard.js` — heatmap footprints now require both `dinoMode` and `dinoFootprints`, preventing footprint/egg markers while Dino Mode is off.
 - `js/settings.js` — Dino dependent controls default to disabled/hidden when Dino Mode is off; dependent toggle handlers bail out if Dino Mode is off.
@@ -23,6 +24,7 @@ Files listed are the ones modified. Always update this on any meaningful change.
 - Fossil Mode, Dino Footprints, and Extinction Warnings have no visible/runtime effect while Dino Mode is off.
 - Opening the custom picker locks the page behind it; only the picker list scrolls.
 - Bottom nav switches reliably scroll the target page to the top across mobile browsers.
+- Heatmap colors now align with forecast risk colors, and the legend uses less vertical space.
 - Date fields in Goals and Trips have enough room to show full mobile date values without overflowing their cards; Add Expense keeps Date and Note side by side.
 - The high-use Add Expense form keeps the save button easier to reach on mobile.
 - The header sync icon intentionally spins while `state.syncStatus === "syncing"`; it should stop when sync settles to idle/offline/error.

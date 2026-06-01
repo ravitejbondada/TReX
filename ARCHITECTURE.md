@@ -365,7 +365,7 @@ Spend data scoped to `cycleStart`–`cycleEnd`, keyed by full ISO date string `"
 
 **CSS:** `.heatmap-crosshatch` — diagonal stripe at 6% opacity over near-black bg.
 
-**Heat legend:** Four colour swatches rendered below the grid in `index.html` (static HTML, no JS): emerald → amber → orange → yellow, labelled Low → High. Colours match the `heatColor()` thresholds in `renderSpendHeatmap()` (0–25% emerald, 25–55% amber, 55–80% orange, 80–100% yellow).
+**Heat legend:** Compact right-aligned swatches rendered below the grid in `index.html` (static HTML, no JS): light green → light yellow → amber → light rose, labelled Low → High. Colours match the `heatColor()` thresholds in `renderSpendHeatmap()` (0–25% green, 25–55% yellow, 55–80% amber, 80–100% rose) and align with the forecast panel risk palette.
 
 ---
 
