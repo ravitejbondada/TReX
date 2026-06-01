@@ -308,6 +308,11 @@ All `<select class="app-dropdown">` elements use a central bottom-sheet custom p
 ### Ledger sort button
 The ledger sort button (`openLedgerSortPicker()`) is a thin wrapper over `openCustomPicker` targeting the hidden `#ledgerSortSelect`. The select has four static options (`date-desc`, `date-asc`, `amt-desc`, `amt-asc`). Its `onchange` updates `#ledgerSortLabel` text and calls `filterHistory()`. `renderHistoryList()` resets it to `date-desc` on every open.
 
+### Ledger row actions and filters
+`transactions.js` keeps ledger-only UI state outside persisted app state: `ledgerSelectMode`, `ledgerSelectedIds`, `ledgerAmountMin`, `ledgerAmountMax`, and `openSwipeRowEl`. `filterHistory()` applies category, payment, date, search text, amount min/max, and sort in one pass, then renders chips and the bulk-select bar.
+
+Normal rows are wrapped in `.swipe-row-wrapper`; `attachSwipeToDelete()` handles mobile left-swipe gestures and reveals `.swipe-delete-btn`. Trip-synced rows (`tripRef`) do not get destructive swipe/select affordances and remain read-only in the ledger.
+
 ### DOM elements (injected once by `_ensurePickerDOM()`)
 | ID | Role |
 |---|---|

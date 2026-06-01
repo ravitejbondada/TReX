@@ -1,24 +1,26 @@
 # TReX Working Log
 
-**Last updated:** May 31, 2026
-**Current version:** v4.2+
+**Last updated:** June 1, 2026
+**Current version:** v4.15
 **Plan:** `TREX_IMPLEMENTATION_PLAN.md` - Feature Implementation Plan
 
 ---
 
 ## Current Item
 
-Phase 1 - Item 1: Swipe-to-delete on ledger rows
+Phase 1 - Items 1-3: Swipe-to-delete, bulk select, amount range filter
 
 ## Status
 
-[ ] Not started
+[x] Done
 
 ## Notes
 
 - Fresh start for the new feature implementation plan.
 - Recurring pause/resume and recurring scheduler simplification are already complete and intentionally removed from the new plan.
 - Before touching source for an item, update this file to `[~] In progress`; after verification, mark `[x] Done` and add a brief completion note.
+- Implementing the first three ledger UX items together because they share the ledger row/header/filter surface.
+- Completed ledger swipe-to-delete, bulk select/delete, and amount range filtering.
 
 ---
 
@@ -33,9 +35,9 @@ Phase 1 - Item 1: Swipe-to-delete on ledger rows
 
 ### Phase 1 - Core Ledger UX
 
-[ ] 1. Swipe-to-delete
-[ ] 2. Bulk delete / select mode
-[ ] 3. Filter by amount range
+[x] 1. Swipe-to-delete
+[x] 2. Bulk delete / select mode
+[x] 3. Filter by amount range
 [ ] 4. Running balance
 [ ] 5. Transaction templates / presets
 [ ] 6. Inline edit (amount + note)

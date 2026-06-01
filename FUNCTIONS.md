@@ -131,7 +131,7 @@ To find where to add/edit something, scan the relevant section header then go to
 
 ---
 
-## transactions.js — Expense Form & Ledger (20 functions)
+## transactions.js — Expense Form & Ledger (27 functions)
 
 | Function | Description |
 |---|---|
@@ -150,14 +150,21 @@ To find where to add/edit something, scan the relevant section header then go to
 | `saveInlinePayment()` | Creates a new payment method from the inline modal, updates dropdowns |
 | `renderHistoryList()` | Renders the full ledger/history list; resets `#ledgerSortSelect` to `date-desc` and sort label to "Dated ↓" on every open; seeds date pickers with current cycle; populates category and payment filter dropdowns sorted A→Z |
 | `initLedgerMonthSelector()` | Populates the ledger date range pickers with the current active cycle |
-| `resetLedgerToCycle()` | Resets ledger date range to the current active cycle and re-runs filterHistory |
+| `resetLedgerToCycle()` | Resets ledger date range and amount filters to the current active cycle, then re-runs filterHistory |
 | `getLedgerDateRange()` | Returns `{ from, to }` ISO strings from the ledger date pickers |
 | `openLedgerWithDate(dateISO)` | Switches to history view (resetting sort + cycle dates), then overrides both date pickers to a single day and calls filterHistory; used by the spend heatmap |
-| `filterHistory()` | Applies search text + category/payment filters; reads `#ledgerSortSelect` value (`date-desc`, `date-asc`, `amt-desc`, `amt-asc`) for dynamic sort; renders summary bar, chips, and search-clear button visibility |
+| `filterHistory()` | Applies search text + category/payment/date/amount filters; reads `#ledgerSortSelect` value (`date-desc`, `date-asc`, `amt-desc`, `amt-asc`) for dynamic sort; renders summary bar, chips, bulk bar, and search-clear button visibility |
 | ~~`cycleLedgerSort()`~~ | **Removed** — replaced by `openLedgerSortPicker()` + the central custom picker system |
 | `toggleLedgerFilterSheet()` | Toggles the collapsed filter sheet (date range + category + payment dropdowns) |
 | `clearLedgerSearch()` | Clears the search input and re-runs filterHistory |
-| `_renderLedgerChips(catId, payId, from, to)` | Renders dismissible active-filter chips below the summary bar; shows/hides the filter dot indicator on the filter button |
+| `applyAmountRangeFilter()` | Reads ledger min/max amount inputs, normalizes empty values to `null`, and re-runs filterHistory |
+| `closeOpenSwipeRow(exceptEl?)` | Closes any currently revealed swipe-delete ledger row |
+| `syncLedgerBulkBar()` | Syncs select-mode bar visibility, selected count, selected button state, and delete disabled state |
+| `toggleLedgerSelectMode(force?)` | Toggles or forces ledger select mode; clears selected IDs when leaving select mode |
+| `toggleLedgerRowSelect(txId)` | Selects/deselects a normal ledger row for bulk delete; ignores trip-synced rows |
+| `bulkDeleteSelected()` | Confirms and deletes all selected non-trip ledger transactions, then refreshes dependent views |
+| `attachSwipeToDelete(rowEl, txId)` | Adds mobile touch handlers that reveal the row's delete action after a left swipe |
+| `_renderLedgerChips(catId, payId, from, to)` | Renders dismissible active-filter chips, including amount range chips; shows/hides the filter dot indicator on the filter button |
 | `deleteTransaction(id)` | Async - confirms then removes a transaction; recurring-created transactions are plain ledger rows, so delete behavior is the same as manual expenses |
 
 ---

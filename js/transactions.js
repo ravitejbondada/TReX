@@ -10,6 +10,12 @@
  * Global state: window.state (defined in core.js)
  */
 
+let ledgerSelectMode = false;
+let ledgerSelectedIds = new Set();
+let ledgerAmountMin = null;
+let ledgerAmountMax = null;
+let openSwipeRowEl = null;
+
 function setupExpenseFormForAdd() {
     document.getElementById("expenseFormTitle").textContent = "Record Expense";
     document.getElementById("editExpenseId").value = "";
@@ -358,6 +364,9 @@ function saveInlinePayment() {
 
 /* LEDGER WORKFLOW FILTER MODULE */
 function renderHistoryList() {
+    ledgerSelectMode = false;
+    ledgerSelectedIds.clear();
+    closeOpenSwipeRow();
     // Reset sort to Dated ↓ on every fresh open
     const sortSel = document.getElementById("ledgerSortSelect");
     if (sortSel) { sortSel.value = "date-desc"; }
@@ -401,6 +410,12 @@ function initLedgerMonthSelector() {
 
 function resetLedgerToCycle() {
     initLedgerMonthSelector();
+    ledgerAmountMin = null;
+    ledgerAmountMax = null;
+    const minEl = document.getElementById("ledgerAmountMin");
+    const maxEl = document.getElementById("ledgerAmountMax");
+    if (minEl) minEl.value = "";
+    if (maxEl) maxEl.value = "";
     filterHistory();
 }
 
@@ -416,6 +431,121 @@ function clearLedgerSearch() {
     filterHistory();
 }
 
+function applyAmountRangeFilter() {
+    const minEl = document.getElementById("ledgerAmountMin");
+    const maxEl = document.getElementById("ledgerAmountMax");
+    const minVal = minEl ? parseFloat(minEl.value) : NaN;
+    const maxVal = maxEl ? parseFloat(maxEl.value) : NaN;
+    ledgerAmountMin = Number.isFinite(minVal) ? minVal : null;
+    ledgerAmountMax = Number.isFinite(maxVal) ? maxVal : null;
+    filterHistory();
+}
+
+function closeOpenSwipeRow(exceptEl = null) {
+    if (openSwipeRowEl && openSwipeRowEl !== exceptEl) {
+        openSwipeRowEl.classList.remove("swiped");
+        openSwipeRowEl.style.transform = "";
+    }
+    if (!exceptEl || openSwipeRowEl !== exceptEl) openSwipeRowEl = null;
+}
+
+function syncLedgerBulkBar() {
+    const bar = document.getElementById("ledgerBulkBar");
+    const count = document.getElementById("ledgerSelectCount");
+    const selectBtn = document.getElementById("ledgerSelectBtn");
+    const deleteBtn = document.getElementById("ledgerBulkDeleteBtn");
+    if (bar) bar.classList.toggle("hidden", !ledgerSelectMode);
+    if (count) count.textContent = `${ledgerSelectedIds.size} selected`;
+    if (selectBtn) {
+        selectBtn.classList.toggle("text-indigo-300", ledgerSelectMode);
+        selectBtn.classList.toggle("border-indigo-500/40", ledgerSelectMode);
+    }
+    if (deleteBtn) deleteBtn.disabled = ledgerSelectedIds.size === 0;
+}
+
+function toggleLedgerSelectMode(force) {
+    ledgerSelectMode = typeof force === "boolean" ? force : !ledgerSelectMode;
+    if (!ledgerSelectMode) ledgerSelectedIds.clear();
+    closeOpenSwipeRow();
+    filterHistory();
+}
+
+function toggleLedgerRowSelect(txId) {
+    const tx = state.transactions.find(t => t.id === txId);
+    if (!tx || tx.tripRef) return;
+    if (ledgerSelectedIds.has(txId)) {
+        ledgerSelectedIds.delete(txId);
+    } else {
+        ledgerSelectedIds.add(txId);
+    }
+    filterHistory();
+}
+
+async function bulkDeleteSelected() {
+    const ids = [...ledgerSelectedIds].filter(id => {
+        const tx = state.transactions.find(t => t.id === id);
+        return tx && !tx.tripRef;
+    });
+    if (ids.length === 0) return;
+    const label = `${ids.length} transaction${ids.length !== 1 ? "s" : ""}`;
+    if (!await customConfirm(`Delete ${label}? This cannot be undone.`, "Delete selected?", "Delete")) return;
+
+    state.transactions = state.transactions.filter(t => !ids.includes(t.id));
+    ledgerSelectedIds.clear();
+    ledgerSelectMode = false;
+    saveStateToLocalStorage();
+    playSound(S.DELETE);
+    showNotification("Selected transactions deleted.");
+    filterHistory();
+    refreshCreditCardViews();
+    updateAppDashboardView();
+}
+
+function attachSwipeToDelete(rowEl, txId) {
+    if (!rowEl) return;
+    let startX = 0;
+    let startY = 0;
+    let deltaX = 0;
+    let tracking = false;
+
+    rowEl.addEventListener("touchstart", event => {
+        if (ledgerSelectMode) return;
+        const touch = event.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+        deltaX = 0;
+        tracking = true;
+        closeOpenSwipeRow(rowEl);
+    }, { passive: true });
+
+    rowEl.addEventListener("touchmove", event => {
+        if (!tracking || ledgerSelectMode) return;
+        const touch = event.touches[0];
+        deltaX = touch.clientX - startX;
+        const deltaY = touch.clientY - startY;
+        if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+        if (deltaX < 0) {
+            event.preventDefault();
+            const offset = Math.max(deltaX, -84);
+            rowEl.style.transform = `translateX(${offset}px)`;
+        }
+    }, { passive: false });
+
+    rowEl.addEventListener("touchend", () => {
+        if (!tracking || ledgerSelectMode) return;
+        tracking = false;
+        if (deltaX < -60) {
+            rowEl.classList.add("swiped");
+            rowEl.style.transform = "";
+            openSwipeRowEl = rowEl;
+        } else {
+            rowEl.classList.remove("swiped");
+            rowEl.style.transform = "";
+            if (openSwipeRowEl === rowEl) openSwipeRowEl = null;
+        }
+    });
+}
+
 function _removeLedgerFilter(type) {
     if (type === "category") {
         const el = document.getElementById("historyFilterCategory");
@@ -427,6 +557,14 @@ function _removeLedgerFilter(type) {
     }
     if (type === "date") {
         initLedgerMonthSelector();
+    }
+    if (type === "amount") {
+        ledgerAmountMin = null;
+        ledgerAmountMax = null;
+        const minEl = document.getElementById("ledgerAmountMin");
+        const maxEl = document.getElementById("ledgerAmountMax");
+        if (minEl) minEl.value = "";
+        if (maxEl) maxEl.value = "";
     }
     filterHistory();
 }
@@ -452,6 +590,11 @@ function _renderLedgerChips(catId, payId, from, to) {
     }
     if ((from && from !== cycleFrom) || (to && to !== cycleTo)) {
         chips.push({ type: "date", label: `${from || "Start"} to ${to || "Today"}` });
+    }
+    if (ledgerAmountMin !== null || ledgerAmountMax !== null) {
+        const minLabel = ledgerAmountMin !== null ? `${state.currencySymbol}${ledgerAmountMin}` : "Min";
+        const maxLabel = ledgerAmountMax !== null ? `${state.currencySymbol}${ledgerAmountMax}` : "Max";
+        chips.push({ type: "amount", label: `${minLabel} to ${maxLabel}` });
     }
 
     chipHost.innerHTML = chips.map(chip => `
@@ -502,6 +645,9 @@ function filterHistory() {
         const matchesCat  = !catId || t.categoryId === catId;
         const matchesPay  = !payId || t.paymentId  === payId;
         const matchesDate = t.date >= from && t.date <= to;
+        const amount = parseFloat(t.amount || 0);
+        const matchesMin = ledgerAmountMin === null || amount >= ledgerAmountMin;
+        const matchesMax = ledgerAmountMax === null || amount <= ledgerAmountMax;
 
         const categoryObj = state.categories.find(c => c.id === t.categoryId) || { name: "" };
         const paymentObj  = state.payments.find(p => p.id === t.paymentId)    || { name: "" };
@@ -512,7 +658,7 @@ function filterHistory() {
                             paymentObj.name.toLowerCase().includes(search) ||
                             t.amount.toString().includes(search);
 
-        return matchesCat && matchesPay && matchesDate && matchesText;
+        return matchesCat && matchesPay && matchesDate && matchesMin && matchesMax && matchesText;
     });
 
     const sortMode = (document.getElementById("ledgerSortSelect") || {}).value || "date-desc";
@@ -531,6 +677,7 @@ function filterHistory() {
     const totalEl = document.getElementById("ledgerPeriodTotal");
     if (countEl) countEl.textContent = `${items.length} transaction${items.length !== 1 ? "s" : ""}`;
     if (totalEl) totalEl.textContent  = items.length ? `${state.currencySymbol}${total.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` : "—";
+    syncLedgerBulkBar();
 
     if (items.length === 0) {
         container.innerHTML = `<p class="text-xs text-slate-500 text-center py-12">${t("No matching transactions found.", "🦴 No fossils match your search.")}</p>`;
@@ -548,22 +695,53 @@ function filterHistory() {
             ? `<span class="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-950 text-amber-400 font-bold uppercase shrink-0">${t.tripType === "pre" ? "Pre-Trip" : "Trip"}</span>`
             : "";
 
+        const wrapper = document.createElement("div");
+        wrapper.className = "swipe-row-wrapper";
+        wrapper.id = `tx-wrap-${t.id}`;
+
+        if (!t.tripRef) {
+            const deleteBtn = document.createElement("button");
+            deleteBtn.type = "button";
+            deleteBtn.className = "swipe-delete-btn";
+            deleteBtn.innerHTML = `<i data-lucide="trash-2" class="w-4 h-4"></i><span>Delete</span>`;
+            deleteBtn.onclick = event => {
+                event.stopPropagation();
+                closeOpenSwipeRow();
+                deleteTransaction(t.id);
+            };
+            wrapper.appendChild(deleteBtn);
+        }
+
         const card = document.createElement("div");
         card.id = `tx-row-${t.id}`;
-        card.className = "bg-slate-900 border border-slate-850 rounded-2xl px-3 py-3 flex justify-between items-stretch gap-2 transition-all";
+        const isSelected = ledgerSelectedIds.has(t.id);
+        card.className = `tx-row bg-slate-900 border border-slate-850 rounded-2xl px-3 py-3 flex justify-between items-stretch gap-2 transition-all ${isSelected ? "selected" : ""}`;
 
-        const actionButtons = t.tripRef
+        const actionButtons = ledgerSelectMode
+            ? (t.tripRef
+                ? `<span class="p-1 text-slate-700" title="Managed via Trip"><i data-lucide="lock" class="w-3.5 h-3.5"></i></span>`
+                : `<span class="text-[8px] font-bold uppercase tracking-wide text-slate-600">Select</span>`)
+            : (t.tripRef
             ? `<span class="p-1 text-slate-700" title="Managed via Trip"><i data-lucide="lock" class="w-3.5 h-3.5"></i></span>`
             : `<button onclick="loadExpenseToFormForEdit('${t.id}')" class="p-1 text-slate-600 hover:text-indigo-400 rounded hover:bg-slate-950 transition-all" title="Edit">
                         <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                     </button>
                     <button onclick="event.stopPropagation(); deleteTransaction('${t.id}')" class="p-1 text-slate-600 hover:text-rose-400 rounded hover:bg-slate-950 transition-all" title="Delete">
                         <i data-lucide="trash" class="w-3.5 h-3.5"></i>
-                    </button>`;
+                    </button>`);
 
-        const clickHandler = t.tripRef ? "" : `onclick="loadExpenseToFormForEdit('${t.id}')"`;
+        const clickHandler = t.tripRef
+            ? ""
+            : (ledgerSelectMode ? `onclick="toggleLedgerRowSelect('${t.id}')"` : `onclick="loadExpenseToFormForEdit('${t.id}')"`);
+        const selectControl = ledgerSelectMode && !t.tripRef
+            ? `<button type="button" onclick="event.stopPropagation(); toggleLedgerRowSelect('${t.id}')"
+                    class="ledger-select-check ${isSelected ? "active" : ""}" aria-label="${isSelected ? "Deselect" : "Select"} transaction">
+                    <i data-lucide="${isSelected ? "check" : "circle"}" class="w-3.5 h-3.5"></i>
+                </button>`
+            : "";
 
         card.innerHTML = `
+            ${selectControl}
             <div class="flex items-stretch gap-2.5 min-w-0 flex-1 ${t.tripRef ? "cursor-default" : "cursor-pointer active:scale-95"}" ${clickHandler}>
                 <span class="w-1 self-stretch rounded-full shrink-0" style="background-color: ${cat.color}"></span>
                 <div class="min-w-0 flex-1 space-y-1 py-0.5">
@@ -595,7 +773,9 @@ function filterHistory() {
                 </div>
             </div>
         `;
-        container.appendChild(card);
+        wrapper.appendChild(card);
+        container.appendChild(wrapper);
+        if (!t.tripRef) attachSwipeToDelete(card, t.id);
     });
 
     initLucideIcons();

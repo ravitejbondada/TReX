@@ -548,10 +548,10 @@
                     <!-- Heat legend -->
                     <div class="flex items-center justify-end gap-1 -mt-1 px-0.5">
                         <span class="text-[8px] text-slate-600 font-bold">Low</span>
-                        <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500/12 border border-emerald-400/15 inline-block"></span>
-                        <span class="w-2.5 h-2.5 rounded-sm bg-yellow-400/12 border border-yellow-300/15 inline-block"></span>
-                        <span class="w-2.5 h-2.5 rounded-sm bg-amber-500/14 border border-amber-400/18 inline-block"></span>
-                        <span class="w-2.5 h-2.5 rounded-sm bg-rose-500/16 border border-rose-400/20 inline-block"></span>
+                        <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500/12 border border-emerald-400/25 inline-block"></span>
+                        <span class="w-2.5 h-2.5 rounded-sm bg-yellow-400/12 border border-yellow-300/25 inline-block"></span>
+                        <span class="w-2.5 h-2.5 rounded-sm bg-amber-500/14 border border-amber-400/30 inline-block"></span>
+                        <span class="w-2.5 h-2.5 rounded-sm bg-rose-500/16 border border-rose-400/35 inline-block"></span>
                         <span class="text-[8px] text-slate-600 font-bold">High</span>
                     </div>
                     <div id="heatmapTooltip" class="text-[10px] text-slate-300 text-center font-semibold min-h-[1rem]">
@@ -759,6 +759,11 @@
                                 <span id="ledgerSortLabel" class="text-[9px] font-bold uppercase tracking-wide">Dated ↓</span>
                             </button>
                         </div>
+                        <button onclick="toggleLedgerSelectMode()" id="ledgerSelectBtn"
+                            class="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-850 rounded-xl text-slate-400 transition-all active:scale-95"
+                            title="Select transactions">
+                            <i data-lucide="check-square" class="w-4 h-4"></i>
+                        </button>
                         <!-- Filter toggle -->
                         <button onclick="toggleLedgerFilterSheet()" id="ledgerFilterBtn"
                             class="relative p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-850 rounded-xl text-slate-400 transition-all active:scale-95">
@@ -785,6 +790,21 @@
                     <span class="text-[9px] text-slate-700">·</span>
                     <span class="text-[9px] font-extrabold text-indigo-300" id="ledgerPeriodTotal">—</span>
                     <div id="ledgerActiveChips" class="flex items-center gap-1.5 flex-wrap ml-auto"></div>
+                </div>
+
+                <!-- Bulk select actions -->
+                <div id="ledgerBulkBar" class="hidden flex bg-indigo-950/40 border border-indigo-500/25 rounded-2xl px-3 py-2 items-center justify-between gap-2">
+                    <span id="ledgerSelectCount" class="text-[10px] font-bold text-indigo-200">0 selected</span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="bulkDeleteSelected()" id="ledgerBulkDeleteBtn"
+                            class="px-3 py-1.5 rounded-lg bg-rose-600 disabled:bg-slate-800 disabled:text-slate-600 text-white text-[9px] font-extrabold uppercase tracking-wide transition-all active:scale-95">
+                            Delete
+                        </button>
+                        <button onclick="toggleLedgerSelectMode(false)"
+                            class="px-3 py-1.5 rounded-lg bg-slate-900 text-slate-400 text-[9px] font-extrabold uppercase tracking-wide transition-all active:scale-95">
+                            Cancel
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Filter sheet (collapsed by default) -->
@@ -815,6 +835,18 @@
                             class="w-full app-dropdown rounded-lg text-[11px] text-white focus:outline-none"></select>
                         <select id="historyFilterPayment" onchange="filterHistory()"
                             class="w-full app-dropdown rounded-lg text-[11px] text-white focus:outline-none"></select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[8px] text-slate-500 font-extrabold uppercase block mb-1">Min Amount</label>
+                            <input type="number" id="ledgerAmountMin" min="0" step="0.01" inputmode="decimal" oninput="applyAmountRangeFilter()"
+                                class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-[10px] text-white focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                        </div>
+                        <div>
+                            <label class="text-[8px] text-slate-500 font-extrabold uppercase block mb-1">Max Amount</label>
+                            <input type="number" id="ledgerAmountMax" min="0" step="0.01" inputmode="decimal" oninput="applyAmountRangeFilter()"
+                                class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-[10px] text-white focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                        </div>
                     </div>
                 </div>
 

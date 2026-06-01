@@ -929,6 +929,63 @@
         .egg-crack-transition { animation: egg-crack 0.6s ease; }
         .goal-egg-icon { display:inline-block; line-height:1; }
 
+        /* Ledger swipe and select affordances */
+        .swipe-row-wrapper {
+            position: relative;
+            overflow: hidden;
+            border-radius: 1rem;
+        }
+        .swipe-delete-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 5.25rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.15rem;
+            background: rgba(225, 29, 72, 0.96);
+            color: white;
+            font-size: 0.55rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-radius: 0 1rem 1rem 0;
+        }
+        .tx-row {
+            position: relative;
+            z-index: 1;
+            touch-action: pan-y;
+            will-change: transform;
+        }
+        .tx-row.swiped {
+            transform: translateX(-5.25rem);
+        }
+        .tx-row.selected {
+            border-color: rgba(129, 140, 248, 0.55) !important;
+            background: rgba(79, 70, 229, 0.14) !important;
+        }
+        .ledger-select-check {
+            width: 1.5rem;
+            min-width: 1.5rem;
+            height: 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            align-self: center;
+            border-radius: 999px;
+            border: 1px solid rgba(100, 116, 139, 0.55);
+            color: rgb(100, 116, 139);
+            background: rgba(15, 23, 42, 0.72);
+        }
+        .ledger-select-check.active {
+            border-color: rgba(129, 140, 248, 0.75);
+            color: rgb(199, 210, 254);
+            background: rgba(79, 70, 229, 0.38);
+        }
+
         /* ── CUSTOM PICKER SHEET ─────────────────────────────────────────────
            Central bottom-sheet picker that replaces the native OS <select>
            picker on all app-dropdown elements. Triggered by openCustomPicker().

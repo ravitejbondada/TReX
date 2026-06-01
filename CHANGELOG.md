@@ -3,6 +3,24 @@
 Format: `[version] YYYY-MM-DD — summary`
 Files listed are the ones modified. Always update this on any meaningful change.
 
+## [v4.15] 2026-06-01 - Ledger swipe, bulk select, and amount filters
+
+**What changed:** Implemented the first three Phase 1 ledger UX items.
+
+**Files modified:**
+- `index.html` - added ledger select-mode button, bulk delete action bar, and min/max amount inputs in the filter sheet.
+- `js/transactions.js` - added swipe-to-delete row wrappers, select-mode state, bulk delete handling, amount range filtering, amount filter chips, and current-cycle reset cleanup.
+- `styles.css` - added ledger swipe/reveal, delete action, selected-row, and checkbox affordance styles.
+- `README.md`, `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`, `working.md` - updated docs.
+
+**Behavior:**
+- Swiping a normal ledger row left reveals a red Delete action; trip-synced rows remain locked/read-only.
+- Select mode lets multiple normal ledger rows be selected and deleted together with one confirmation.
+- Ledger filter sheet now supports min/max amount filtering; active amount filters appear as dismissible chips and clear with Current Cycle.
+- Heatmap fills remain ultra-subtle while colored borders are slightly brighter for better readability on dark backgrounds.
+
+---
+
 ## [v4.14] 2026-06-01 — Mobile polish and Dino Mode guardrails
 
 **What changed:** Tightened mobile navigation/dropdown/add-expense behavior and made Dino Mode opt-in/experimental.

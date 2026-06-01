@@ -60,7 +60,7 @@ TReX/
     ├── core.js             State, boot, persistence, routing, theme, notifications
     ├── auth.js             PIN lock/unlock, WebAuthn biometrics, locked expense sheet (slide-up)
     ├── dashboard.js        Budget widgets, forecast, heatmap, quick logs, alerts/reminders
-    ├── transactions.js     Add/edit expense form, ledger history, filter/search
+    ├── transactions.js     Add/edit expense form, ledger history, filter/search, swipe/bulk actions
     ├── reports.js          Chart.js renderers, analytics reports, MoM comparison
     ├── settings.js         Settings form, category/payment CRUD, CC helpers
     ├── credit-cards.js     Credit card view, card analytics, payment lock UI
@@ -148,7 +148,8 @@ The Reports / Premium Insights screen includes a **Download PDF Summary Report**
 
 ## UX Notes
 
-- **Ledger header:** Compact three-row design — title + Sort button + Filter icon button / search bar / summary + active filter chips. Filter sheet (date range, category, payment) is collapsed by default; tap the filter icon to expand. Sort uses 4 picker options (Dated ↓↑, Amt ↓↑) and resets to Dated ↓ on each ledger open. Active filters appear as dismissible chips; a dot on the filter icon signals active filters.
+- **Ledger header:** Compact three-row design — title + Sort button + Select button + Filter icon button / search bar / summary + active filter chips. Filter sheet (date range, category, payment, amount range) is collapsed by default; tap the filter icon to expand. Sort uses 4 picker options (Dated ↓↑, Amt ↓↑) and resets to Dated ↓ on each ledger open. Active filters appear as dismissible chips; a dot on the filter icon signals active filters.
+- **Ledger row actions:** Swipe a normal ledger row left to reveal Delete. Select mode supports multi-select bulk delete; trip-synced ledger rows stay locked/read-only.
 - **Heatmap legend:** Compact right-aligned ultra-muted swatches (Low → High: green, yellow, amber, rose) rendered below the heatmap grid. Matches `heatColor()` thresholds while staying subtle on the dark dashboard.
 - **Heatmap → Ledger:** Tapping a heatmap day opens the ledger scoped to that single day, sorted Dated ↓ by default.
 - **Ledger sort:** Tap the sort button to open the custom picker with 4 options — Dated ↓, Dated ↑, Amt ↓, Amt ↑. "Dated" sorts by the expense date field. Resets to Dated ↓ on every ledger open.
