@@ -62,6 +62,7 @@ let state = {
     payments: [...DEFAULT_PAYMENTS],
     transactions: [],
     transactionTemplates: [],
+    knownTags: [],
     savingGoals: [...DEFAULT_SAVING_GOALS],
     recurringExpenses: [],
     emis: [],
@@ -150,6 +151,7 @@ window.onload = function () {
 
     if (!state.recurringExpenses) state.recurringExpenses = [];
     if (!Array.isArray(state.transactionTemplates)) state.transactionTemplates = [];
+    if (!Array.isArray(state.knownTags)) state.knownTags = [];
     if (!state.emis) state.emis = [];
     if (!state.trips) state.trips = [];
     if (!state.pinCode) state.pinCode = "1234";
@@ -207,6 +209,7 @@ window.onload = function () {
         if (tx.tripRef === undefined) tx.tripRef = false;
         if (tx.splitGroupId === undefined) tx.splitGroupId = null;
         if (tx.splitLabel === undefined) tx.splitLabel = null;
+        if (!Array.isArray(tx.tags)) tx.tags = [];
     });
     state.payments.forEach(pay => {
         if (pay.billingDay === undefined) pay.billingDay = null;
@@ -219,6 +222,12 @@ window.onload = function () {
         if (!rec.startDate) rec.startDate = getTodayISO();
         if (rec.paused === undefined) rec.paused = false;
         if (rec.lastPostedDate === undefined) rec.lastPostedDate = null;
+    });
+
+    state.emis.forEach(emi => {
+        if (emi.foreclosed === undefined) emi.foreclosed = false;
+        if (emi.foreclosedDate === undefined) emi.foreclosedDate = null;
+        if (emi.foreclosureCharge === undefined) emi.foreclosureCharge = 0;
     });
 
     processRecurringExpenses();

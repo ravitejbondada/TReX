@@ -591,8 +591,8 @@ Phase 2
 
 Phase 3
 [x] 12. Split transactions
-[ ] 13. Tag / label system
-[ ] 14. EMI foreclosure calculator
+[x] 13. Tag / label system
+[x] 14. EMI foreclosure calculator
 [ ] 15. Offline conflict queue
 
 Phase 4

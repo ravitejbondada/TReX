@@ -529,6 +529,157 @@ function closeEMIScheduleModal() {
     document.getElementById("emiScheduleModal").classList.add("hidden");
 }
 
+function calcEMIOutstandingPrincipal(emi, asOfDate = getTodayISO()) {
+    const principal = Number(emi.principal || 0);
+    const tenure = Number(emi.tenure || 0);
+    const emiAmount = Number(emi.emiAmount || calculateEMIDetails(principal, emi.interestRate || 0, tenure).emiAmount || 0);
+    const rateYear = Number(emi.interestRate || 0);
+    const monthlyRate = rateYear > 0 ? (rateYear / 12) / 100 : 0;
+    const start = emi.startDate ? parseISODate(emi.startDate) : parseISODate(getTodayISO());
+    const asOf = typeof asOfDate === "string" ? parseISODate(asOfDate) : new Date(asOfDate);
+    start.setHours(0, 0, 0, 0);
+    asOf.setHours(0, 0, 0, 0);
+
+    let balance = principal;
+    let interestPaid = 0;
+    let principalPaid = 0;
+    let monthsCompleted = 0;
+
+    for (let i = 0; i < tenure; i++) {
+        const due = new Date(start);
+        due.setMonth(start.getMonth() + i);
+        due.setHours(0, 0, 0, 0);
+        if (due > asOf || balance <= 0) break;
+
+        const interestPart = monthlyRate > 0 ? Math.min(balance, balance * monthlyRate) : 0;
+        const principalPart = Math.min(balance, Math.max(0, emiAmount - interestPart));
+        balance = Math.max(0, balance - principalPart);
+        interestPaid += interestPart;
+        principalPaid += principalPart;
+        monthsCompleted++;
+    }
+
+    return {
+        outstandingPrincipal: parseFloat(balance.toFixed(2)),
+        interestPaid: parseFloat(interestPaid.toFixed(2)),
+        principalPaid: parseFloat(principalPaid.toFixed(2)),
+        monthsCompleted
+    };
+}
+
+function _updateEMIPrepayTotals(emiId) {
+    const emi = state.emis.find(e => e.id === emiId);
+    if (!emi) return;
+    const calc = calcEMIOutstandingPrincipal(emi, getTodayISO());
+    const pct = parseFloat(document.getElementById("foreclosureChargePct")?.value) || 0;
+    const charge = Math.max(0, calc.outstandingPrincipal * (pct / 100));
+    const total = calc.outstandingPrincipal + charge;
+    const sym = state.currencySymbol || "\u20B9";
+    const fmt = v => `${sym}${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const chargeEl = document.getElementById("emiForeclosureChargeAmount");
+    const payoffEl = document.getElementById("emiPayoff");
+    if (chargeEl) chargeEl.textContent = fmt(charge);
+    if (payoffEl) payoffEl.textContent = fmt(total);
+}
+
+function openEMIPrepayModal(emiId) {
+    const emi = state.emis.find(e => e.id === emiId);
+    if (!emi) return;
+    const existing = document.getElementById("emiPrepayModal");
+    if (existing) existing.remove();
+
+    const calc = calcEMIOutstandingPrincipal(emi, getTodayISO());
+    const sym = state.currencySymbol || "\u20B9";
+    const fmt = v => `${sym}${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const safeName = typeof _escapeHtml === "function" ? _escapeHtml(emi.name) : String(emi.name || "EMI");
+    const div = document.createElement("div");
+    div.id = "emiPrepayModal";
+    div.className = "fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[110] flex items-end justify-center p-0";
+    div.innerHTML = `
+        <div class="bg-slate-900 border border-slate-800 rounded-t-3xl w-full max-w-md p-5 space-y-4 shadow-2xl">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-xs font-extrabold uppercase tracking-wider text-white">Prepay / Foreclose EMI</h3>
+                    <p class="text-[10px] text-slate-500 mt-1">${safeName} - ${calc.monthsCompleted}/${emi.tenure} months posted</p>
+                </div>
+                <button type="button" onclick="closeEMIPrepayModal()" class="p-1 text-slate-500 hover:text-slate-300">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="emi-prepay-stat"><span>Outstanding Principal</span><strong id="emiOutstanding">${fmt(calc.outstandingPrincipal)}</strong></div>
+                <div class="emi-prepay-stat"><span>Principal Paid</span><strong>${fmt(calc.principalPaid)}</strong></div>
+            </div>
+            <label class="block space-y-1.5">
+                <span class="text-[9px] uppercase tracking-widest font-extrabold text-slate-500">Foreclosure Charge %</span>
+                <input type="number" id="foreclosureChargePct" value="0" min="0" step="0.1" inputmode="decimal"
+                    oninput="_updateEMIPrepayTotals('${emi.id}')"
+                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            </label>
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3 space-y-2">
+                <div class="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Foreclosure charge</span><strong id="emiForeclosureChargeAmount" class="text-amber-300">${fmt(0)}</strong>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Payoff</span>
+                    <strong id="emiPayoff" class="text-base text-white">${fmt(calc.outstandingPrincipal)}</strong>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="closeEMIPrepayModal()" class="bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-400 font-bold py-3 rounded-xl text-xs active:scale-95 transition-all">Cancel</button>
+                <button type="button" onclick="confirmEMIForeclosure('${emi.id}')" class="bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3 rounded-xl text-xs active:scale-95 transition-all">Confirm & Record</button>
+            </div>
+        </div>`;
+    document.body.appendChild(div);
+    initLucideIcons(div);
+}
+
+function closeEMIPrepayModal() {
+    const el = document.getElementById("emiPrepayModal");
+    if (el) el.remove();
+}
+
+async function confirmEMIForeclosure(emiId) {
+    const emi = state.emis.find(e => e.id === emiId);
+    if (!emi || emi.foreclosed) return;
+    const calc = calcEMIOutstandingPrincipal(emi, getTodayISO());
+    const pct = parseFloat(document.getElementById("foreclosureChargePct")?.value) || 0;
+    const charge = parseFloat(Math.max(0, calc.outstandingPrincipal * (pct / 100)).toFixed(2));
+    const payoff = parseFloat((calc.outstandingPrincipal + charge).toFixed(2));
+    const sym = state.currencySymbol || "\u20B9";
+    const label = `${sym}${payoff.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    if (!await customConfirm(`Record ${label} as final payoff for "${emi.name}"? Future EMI postings will stop.`, "Foreclose EMI?", "Record Payoff")) return;
+
+    const today = getTodayISO();
+    state.transactions.push({
+        id: "tx_emi_foreclose_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8),
+        amount: payoff,
+        categoryId: emi.categoryId,
+        paymentId: emi.paymentId,
+        date: today,
+        note: `EMI Foreclosure: ${emi.name}`,
+        isEMI: true,
+        emiId: emi.id,
+        isEMIForeclosure: true,
+        tags: ["emi", "foreclosure"],
+        createdAt: new Date().toISOString()
+    });
+    emi.foreclosed = true;
+    emi.foreclosedDate = today;
+    emi.foreclosureCharge = charge;
+    emi.foreclosureChargePct = pct;
+    removeFutureEMITransactions(emi.id, today);
+    saveStateToLocalStorage();
+    closeEMIPrepayModal();
+    renderEMIsList();
+    filterHistory();
+    refreshCreditCardViews();
+    updateAppDashboardView();
+    playSound(S.SAVE);
+    showNotification("EMI foreclosed and payoff recorded.");
+}
 function calculateEMILivePreview() {
     const principal = parseFloat(document.getElementById("emiPrincipal").value) || 0;
     const processingFee = parseFloat(document.getElementById("emiProcessingFee").value) || 0;
@@ -593,6 +744,9 @@ function saveEMI() {
                 emiAmount: calc.emiAmount,
                 totalInterest: calc.totalInterest,
                 totalPayable: calc.totalPayable,
+                foreclosed: false,
+                foreclosedDate: null,
+                foreclosureCharge: 0,
                 updatedAt: new Date().toISOString()
             };
             playSound(S.SYSTEM);
@@ -606,6 +760,9 @@ function saveEMI() {
             totalInterest: calc.totalInterest,
             totalPayable: calc.totalPayable,
             postedInstallments: [],
+            foreclosed: false,
+            foreclosedDate: null,
+            foreclosureCharge: 0,
             createdAt: new Date().toISOString()
         };
         state.emis.push(newEMI);
@@ -634,8 +791,13 @@ async function deleteEMI(id) {
     showNotification(t(`EMI "${emi.name}" cancelled.`, `EMI trail "${emi.name}" collapsed.`));
 }
 
-function removeFutureEMITransactions(emiId) {
-    state.transactions = state.transactions.filter(tx => !(tx.isEMI && tx.emiId === emiId));
+function removeFutureEMITransactions(emiId, afterDate = "") {
+    state.transactions = state.transactions.filter(tx => {
+        if (!(tx.isEMI && tx.emiId === emiId)) return true;
+        if (!afterDate) return false;
+        if (tx.isEMIForeclosure) return true;
+        return tx.date <= afterDate;
+    });
 }
 
 function renderEMIsList() {
@@ -668,13 +830,16 @@ function renderEMIsList() {
                 const cat = state.categories.find(c => c.id === e.categoryId);
                 const pay = state.payments.find(p => p.id === e.paymentId);
                 const paidCount = e.postedInstallments ? e.postedInstallments.length : 0;
+                const statusBadge = e.foreclosed
+                    ? `<span class="text-[9px] px-2 py-0.5 rounded-full bg-rose-950/70 text-rose-300 font-bold uppercase">Foreclosed ${e.foreclosedDate || ""}</span>`
+                    : `<span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-900 text-rose-400 font-bold uppercase">${paidCount}/${e.tenure} Months</span>`;
                 return `
                 <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl space-y-2.5">
                     <div class="flex justify-between items-start">
                         <div>
                             <span class="text-[11px] font-bold text-slate-100 block">${e.name}</span>
                             <div class="flex gap-1.5 mt-1.5 flex-wrap">
-                                <span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-900 text-rose-400 font-bold uppercase">${paidCount}/${e.tenure} Months</span>
+                                ${statusBadge}
                                 <span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-500">from ${e.startDate || "—"}</span>
                                 ${cat ? `<span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-400">${cat.name}</span>` : ""}
                                 ${pay ? `<span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-400">${pay.name}</span>` : ""}
@@ -686,6 +851,9 @@ function renderEMIsList() {
                         <button onclick="openEMIScheduleModal('${e.id}')" class="flex-1 bg-slate-900 hover:bg-slate-800 text-[10px] text-indigo-300 font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1">
                             <i data-lucide="calendar-days" class="w-3 h-3"></i> Schedule
                         </button>
+                        ${!e.foreclosed ? `<button onclick="openEMIPrepayModal('${e.id}')" class="flex-1 bg-slate-900 hover:bg-slate-800 text-[10px] text-amber-300 font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1">
+                            <i data-lucide="badge-indian-rupee" class="w-3 h-3"></i> Foreclose
+                        </button>` : ""}
                         <button onclick="openEMIModal('${e.id}')" class="flex-1 bg-slate-900 hover:bg-slate-800 text-[10px] text-indigo-400 font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1">
                             <i data-lucide="pencil" class="w-3 h-3"></i> Edit
                         </button>
@@ -707,6 +875,7 @@ function processEMIs() {
     let anyPosted = false;
 
     state.emis.forEach(emi => {
+        if (emi.foreclosed) return;
         const dueDates = getEMIOccurrenceDates(emi, today);
         dueDates.forEach((dateStr, index) => {
             const monthNumber = index + 1;

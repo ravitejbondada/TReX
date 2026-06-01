@@ -100,6 +100,7 @@ function buildFreshStateAfterReset(marker) {
         payments: [...DEFAULT_PAYMENTS],
         transactions: [],
         transactionTemplates: [],
+        knownTags: [],
         savingGoals: [...DEFAULT_SAVING_GOALS],
         recurringExpenses: [],
         emis: [],
@@ -533,6 +534,10 @@ function buildMergedSyncState(localState, remoteState) {
     merged.payments = mergeById(localState.payments, remoteState.payments);
     merged.transactions = mergeById(localState.transactions, remoteState.transactions);
     merged.transactionTemplates = mergeById(localState.transactionTemplates, remoteState.transactionTemplates);
+    merged.knownTags = Array.from(new Set([
+        ...(Array.isArray(localState.knownTags) ? localState.knownTags : []),
+        ...(Array.isArray(remoteState.knownTags) ? remoteState.knownTags : [])
+    ].map(tag => String(tag || "").trim()).filter(Boolean)));
     merged.savingGoals = mergeById(localState.savingGoals, remoteState.savingGoals);
     merged.trips = mergeById(localState.trips, remoteState.trips);
     merged.recurringExpenses = mergeById(localState.recurringExpenses, remoteState.recurringExpenses);
@@ -572,7 +577,7 @@ function buildMergedSyncState(localState, remoteState) {
 }
 
 function sameSyncArrays(a, b) {
-    const arrayKeys = ["categories", "payments", "transactions", "transactionTemplates", "savingGoals", "trips", "recurringExpenses", "emis"];
+    const arrayKeys = ["categories", "payments", "transactions", "transactionTemplates", "knownTags", "savingGoals", "trips", "recurringExpenses", "emis"];
     const scalarKeys = ["currency", "currencySymbol", "monthlyBudget", "cycleType", "cycleDay", "theme", "creditCardsEnabled"];
     return arrayKeys.every(key => JSON.stringify(a[key] || []) === JSON.stringify(b[key] || [])) &&
         scalarKeys.every(key => (a[key] ?? null) === (b[key] ?? null));
@@ -716,11 +721,22 @@ function normalizeSyncState(remoteState) {
 
     next.categories = Array.isArray(src.categories) ? src.categories : (state.categories || []);
     next.payments = Array.isArray(src.payments) ? src.payments : (state.payments || []);
-    next.transactions = Array.isArray(src.transactions) ? src.transactions : [];
+    next.transactions = Array.isArray(src.transactions) ? src.transactions.map(tx => ({
+        ...tx,
+        tags: Array.isArray(tx.tags) ? tx.tags : [],
+        splitGroupId: tx.splitGroupId || null,
+        splitLabel: tx.splitLabel || null
+    })) : [];
     next.transactionTemplates = Array.isArray(src.transactionTemplates) ? src.transactionTemplates : [];
+    next.knownTags = Array.isArray(src.knownTags) ? src.knownTags.map(tag => String(tag || "").trim()).filter(Boolean) : [];
     next.savingGoals = Array.isArray(src.savingGoals) ? src.savingGoals : [];
     next.recurringExpenses = Array.isArray(src.recurringExpenses) ? src.recurringExpenses : [];
-    next.emis = Array.isArray(src.emis) ? src.emis : [];
+    next.emis = Array.isArray(src.emis) ? src.emis.map(emi => ({
+        ...emi,
+        foreclosed: !!emi.foreclosed,
+        foreclosedDate: emi.foreclosedDate || null,
+        foreclosureCharge: Number(emi.foreclosureCharge || 0)
+    })) : [];
     next.trips = Array.isArray(src.trips) ? src.trips : [];
 
     if (next.creditCardsEnabled === undefined) next.creditCardsEnabled = false;

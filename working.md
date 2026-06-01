@@ -1,14 +1,14 @@
 # TReX Working Log
 
 **Last updated:** June 1, 2026
-**Current version:** v4.17
+**Current version:** v4.18
 **Plan:** `TREX_IMPLEMENTATION_PLAN.md` - Feature Implementation Plan
 
 ---
 
 ## Current Item
 
-Phase 3 - Item 12: Split transactions
+Phase 3 - Items 13-14: Tag / label system, EMI foreclosure calculator
 
 ## Status
 
@@ -32,6 +32,8 @@ Phase 3 - Item 12: Split transactions
 
 - Corrected implementation-plan numbering after skipped Item 3 caused later headings to drift by one.
 - Completed split transactions. Split mode now validates rows against the total amount, stores parts with shared `splitGroupId`, renders grouped ledger rows, supports split edit, preserves split fields in backup/core migration, and delete now offers part-only vs all-parts choices.
+- Starting tag labels and EMI foreclosure together because both add persisted optional fields and backup/sync normalization.
+- Completed tag labels and EMI foreclosure. Expense form now saves transaction tags, ledger can search/filter tags, rows show compact tag chips, backup/sync/core preserve tag state, EMI cards expose Foreclose on active schedules, and foreclosure records a payoff transaction while stopping future EMI processing.
 
 ---
 
@@ -64,8 +66,8 @@ Phase 3 - Item 12: Split transactions
 ### Phase 3 - Power Features
 
 [x] 12. Split transactions
-[ ] 13. Tag / label system
-[ ] 14. EMI foreclosure calculator
+[x] 13. Tag / label system
+[x] 14. EMI foreclosure calculator
 [ ] 15. Offline conflict queue
 
 ### Phase 4 - Low Priority

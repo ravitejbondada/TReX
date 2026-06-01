@@ -14,10 +14,117 @@ let ledgerSelectMode = false;
 let ledgerSelectedIds = new Set();
 let ledgerAmountMin = null;
 let ledgerAmountMax = null;
+let activeTagFilter = "";
 let openSwipeRowEl = null;
 
 let _splitMode = false;
 let _splitRowCounter = 0;
+let _expenseTags = [];
+
+function _escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function normalizeTag(raw) {
+    return String(raw || "")
+        .trim()
+        .replace(/^#+/, "")
+        .replace(/\s+/g, "-")
+        .toLowerCase()
+        .slice(0, 28);
+}
+
+function getKnownTags() {
+    const all = [
+        ...((state.knownTags || []).map(normalizeTag)),
+        ...((state.transactions || []).flatMap(tx => Array.isArray(tx.tags) ? tx.tags.map(normalizeTag) : []))
+    ].filter(Boolean);
+    return Array.from(new Set(all)).sort((a, b) => a.localeCompare(b));
+}
+
+function getExpenseTags() {
+    return [..._expenseTags];
+}
+
+function rememberTags(tags) {
+    const merged = new Set([...(state.knownTags || []).map(normalizeTag)]);
+    (tags || []).map(normalizeTag).filter(Boolean).forEach(tag => merged.add(tag));
+    state.knownTags = [...merged].sort((a, b) => a.localeCompare(b));
+}
+
+function renderTagSuggestions(partial = "") {
+    const input = document.getElementById("expenseTagDraft");
+    const host = document.getElementById("expenseTagSuggestions");
+    if (!input || !host) return;
+    const normalized = normalizeTag(partial);
+    const matches = getKnownTags()
+        .filter(tag => tag && tag !== normalized && (!normalized || tag.includes(normalized)))
+        .slice(0, 6);
+    if (!matches.length || !document.activeElement || document.activeElement !== input) {
+        host.innerHTML = "";
+        host.classList.add("hidden");
+        return;
+    }
+    host.innerHTML = matches.map(tag => `
+        <button type="button" onclick="addExpenseTag('${_escapeHtml(tag)}')"
+            class="tag-suggestion-item">${_escapeHtml(tag)}</button>
+    `).join("");
+    host.classList.remove("hidden");
+}
+
+function addExpenseTag(raw) {
+    const tag = normalizeTag(raw || document.getElementById("expenseTagDraft")?.value);
+    if (!tag || _expenseTags.includes(tag)) return;
+    _expenseTags.push(tag);
+    renderTagInput("tagInputContainer", _expenseTags);
+}
+
+function removeExpenseTag(tag) {
+    const normalized = normalizeTag(tag);
+    _expenseTags = _expenseTags.filter(t => t !== normalized);
+    renderTagInput("tagInputContainer", _expenseTags);
+}
+
+function renderTagInput(containerId, initialTags = []) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    _expenseTags = Array.from(new Set((initialTags || []).map(normalizeTag).filter(Boolean)));
+    container.innerHTML = `
+        <label class="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-2">Tags</label>
+        <div class="tag-input-wrap">
+            <div class="tag-chip-row">
+                ${_expenseTags.map(tag => `
+                    <span class="tag-chip">
+                        <span>#${_escapeHtml(tag)}</span>
+                        <button type="button" class="tag-remove" onclick="removeExpenseTag('${_escapeHtml(tag)}')" aria-label="Remove ${_escapeHtml(tag)}">x</button>
+                    </span>
+                `).join("")}
+                <input id="expenseTagDraft" type="text" inputmode="text" autocomplete="off"
+                    placeholder="${_expenseTags.length ? 'Add tag' : 'weekend, family'}"
+                    class="tag-input-field"
+                    oninput="renderTagSuggestions(this.value)"
+                    onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addExpenseTag(this.value)}" />
+            </div>
+            <div id="expenseTagSuggestions" class="tag-suggestions hidden"></div>
+        </div>
+    `;
+}
+
+function applyTagFilter() {
+    activeTagFilter = normalizeTag(document.getElementById("tagFilterInput")?.value || "");
+    filterHistory();
+}
+
+function _renderTxTagChips(tags, extraClass = "") {
+    const clean = Array.from(new Set((tags || []).map(normalizeTag).filter(Boolean)));
+    if (!clean.length) return "";
+    return `<div class="tx-tag-row ${extraClass}">${clean.map(tag => `<span class="tx-tag-chip">#${_escapeHtml(tag)}</span>`).join("")}</div>`;
+}
 
 function _buildSplitCategoryOptions(selectedId) {
     const sorted = [...state.categories].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
@@ -191,6 +298,7 @@ function setupExpenseFormForAdd() {
     dateEl.value = todayISO;
     dateEl.max = todayISO;
     document.getElementById("expenseNote").value = "";
+    renderTagInput("tagInputContainer", []);
 
     populateExpenseFormDropdowns();
     clearExpensePaymentLock();
@@ -276,6 +384,7 @@ function loadExpenseToFormForEdit(txId, returnCardId = "") {
         editDateEl.value = tx.date;
         editDateEl.max = getTodayISO();
         document.getElementById("expenseNote").value = tx.note || "";
+        renderTagInput("tagInputContainer", tx.tags || []);
 
         populateExpenseFormDropdowns(tx.paymentId);
         document.getElementById("expensePayment").value = tx.paymentId;
@@ -310,6 +419,7 @@ function loadExpenseToFormForEdit(txId, returnCardId = "") {
     editDateEl.value = tx.date;
     editDateEl.max = getTodayISO();
     document.getElementById("expenseNote").value = tx.note || "";
+    renderTagInput("tagInputContainer", tx.tags || []);
 
     populateExpenseFormDropdowns(tx.paymentId);
     document.getElementById("expenseCategory").value = tx.categoryId;
@@ -324,6 +434,7 @@ function handleExpenseSubmit(e) {
         const payId = expensePaymentLockId || document.getElementById("expensePayment").value;
         const date  = document.getElementById("expenseDate").value;
         const note  = document.getElementById("expenseNote").value.trim();
+        const tags = getExpenseTags();
         const editId = document.getElementById("editExpenseId").value;
         const splitValidation = validateSplitRows();
         if (!splitValidation.valid) return;
@@ -347,6 +458,7 @@ function handleExpenseSubmit(e) {
                     categoryId: p.catId,
                     paymentId: payId,
                     date, note,
+                    tags,
                     splitGroupId: groupId,
                     splitLabel: cat.name,
                     createdAt: now
@@ -365,6 +477,7 @@ function handleExpenseSubmit(e) {
                     categoryId: p.catId,
                     paymentId: payId,
                     date, note,
+                    tags,
                     splitGroupId: groupId,
                     splitLabel: cat.name,
                     createdAt: now
@@ -374,6 +487,7 @@ function handleExpenseSubmit(e) {
             showNotification(t(`Split into ${parts.length} transactions saved.`, `🦖 Devoured in ${parts.length} bites!`));
         }
 
+        rememberTags(tags);
         saveStateToLocalStorage();
         refreshCreditCardViews();
         const returnCardId = expenseFormReturnCardId;
@@ -392,6 +506,7 @@ function handleExpenseSubmit(e) {
     const payId = expensePaymentLockId || document.getElementById("expensePayment").value;
     const date = document.getElementById("expenseDate").value;
     const note = document.getElementById("expenseNote").value.trim();
+    const tags = getExpenseTags();
     const editId = document.getElementById("editExpenseId").value;
 
     if (isNaN(amount) || amount <= 0) {
@@ -426,7 +541,7 @@ function handleExpenseSubmit(e) {
             const { isRecurring: _r, recurringId: _rid, isEMI: _e, emiId: _eid, ...rest } = existing;
             state.transactions[index] = {
                 ...rest,
-                amount, categoryId: catId, paymentId: payId, date, note,
+                amount, categoryId: catId, paymentId: payId, date, note, tags,
                 createdAt: dateChanged ? new Date().toISOString() : (existing.createdAt || new Date().toISOString())
             };
             showNotification(t("Transaction updated successfully.", "Ledger fossil updated."));
@@ -435,7 +550,7 @@ function handleExpenseSubmit(e) {
     } else {
         const newTx = {
             id: "tx_" + Date.now(),
-            amount, categoryId: catId, paymentId: payId, date, note,
+            amount, categoryId: catId, paymentId: payId, date, note, tags,
             createdAt: new Date().toISOString()
         };
         state.transactions.push(newTx);
@@ -443,6 +558,7 @@ function handleExpenseSubmit(e) {
         showNotification(t("Transaction saved.", "🦖 Devoured! Expense saved."));
     }
 
+    rememberTags(tags);
     saveStateToLocalStorage();
     refreshCreditCardViews();
     const returnCardId = expenseFormReturnCardId;
@@ -689,10 +805,13 @@ function resetLedgerToCycle() {
     initLedgerMonthSelector();
     ledgerAmountMin = null;
     ledgerAmountMax = null;
+    activeTagFilter = "";
     const minEl = document.getElementById("ledgerAmountMin");
     const maxEl = document.getElementById("ledgerAmountMax");
+    const tagEl = document.getElementById("tagFilterInput");
     if (minEl) minEl.value = "";
     if (maxEl) maxEl.value = "";
+    if (tagEl) tagEl.value = "";
     filterHistory();
 }
 
@@ -848,6 +967,11 @@ function _removeLedgerFilter(type) {
         if (minEl) minEl.value = "";
         if (maxEl) maxEl.value = "";
     }
+    if (type === "tag") {
+        activeTagFilter = "";
+        const el = document.getElementById("tagFilterInput");
+        if (el) el.value = "";
+    }
     filterHistory();
 }
 
@@ -877,6 +1001,9 @@ function _renderLedgerChips(catId, payId, from, to) {
         const minLabel = ledgerAmountMin !== null ? `${state.currencySymbol}${ledgerAmountMin}` : "Min";
         const maxLabel = ledgerAmountMax !== null ? `${state.currencySymbol}${ledgerAmountMax}` : "Max";
         chips.push({ type: "amount", label: `${minLabel} to ${maxLabel}` });
+    }
+    if (activeTagFilter) {
+        chips.push({ type: "tag", label: `#${activeTagFilter}` });
     }
 
     chipHost.innerHTML = chips.map(chip => `
@@ -930,6 +1057,8 @@ function filterHistory() {
         const amount = parseFloat(t.amount || 0);
         const matchesMin = ledgerAmountMin === null || amount >= ledgerAmountMin;
         const matchesMax = ledgerAmountMax === null || amount <= ledgerAmountMax;
+        const txTags = Array.isArray(t.tags) ? t.tags.map(normalizeTag) : [];
+        const matchesTag = !activeTagFilter || txTags.some(tag => tag.includes(activeTagFilter));
 
         const categoryObj = state.categories.find(c => c.id === t.categoryId) || { name: "" };
         const paymentObj  = state.payments.find(p => p.id === t.paymentId)    || { name: "" };
@@ -938,9 +1067,10 @@ function filterHistory() {
                             (t.note && t.note.toLowerCase().includes(search)) ||
                             categoryObj.name.toLowerCase().includes(search) ||
                             paymentObj.name.toLowerCase().includes(search) ||
+                            txTags.some(tag => tag.includes(search)) ||
                             t.amount.toString().includes(search);
 
-        return matchesCat && matchesPay && matchesDate && matchesMin && matchesMax && matchesText;
+        return matchesCat && matchesPay && matchesDate && matchesMin && matchesMax && matchesTag && matchesText;
     });
 
     const sortMode = (document.getElementById("ledgerSortSelect") || {}).value || "date-desc";
@@ -993,6 +1123,7 @@ function filterHistory() {
             const groupParts = items.filter(tx => tx.splitGroupId === t.splitGroupId)
                 .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
             const groupTotal = groupParts.reduce((s, tx) => s + tx.amount, 0);
+            const groupTags = Array.from(new Set(groupParts.flatMap(tx => Array.isArray(tx.tags) ? tx.tags : []).map(normalizeTag).filter(Boolean)));
             const pay = state.payments.find(p => p.id === t.paymentId) || { name: "Cash" };
             const dateStr = formatDateReadable(new Date(t.date), { year: '2-digit' });
 
@@ -1020,6 +1151,7 @@ function filterHistory() {
                             </span>
                             <span class="text-[8px] text-slate-600">${groupParts.length} parts</span>
                         </div>
+                        ${_renderTxTagChips(groupTags)}
                     </div>
                 </div>
                 <div class="flex flex-col items-end gap-1 shrink-0">
@@ -1072,6 +1204,7 @@ function filterHistory() {
         const tripBadge = t.tripRef
             ? `<span class="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-950 text-amber-400 font-bold uppercase shrink-0">${t.tripType === "pre" ? "Pre-Trip" : "Trip"}</span>`
             : "";
+        const tagChips = _renderTxTagChips(t.tags || []);
 
         const wrapper = document.createElement("div");
         wrapper.className = "swipe-row-wrapper";
@@ -1153,6 +1286,7 @@ function filterHistory() {
                             ${dateStr}
                         </span>
                     </div>
+                    ${tagChips}
                 </div>
             </div>
             <div class="flex flex-col items-end gap-1.5 shrink-0 ml-1">

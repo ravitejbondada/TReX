@@ -73,8 +73,12 @@ function normalizeImportedState(raw) {
                 tripType: t.tripType || null,
                 tripRef:  !!t.tripRef,
                 splitGroupId: t.splitGroupId || null,
-                splitLabel:   t.splitLabel   || null
+                splitLabel:   t.splitLabel   || null,
+                tags: Array.isArray(t.tags) ? t.tags.map(tag => String(tag || "").trim()).filter(Boolean) : []
             }))
+            : [],
+        knownTags: Array.isArray(src.knownTags)
+            ? Array.from(new Set(src.knownTags.map(tag => String(tag || "").trim()).filter(Boolean)))
             : [],
         transactionTemplates: Array.isArray(src.transactionTemplates)
             ? src.transactionTemplates.map(t => ({
@@ -108,6 +112,24 @@ function normalizeImportedState(raw) {
                 lastProcessed: r.lastProcessed || "",
                 createdAt: r.createdAt || "",
                 updatedAt: r.updatedAt || ""
+            }))
+            : [],
+        emis: Array.isArray(src.emis)
+            ? src.emis.map(e => ({
+                ...e,
+                id: String(e.id || `emi_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`),
+                name: String(e.name || "EMI"),
+                principal: parseFloat(e.principal) || 0,
+                processingFee: parseFloat(e.processingFee) || 0,
+                interestRate: parseFloat(e.interestRate) || 0,
+                tenure: parseInt(e.tenure, 10) || 12,
+                emiAmount: parseFloat(e.emiAmount) || 0,
+                totalInterest: parseFloat(e.totalInterest) || 0,
+                totalPayable: parseFloat(e.totalPayable) || 0,
+                postedInstallments: Array.isArray(e.postedInstallments) ? e.postedInstallments : [],
+                foreclosed: !!e.foreclosed,
+                foreclosedDate: e.foreclosedDate || null,
+                foreclosureCharge: parseFloat(e.foreclosureCharge) || 0
             }))
             : [],
         trips: Array.isArray(src.trips) ? src.trips.map(trip => ({
@@ -165,6 +187,7 @@ function applyFullStateRestore(importedRaw) {
         if (tx.tripRef   === undefined) tx.tripRef   = false;
         if (tx.splitGroupId === undefined) tx.splitGroupId = null;
         if (tx.splitLabel   === undefined) tx.splitLabel   = null;
+        if (!Array.isArray(tx.tags)) tx.tags = [];
     });
     if (state.creditCardsEnabled) {
         backfillMissingCreditCardBillingDays();
@@ -333,7 +356,8 @@ function buildStateFromCSVSections(sections) {
             isRecurring: row.isRecurring === "true",
             recurringId: row.recurringId || "",
             splitGroupId: row.splitGroupId || null,
-            splitLabel:   row.splitLabel   || null
+            splitLabel:   row.splitLabel   || null,
+            tags: row.tags ? row.tags.split(";").map(tag => tag.trim()).filter(Boolean) : []
         });
     });
 
@@ -430,12 +454,12 @@ function exportDataToCSV() {
     csv += "\n";
 
     csv += "[TRANSACTIONS]\n";
-    csv += csvRow(["id", "amount", "categoryId", "paymentId", "date", "note", "isRecurring", "recurringId", "splitGroupId", "splitLabel"]);
+    csv += csvRow(["id", "amount", "categoryId", "paymentId", "date", "note", "isRecurring", "recurringId", "splitGroupId", "splitLabel", "tags"]);
     state.transactions.forEach(t => {
         csv += csvRow([
             t.id, t.amount, t.categoryId, t.paymentId, t.date, t.note || "",
             t.isRecurring ? "true" : "false", t.recurringId || "",
-            t.splitGroupId || "", t.splitLabel || ""
+            t.splitGroupId || "", t.splitLabel || "", Array.isArray(t.tags) ? t.tags.join(";") : ""
         ]);
     });
     csv += "\n";
