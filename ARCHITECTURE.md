@@ -339,11 +339,11 @@ Normal rows are wrapped in `.swipe-row-wrapper`; `attachSwipeToDelete()` handles
 ### Split transactions and tags
 `transactions.js` owns split-entry UI and tag input/filtering.
 
-- Split mode is toggled from the Category Tag header in Add Expense. When enabled, the normal category picker is hidden and replaced by split rows.
-- `validateSplitRows()` requires at least two rows, no duplicate categories, and a split sum that matches the main amount.
+- Split mode is toggled from the Category Tag header in Add Expense. When enabled, the normal category picker is hidden and replaced by split rows, and the main amount field becomes read-only.
+- `_updateSplitTotal()` derives the main amount from the individual split row amounts. `validateSplitRows()` requires at least two rows, positive amounts, and no duplicate categories; there is no separate target-total check.
 - A split expense persists as multiple normal transactions sharing the same `splitGroupId`; each part keeps its own `categoryId`, amount, optional tags, and `splitLabel`.
-- Ledger rendering collapses a split group into one bordered card with a Split badge, grouped total, date/payment line, up to three category chips, and a vertical stripe using up to three category colors. Running balance counts each split group once.
-- Split delete prompts for part-only vs all-parts; edit loads the whole group into split mode.
+- Ledger rendering collapses a split group into one bordered card with a Split badge, grouped total, date/payment line, up to three category chips, and a vertical stripe using up to three category colors. Running balance counts each visible split group once and is calculated chronologically independent of the current display sort.
+- The parent split-card delete action confirms and deletes the entire group. Expanded child rows expose individual delete buttons for deleting a single split part. Edit loads the whole group into split mode.
 - Tags are normalized free-text labels. `state.knownTags[]` plus existing transaction tags power suggestions. Ledger search includes tags, and `activeTagFilter` narrows results by tag text.
 
 ### DOM elements (injected once by `_ensurePickerDOM()`)

@@ -98,7 +98,7 @@ On boot, `window.onload` reads it back. If the key is missing, seed data (defaul
 
 **Transaction presets:** `state.transactionTemplates[]` stores reusable expense combos (`name`, `amount`, `categoryId`, `paymentId`, `note`) for one-tap logging from Add Expense or Ledger. Presets are included in JSON/CSV backup and Drive sync.
 
-**Split transactions and tags:** Split expenses are stored as multiple normal transactions linked by `splitGroupId`, with optional `splitLabel` and `tags`. `state.knownTags[]` powers tag suggestions. Split/tag fields are preserved by JSON/CSV backup and Drive sync.
+**Split transactions and tags:** Split expenses are stored as multiple normal transactions linked by `splitGroupId`, with optional `splitLabel` and `tags`. In split mode, the main amount is read-only and is derived from the split row amounts. `state.knownTags[]` powers tag suggestions. Split/tag fields are preserved by JSON/CSV backup and Drive sync.
 
 > ⚠️ Local-only data is lost if the browser cache is cleared. Enable Google Drive sync in Settings to keep a persistent backup.
 
@@ -156,9 +156,9 @@ The Reports / Premium Insights screen includes a **Download PDF Summary Report**
 
 - **Ledger header:** Compact three-row design — title + Sort button + Select button + Filter icon button / search bar / summary + active filter chips. Filter sheet (date range, category, payment, amount range) is collapsed by default; tap the filter icon to expand. Sort uses 4 picker options (Dated ↓↑, Amt ↓↑) and resets to Dated ↓ on each ledger open. Active filters appear as dismissible chips; a dot on the filter icon signals active filters.
 - **Ledger row actions:** Swipe a normal ledger row left to reveal Delete. Select mode supports multi-select bulk delete; trip-synced ledger rows stay locked/read-only.
-- **Ledger running balance:** Each visible ledger row shows a subtle running spend total computed chronologically over the currently filtered result set.
+- **Ledger running balance:** Each visible ledger row shows a subtle running spend total computed chronologically over the currently filtered result set. Split groups count once using the grouped visible total, regardless of the active ledger sort.
 - **Transaction presets:** Add Expense can save the current amount/category/payment/note as a preset; preset chips appear in Add Expense and Ledger for one-tap logging.
-- **Split transactions:** Add Expense has a Split across cat toggle in the Category Tag header. Split mode replaces the single category picker with split rows, blocks duplicate categories, requires split amounts to match the total, and renders one grouped ledger card with a Split badge, up to three category chips, and a multi-color vertical stripe.
+- **Split transactions:** Add Expense has a Split across cat toggle in the Category Tag header. Split mode replaces the single category picker with split rows, blocks duplicate categories, and derives the main amount from the row totals. The ledger renders one grouped card with a Split badge, up to three category chips, and a multi-color vertical stripe. The parent delete button warns and deletes the entire split; expand the card to delete an individual split part.
 - **Transaction tags:** Expense rows can carry free-text tags. Ledger search includes tags, tag chips render on rows, and the tag filter narrows the ledger by matching tag text.
 - **EMI foreclosure:** Active EMI cards expose Foreclose. The payoff modal estimates outstanding principal, applies an optional foreclosure charge, records a final payoff transaction, and stops future EMI posting.
 - **Heatmap legend:** Compact right-aligned ultra-muted swatches (Low → High: green, yellow, amber, rose) rendered below the heatmap grid. Matches `heatColor()` thresholds while staying subtle on the dark dashboard.

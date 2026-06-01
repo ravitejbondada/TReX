@@ -147,10 +147,10 @@ To find where to add/edit something, scan the relevant section header then go to
 | `renderTagInput(containerId, initialTags?)` | Renders the expense tag chip input and autocomplete host |
 | `getExpenseTags()` | Returns the current normalized expense-form tags |
 | `applyTagFilter()` | Reads the ledger tag filter input and re-runs `filterHistory()` |
-| `validateSplitRows()` | Validates split rows: matching total, non-empty rows, and no duplicate categories |
+| `validateSplitRows()` | Validates split rows: at least two rows, positive row amounts, and no duplicate categories; the main amount is derived from row totals |
 | `addSplitRow(catId?, amount?)` | Adds one category/amount row to the split section |
 | `removeSplitRow(rowId)` | Removes a split row and recomputes split totals |
-| `toggleSplitMode(force?)` | Enables/disables split mode, replacing the category picker with split rows |
+| `toggleSplitMode(force?)` | Enables/disables split mode, replacing the category picker with split rows and making the main amount read-only while split is active |
 | `setupExpenseFormForAdd()` | Resets the expense form for a new transaction |
 | `populateExpenseFormDropdowns(currentPaymentId?)` | Populates category and payment `<select>` options, both sorted A→Z by name; payments filtered to non-archived |
 | `populateEMIFormDropdowns()` | Populates EMI form category and payment dropdowns |
@@ -169,7 +169,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `resetLedgerToCycle()` | Resets ledger date range and amount filters to the current active cycle, then re-runs filterHistory |
 | `getLedgerDateRange()` | Returns `{ from, to }` ISO strings from the ledger date pickers |
 | `openLedgerWithDate(dateISO)` | Switches to history view (resetting sort + cycle dates), then overrides both date pickers to a single day and calls filterHistory; used by the spend heatmap |
-| `filterHistory()` | Applies search text + category/payment/date/amount/tag filters; reads `#ledgerSortSelect` value (`date-desc`, `date-asc`, `amt-desc`, `amt-asc`); groups split rows; computes chronological running balances with split groups counted once; renders summary bar, chips, bulk bar, and search-clear button visibility |
+| `filterHistory()` | Applies search text + category/payment/date/amount/tag filters; reads `#ledgerSortSelect` value (`date-desc`, `date-asc`, `amt-desc`, `amt-asc`); groups split rows; computes chronological running balances with visible split groups counted once independent of display sort; renders summary bar, chips, bulk bar, and search-clear button visibility |
 | ~~`cycleLedgerSort()`~~ | **Removed** — replaced by `openLedgerSortPicker()` + the central custom picker system |
 | `toggleLedgerFilterSheet()` | Toggles the collapsed filter sheet (date range + category + payment dropdowns) |
 | `clearLedgerSearch()` | Clears the search input and re-runs filterHistory |
@@ -181,8 +181,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `bulkDeleteSelected()` | Confirms and deletes all selected non-trip ledger transactions, then refreshes dependent views |
 | `attachSwipeToDelete(rowEl, txId)` | Adds mobile touch handlers that reveal the row's delete action after a left swipe |
 | `_renderLedgerChips(catId, payId, from, to)` | Renders dismissible active-filter chips, including amount range chips; shows/hides the filter dot indicator on the filter button |
-| `chooseSplitDeleteScope(tx, groupParts, total)` | Shows the split delete scope prompt and returns whether to delete one part, all parts, or cancel |
-| `deleteTransaction(id)` | Async - confirms then removes a transaction; split rows offer part-only vs all-parts deletion; recurring-created transactions are plain ledger rows |
+| `deleteTransaction(id, splitDeleteMode?)` | Async - confirms then removes a transaction; parent split delete uses `"all"` to remove the whole group, expanded split child rows use `"part"` to remove one part; recurring-created transactions are plain ledger rows |
 
 ---
 

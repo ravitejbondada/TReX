@@ -374,10 +374,10 @@ html[data-theme="light"] .goal-progress-bar { background:rgba(0,0,0,0.1); }
 Add `splitGroupId` and `splitLabel` as optional fields to the transaction shape in `ARCHITECTURE.md` comments, and preserve them in backup export/import normalization.
 
 **Functions:**
-- **NEW** `toggleSplitMode()` — shows/hides the split rows section on the form; hides the single amount input.
+- **NEW** `toggleSplitMode()` — shows/hides the split rows section on the form; keeps the main amount visible but read-only and derived from row totals.
 - **NEW** `addSplitRow()` — appends a split-row `<div>` with category select + amount input.
 - **NEW** `removeSplitRow(rowId)` — removes a split row.
-- **NEW** `validateSplitRows()` — ensures split amounts sum to total; returns boolean.
+- **NEW** `validateSplitRows()` — ensures at least two valid positive rows and no duplicate categories; returns boolean/parts.
 - `handleExpenseSubmit(e)` — if split mode active: generate a `splitGroupId`, create one transaction per split row, save all, render.
 - `renderHistoryList()` — group transactions with the same `splitGroupId` under a collapsible row with a "Split" badge; show sub-rows indented.
 - `deleteTransaction(id)` — if `tx.splitGroupId` exists, `customConfirm` asks: "Delete this split part only or all parts?"

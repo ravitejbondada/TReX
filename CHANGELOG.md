@@ -3,6 +3,22 @@
 Format: `[version] YYYY-MM-DD — summary`
 Files listed are the ones modified. Always update this on any meaningful change.
 
+## [v4.20] 2026-06-01 - Split totals and ledger delete polish
+
+**What changed:** Fixed split amount entry, split ledger deletion, and running balance behavior.
+
+**Files modified:**
+- `js/transactions.js` - made the main amount read-only in split mode and derived from split rows; removed the split target-total validation; rebuilt ledger grouping/running-balance calculation around grouped entries; made parent split delete remove the whole split after a warning; added per-part delete buttons on expanded split rows.
+- `styles.css` - updated split toggle/icon/text colors and derived amount styling.
+- `README.md`, `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`, `working.md`, `TREX_IMPLEMENTATION_PLAN.md` - updated docs for derived split totals, grouped running balances, and split delete behavior.
+
+**Behavior:**
+- Split totals are entered only in individual row amounts; the main amount displays their sum.
+- Ledger running balances count each visible split group once and stay chronological even when the display is sorted differently.
+- Deleting from the parent split card warns that the entire split will be deleted. To delete one part, expand the split card and use the row-level delete action.
+
+---
+
 ## [v4.19] 2026-06-01 - Feature plan wrap and documentation refresh
 
 **What changed:** Completed the remaining implementation-plan items and refreshed project documentation for the finished Phase 1-4 feature set.
