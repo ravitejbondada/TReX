@@ -3,18 +3,18 @@
 Format: `[version] YYYY-MM-DD — summary`
 Files listed are the ones modified. Always update this on any meaningful change.
 
-## [v4.20] 2026-06-01 - Split totals and ledger delete polish
+## [v4.20] 2026-06-01 - Split totals and ledger cumulative polish
 
-**What changed:** Fixed split amount entry, split ledger deletion, and running balance behavior.
+**What changed:** Fixed split amount entry, split ledger deletion, and revamped cumulative balance behavior.
 
 **Files modified:**
-- `js/transactions.js` - made the main amount read-only in split mode and derived from split rows; removed the split target-total validation; rebuilt ledger grouping/running-balance calculation around grouped entries; made parent split delete remove the whole split after a warning; added per-part delete buttons on expanded split rows.
+- `js/transactions.js` - made the main amount read-only in split mode and derived from split rows; removed the split target-total validation; rebuilt ledger grouping/cumulative calculation around the final visible tile order; made parent split delete remove the whole split after a warning; added per-part delete buttons on expanded split rows.
 - `styles.css` - updated split toggle/icon/text colors and derived amount styling.
-- `README.md`, `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`, `working.md`, `TREX_IMPLEMENTATION_PLAN.md` - updated docs for derived split totals, grouped running balances, and split delete behavior.
+- `README.md`, `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`, `working.md`, `TREX_IMPLEMENTATION_PLAN.md` - updated docs for derived split totals, visible-order cumulative balances, and split delete behavior.
 
 **Behavior:**
 - Split totals are entered only in individual row amounts; the main amount displays their sum.
-- Ledger running balances count each visible split group once and stay chronological even when the display is sorted differently.
+- Ledger cumulative values are calculated only from the visible ledger tiles by summing bottom-to-top after the current filter/search/sort is applied. Split groups count once as grouped tiles.
 - Deleting from the parent split card warns that the entire split will be deleted. To delete one part, expand the split card and use the row-level delete action.
 
 ---
@@ -48,7 +48,7 @@ Files listed are the ones modified. Always update this on any meaningful change.
 - `README.md`, `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`, `working.md` - updated docs.
 
 **Behavior:**
-- Ledger rows now show a subtle chronological running spend total for the currently filtered transaction set.
+- Ledger rows now show a subtle running spend total for the currently filtered transaction set. This was later replaced by the visible-order cumulative engine in v4.20.
 - Ledger row metadata now puts the date badge on its own line, and the running total label reads `Spent` instead of `Run`.
 - Users can save the current Add Expense combo as a preset and log it later with one tap from Add Expense or Ledger.
 - Presets are included in local state, JSON/CSV backup restore, and Google Drive sync merge.

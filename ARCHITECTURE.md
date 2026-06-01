@@ -331,7 +331,7 @@ The ledger sort button (`openLedgerSortPicker()`) is a thin wrapper over `openCu
 
 Normal rows are wrapped in `.swipe-row-wrapper`; `attachSwipeToDelete()` handles mobile left-swipe gestures and reveals `.swipe-delete-btn`. Trip-synced rows (`tripRef`) do not get destructive swipe/select affordances and remain read-only in the ledger.
 
-`filterHistory()` also builds a chronological running total map for the currently filtered result set. The displayed row order can still follow the active sort mode, but each `.running-balance` value is based on oldest-to-newest spend within the filtered set.
+`filterHistory()` also builds a cumulative total map for the currently rendered ledger tiles. After filtering/searching and applying the active sort mode, `_computeRunningBalances()` walks the final tile list from bottom to top and accumulates each tile amount. Each `.running-balance` value therefore reflects the exact visible ledger order.
 
 ### Transaction presets
 `ledger-templates.js` owns `state.transactionTemplates[]`. The Add Expense screen can save the current amount/category/payment/note as a preset, and both Add Expense and Ledger render preset chips through `renderTransactionTemplatesBars()`. Tapping a chip confirms and logs a new transaction for `getTodayISO()` with the preset's saved combo. The preset manager supports apply-to-form and delete actions. Presets are normalized in backup restore and included in Drive sync merge comparisons.
@@ -342,7 +342,7 @@ Normal rows are wrapped in `.swipe-row-wrapper`; `attachSwipeToDelete()` handles
 - Split mode is toggled from the Category Tag header in Add Expense. When enabled, the normal category picker is hidden and replaced by split rows, and the main amount field becomes read-only.
 - `_updateSplitTotal()` derives the main amount from the individual split row amounts. `validateSplitRows()` requires at least two rows, positive amounts, and no duplicate categories; there is no separate target-total check.
 - A split expense persists as multiple normal transactions sharing the same `splitGroupId`; each part keeps its own `categoryId`, amount, optional tags, and `splitLabel`.
-- Ledger rendering collapses a split group into one bordered card with a Split badge, grouped total, date/payment line, up to three category chips, and a vertical stripe using up to three category colors. Running balance counts each visible split group once and is calculated chronologically independent of the current display sort.
+- Ledger rendering collapses a split group into one bordered card with a Split badge, grouped total, date/payment line, up to three category chips, and a vertical stripe using up to three category colors. Cumulative balance counts each visible split group once and is calculated from the current displayed tile order, bottom to top.
 - The parent split-card delete action confirms and deletes the entire group. Expanded child rows expose individual delete buttons for deleting a single split part. Edit loads the whole group into split mode.
 - Tags are normalized free-text labels. `state.knownTags[]` plus existing transaction tags power suggestions. Ledger search includes tags, and `activeTagFilter` narrows results by tag text.
 

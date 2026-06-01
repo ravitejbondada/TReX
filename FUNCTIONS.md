@@ -169,7 +169,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `resetLedgerToCycle()` | Resets ledger date range and amount filters to the current active cycle, then re-runs filterHistory |
 | `getLedgerDateRange()` | Returns `{ from, to }` ISO strings from the ledger date pickers |
 | `openLedgerWithDate(dateISO)` | Switches to history view (resetting sort + cycle dates), then overrides both date pickers to a single day and calls filterHistory; used by the spend heatmap |
-| `filterHistory()` | Applies search text + category/payment/date/amount/tag filters; reads `#ledgerSortSelect` value (`date-desc`, `date-asc`, `amt-desc`, `amt-asc`); groups split rows; computes chronological running balances with visible split groups counted once independent of display sort; renders summary bar, chips, bulk bar, and search-clear button visibility |
+| `filterHistory()` | Applies search text + category/payment/date/amount/tag filters; reads `#ledgerSortSelect` value (`date-desc`, `date-asc`, `amt-desc`, `amt-asc`); groups split rows; computes cumulative balances from the final visible tile order by summing bottom-to-top; renders summary bar, chips, bulk bar, and search-clear button visibility |
 | ~~`cycleLedgerSort()`~~ | **Removed** — replaced by `openLedgerSortPicker()` + the central custom picker system |
 | `toggleLedgerFilterSheet()` | Toggles the collapsed filter sheet (date range + category + payment dropdowns) |
 | `clearLedgerSearch()` | Clears the search input and re-runs filterHistory |

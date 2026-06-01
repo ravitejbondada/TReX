@@ -1099,10 +1099,11 @@ function _buildLedgerEntries(items) {
 function _computeRunningBalances(entries) {
     const runningById = new Map();
     let runningTotal = 0;
-    [...entries].sort(_entryChronologicalCompare).forEach(entry => {
+    for (let i = entries.length - 1; i >= 0; i -= 1) {
+        const entry = entries[i];
         runningTotal += entry.total;
         runningById.set(entry.key, runningTotal);
-    });
+    }
     return runningById;
 }
 
