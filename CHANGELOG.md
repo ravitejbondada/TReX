@@ -17,6 +17,7 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 **Behavior:**
 - Ledger rows now show a subtle chronological running spend total for the currently filtered transaction set.
+- Ledger row metadata now puts the date badge on its own line, and the running total label reads `Spent` instead of `Run`.
 - Users can save the current Add Expense combo as a preset and log it later with one tap from Add Expense or Ledger.
 - Presets are included in local state, JSON/CSV backup restore, and Google Drive sync merge.
 

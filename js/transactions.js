@@ -780,6 +780,8 @@ function filterHistory() {
                             <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="14" height="10" rx="2"/><path d="M1 7h14"/><path d="M5 1v3M11 1v3"/></svg>
                             <span class="truncate max-w-[72px]">${pay.name}</span>
                         </span>
+                    </div>
+                    <div class="flex items-center">
                         <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-950 text-slate-500 shrink-0">
                             <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="2" width="14" height="13" rx="2"/><path d="M1 6h14"/><path d="M5 1v2M11 1v2"/></svg>
                             ${dateStr}
@@ -789,7 +791,7 @@ function filterHistory() {
             </div>
             <div class="flex flex-col items-end gap-1.5 shrink-0 ml-1">
                 <span class="text-xs font-black text-indigo-300">${state.currencySymbol}${t.amount.toLocaleString()}</span>
-                <span class="running-balance">Run ${state.currencySymbol}${(runningById.get(t.id) || t.amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                <span class="running-balance">Spent ${state.currencySymbol}${(runningById.get(t.id) || t.amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                 <div class="flex items-center gap-1">
                     ${actionButtons}
                 </div>
