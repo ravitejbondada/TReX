@@ -117,7 +117,7 @@ let state = {
   biometricRegisteredAt: "",
   budgetAlertThreshold: 80,      // Percent of budget
   dinoPrefs: {
-    dinoMode: true,
+    dinoMode: false,
     roarSounds: false,
     soundVolume: 0.6,
     fossilMode: false,
@@ -289,7 +289,7 @@ Returns a Promise resolving to `true` (confirmed) or `false` (cancelled).
 
 Phase 3 uses `t(...)` for toasts, confirm dialog labels/messages, empty states, and contextual labels without changing layout or data behavior.
 
-Dino Mode is the master preference. `toggleDinoMode(sourceEl?)` keeps the Settings toggle and drawer-header toggle in sync, while `syncDinoDependentControls()` disables dependent controls when Dino Mode is off without clearing their saved values.
+Dino Mode is the master preference and is off by default for clean-start users. The Settings label marks it as experimental. `toggleDinoMode(sourceEl?)` keeps the Settings toggle and drawer-header toggle in sync, while `syncDinoDependentControls()` disables and hides dependent controls when Dino Mode is off without clearing their saved values. Dependent effects such as Fossil Mode, Dino Footprints, and Extinction Warnings must also be gated by `dp("dinoMode")` at render/runtime.
 
 ---
 
@@ -298,10 +298,12 @@ All `<select class="app-dropdown">` elements use a central bottom-sheet custom p
 
 ### How it works
 - `wrapAllSelects()` wraps each select in `.select-wrap`, sets `pointer-events:none` on the `<select>` itself, and injects a `.select-catcher` div (absolute, fills the wrapper) that intercepts all taps and calls `openCustomPicker(selectEl)`. Setting `pointer-events:none` is the only fully reliable cross-browser method to prevent the native OS picker — `mousedown` + `preventDefault` does not work consistently on desktop Chrome.
+- Hidden backing selects can opt out of wrapping with `data-picker-skip-wrap="true"` while still being usable by direct calls to `openCustomPicker(selectEl)`.
 - A `MutationObserver` in `core.js` automatically calls `wrapAllSelects()` when new `app-dropdown` selects are injected into the DOM (e.g. after a drawer section renders) — no manual call needed in other modules.
 - `openCustomPicker(selectEl, titleOverride?)` reads the live `<option>` list from the underlying `<select>` at call time (so dynamically populated selects like category/payment always show current data), builds styled rows in `#customPickerList`, and slides the `#customPickerPanel` up.
 - On row tap: `select.value = opt.value` then `select.dispatchEvent(new Event('change', { bubbles: true }))` — every existing `onchange` handler (e.g. `filterHistory`, `renderMomReport`, `applyCategoryDefaultPayment`, `syncPaymentBillingDayRequirement`) fires automatically with zero changes to other modules.
 - `data-picker-attached` guard on each select prevents duplicate interceptor attachment on repeated `wrapAllSelects()` calls.
+- `openCustomPicker()` locks page scroll through `lockPickerPageScroll()` and `closeCustomPicker()` restores it. The picker overlay/panel/list use `overscroll-behavior: contain` so mobile scroll gestures stay inside the sheet instead of moving the page behind it.
 
 ### Ledger sort button
 The ledger sort button (`openLedgerSortPicker()`) is a thin wrapper over `openCustomPicker` targeting the hidden `#ledgerSortSelect`. The select has four static options (`date-desc`, `date-asc`, `amt-desc`, `amt-asc`). Its `onchange` updates `#ledgerSortLabel` text and calls `filterHistory()`. `renderHistoryList()` resets it to `date-desc` on every open.
@@ -321,6 +323,10 @@ The ledger sort button (`openLedgerSortPicker()`) is a thin wrapper over `openCu
 - `.picker-option.selected` — indigo tint + check icon visible
 - `.picker-check` — SVG checkmark, `opacity:0` by default, `opacity:1` when selected
 Full dark / light / fossil theme variants defined in `styles.css`.
+
+## Navigation Scroll Reset
+
+`switchScreen(viewName)` calls `resetAppScrollToTop(viewName)` after rendering and repeats it on the next animation frame plus a short timeout. The helper resets `window`, `document.scrollingElement`, `documentElement`, `body`, `<main>`, `#screenContainer`, and the active `.view-panel`, because mobile browsers differ on which element owns scroll.
 
 ## Credit Card Billing Logic (settings.js)
 

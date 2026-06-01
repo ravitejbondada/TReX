@@ -126,7 +126,7 @@ function buildFreshStateAfterReset(marker) {
         biometricLabel: "",
         biometricRegisteredAt: "",
         dinoPrefs: {
-            dinoMode: true, roarSounds: false, soundVolume: 0.6,
+            dinoMode: false, roarSounds: false, soundVolume: 0.6,
             fossilMode: false, extinctionWarnings: true,
             dinoFootprints: true, herdMode: true, recentActivityLabel: "dino"
         }
@@ -734,7 +734,7 @@ function normalizeSyncState(remoteState) {
     ensureSyncIdentity(next);
     if (!next.dinoPrefs || typeof next.dinoPrefs !== "object") {
         next.dinoPrefs = {
-            dinoMode: true, roarSounds: false, soundVolume: 0.6,
+            dinoMode: false, roarSounds: false, soundVolume: 0.6,
             fossilMode: false, extinctionWarnings: true,
             dinoFootprints: true, herdMode: true, recentActivityLabel: "dino"
         };

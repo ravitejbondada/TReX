@@ -89,7 +89,7 @@ let state = {
     syncResetHistory: [],
     pendingCloudResetEpoch: "",
     dinoPrefs: {
-        dinoMode: true,             // Full dino personality (copy + animations)
+        dinoMode: false,            // Full dino personality (copy + animations)
         roarSounds: false,          // Audio micro-feedback (default OFF — never surprise with sound)
         soundVolume: 0.6,           // Master volume scalar (0.0–1.0)
         fossilMode: false,          // Fossil color theme (amber/charcoal)
@@ -145,7 +145,7 @@ window.onload = function () {
     updateAppLockButton();
     buildCurrencySelectorOptions();
     syncSettingsFormFields();
-    applyTheme(state.theme || "dark", (state.dinoPrefs?.dinoMode ?? true) && state.dinoPrefs?.fossilMode);
+    applyTheme(state.theme || "dark", (state.dinoPrefs?.dinoMode ?? false) && state.dinoPrefs?.fossilMode);
 
     if (!state.recurringExpenses) state.recurringExpenses = [];
     if (!state.emis) state.emis = [];
@@ -175,7 +175,7 @@ window.onload = function () {
     if (!Array.isArray(state.syncResetHistory)) state.syncResetHistory = [];
     if (state.pendingCloudResetEpoch === undefined) state.pendingCloudResetEpoch = "";
     if (!state.dinoPrefs) state.dinoPrefs = {
-        dinoMode: true,
+        dinoMode: false,
         roarSounds: false,
         soundVolume: 0.6,
         fossilMode: false,
@@ -289,6 +289,29 @@ function _ensurePickerDOM() {
 }
 
 let _pickerActiveSelect = null;
+let _pickerScrollY = 0;
+
+function lockPickerPageScroll() {
+    if (document.body.classList.contains("picker-scroll-lock")) return;
+    _pickerScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.body.classList.add("picker-scroll-lock");
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${_pickerScrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+}
+
+function unlockPickerPageScroll() {
+    if (!document.body.classList.contains("picker-scroll-lock")) return;
+    document.body.classList.remove("picker-scroll-lock");
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    window.scrollTo(0, _pickerScrollY);
+}
 
 function openCustomPicker(selectEl, titleOverride) {
     if (!selectEl) return;
@@ -329,6 +352,7 @@ function openCustomPicker(selectEl, titleOverride) {
 
     // Scroll selected item into view
     const overlay = document.getElementById("customPickerOverlay");
+    lockPickerPageScroll();
     overlay.classList.add("open");
     requestAnimationFrame(() => {
         const sel = list.querySelector(".picker-option.selected");
@@ -339,6 +363,7 @@ function openCustomPicker(selectEl, titleOverride) {
 function closeCustomPicker() {
     const overlay = document.getElementById("customPickerOverlay");
     if (overlay) overlay.classList.remove("open");
+    unlockPickerPageScroll();
     _pickerActiveSelect = null;
 }
 
@@ -542,7 +567,7 @@ function openDrawer() {
     drawer.scrollTop = 0;
     if (nav) nav.scrollTop = 0;
     const drawerDinoModeEl = document.getElementById('drawerDinoModeToggle');
-    if (drawerDinoModeEl) drawerDinoModeEl.checked = state.dinoPrefs?.dinoMode ?? true;
+    if (drawerDinoModeEl) drawerDinoModeEl.checked = state.dinoPrefs?.dinoMode ?? false;
 
     const pill = document.getElementById('drawerSyncPill');
     if (pill) {
@@ -596,6 +621,24 @@ const DINO_NAV_ICONS = {
     cards:      `<svg data-nav-icon="cards" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="display:block"><path d="M4,12 Q6,9 8,12 Q10,15 12,12 Q14,9 16,12 Q18,15 20,12"/><circle cx="12" cy="6" r="2" fill="currentColor" stroke="none"/></svg>`,
 };
 
+function resetAppScrollToTop(viewName) {
+    const activePanel = document.getElementById(viewName + "View");
+    const scrollTargets = [
+        document.scrollingElement,
+        document.documentElement,
+        document.body,
+        document.querySelector("main"),
+        document.getElementById("screenContainer"),
+        activePanel
+    ].filter(Boolean);
+
+    window.scrollTo(0, 0);
+    scrollTargets.forEach(el => {
+        if (typeof el.scrollTo === "function") el.scrollTo(0, 0);
+        el.scrollTop = 0;
+    });
+}
+
 function switchScreen(viewName) {
     closeDrawer();
     document.querySelectorAll(".view-panel").forEach(p => p.classList.add("hidden"));
@@ -644,10 +687,10 @@ function switchScreen(viewName) {
         }
     }
 
-    document.getElementById("screenContainer").scrollTop = 0;
-    const activePanel = document.getElementById(viewName + "View");
-    if (activePanel) activePanel.scrollTop = 0;
     initLucideIcons();
+    resetAppScrollToTop(viewName);
+    requestAnimationFrame(() => resetAppScrollToTop(viewName));
+    setTimeout(() => resetAppScrollToTop(viewName), 120);
 
     // Phase 5 — nav icon swap
     if (dp('dinoMode')) {

@@ -1,6 +1,6 @@
 /**
  * backup.js — Data Backup & Restore
- * TReX � Devour Your Expenses
+ * TReX — Devour Your Expenses
  *
  * JSON and CSV export, JSON and CSV import, state validation,
  * full state restore, CSV parsing helpers, backup payload builder.
@@ -108,7 +108,7 @@ function normalizeImportedState(raw) {
             })) : []
         })) : [],
         dinoPrefs: (src.dinoPrefs && typeof src.dinoPrefs === "object") ? {
-            dinoMode:             src.dinoPrefs.dinoMode             ?? true,
+            dinoMode:             src.dinoPrefs.dinoMode             ?? false,
             roarSounds:           src.dinoPrefs.roarSounds           ?? false,
             soundVolume:          src.dinoPrefs.soundVolume          ?? 0.6,
             fossilMode:           src.dinoPrefs.fossilMode           ?? false,
@@ -117,7 +117,7 @@ function normalizeImportedState(raw) {
             herdMode:             src.dinoPrefs.herdMode             ?? true,
             recentActivityLabel:  src.dinoPrefs.recentActivityLabel  ?? "dino"
         } : {
-            dinoMode: true, roarSounds: false, soundVolume: 0.6,
+            dinoMode: false, roarSounds: false, soundVolume: 0.6,
             fossilMode: false, extinctionWarnings: true,
             dinoFootprints: true, herdMode: true, recentActivityLabel: "dino"
         }

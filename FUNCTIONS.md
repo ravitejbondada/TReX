@@ -26,6 +26,8 @@ To find where to add/edit something, scan the relevant section header then go to
 | `_ensurePickerDOM()` | Lazily injects the `#customPickerOverlay` bottom-sheet DOM into `<body>` on first use; idempotent |
 | `openCustomPicker(selectEl, titleOverride?)` | Opens the central custom bottom-sheet picker for any `<select class="app-dropdown">`; reads live options, builds styled rows, sets `select.value` and dispatches a real `change` event on selection so all existing `onchange` handlers fire automatically |
 | `closeCustomPicker()` | Slides the custom picker sheet away and clears the active select reference |
+| `lockPickerPageScroll()` | Freezes the page behind the custom picker at the current scroll position so mobile sheet scrolling does not move the background page |
+| `unlockPickerPageScroll()` | Restores page scroll after the custom picker closes |
 | `openLedgerSortPicker()` | Thin wrapper — calls `openCustomPicker` on `#ledgerSortSelect` with title "Sort by"; wired to the ledger sort button |
 | `forceDropdownDarkTheme(sel)` | Sets `color-scheme: dark` on a `<select>` element |
 | `wrapAllSelects(root?)` | Wraps all `.app-dropdown` selects in a `.select-wrap` div; sets `pointer-events:none` on each select; injects a `.select-catcher` sibling div (absolute, fills wrapper) that intercepts all taps and calls `openCustomPicker()`; `data-picker-attached` guard makes it idempotent; safe to call multiple times after dynamic option injection |
@@ -41,6 +43,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `closeDrawer()` | Closes the side drawer/backdrop and resets any open drawer sub-panel |
 | `dp(key)` | Safely reads a value from `state.dinoPrefs` |
 | `t(neutral, dino)` | Returns Dino Mode copy when `dinoPrefs.dinoMode` is enabled, otherwise neutral copy |
+| `resetAppScrollToTop(viewName)` | Resets every real app scroll host (`window`, document/body, `<main>`, `#screenContainer`, and the active panel) when switching screens |
 | `switchScreen(viewName)` | Main router — hides all view panels, shows target, updates nav tabs, calls init render, resets scroll on both `screenContainer` and the active view panel |
 | `registerTrexServiceWorker()` | Registers `sw.js` on secure origins/localhost for PWA notification handling |
 | `checkAndShowOnboardingModal()` | Called from `window.onload`; delegates to `sync.js` to show the Drive onboarding prompt if sync is disabled and not yet seen this session |
@@ -222,8 +225,8 @@ To find where to add/edit something, scan the relevant section header then go to
 | `openDrawerSection(sectionName)` | Opens a drawer sub-panel and renders Budget, Categories, Payments, Credit Cards, Recurring, EMI, or backup content |
 | `closeDrawerSection()` | Closes the drawer content sub-panel and returns to the drawer nav list |
 | `syncPersonalitySettings()` | Syncs Personality section controls from `state.dinoPrefs` |
-| `syncDinoDependentControls()` | Disables/enables Dino Mode dependent controls from the master toggle while preserving saved values |
-| `toggleDinoMode()` | Saves the Dino Mode master toggle |
+| `syncDinoDependentControls()` | Disables/hides Dino Mode dependent controls from the master toggle while preserving saved values |
+| `toggleDinoMode()` | Saves the Dino Mode master toggle; Dino Mode is off by default and labelled experimental in Settings |
 | `toggleRoarSounds()` | Saves the Roar Sounds toggle and shows/hides the volume row |
 | `saveSoundVolume()` | Persists the roar sound volume slider value |
 | `toggleFossilMode()` | Saves Fossil Mode preference for the future visual phase |

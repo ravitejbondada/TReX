@@ -948,6 +948,8 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.22s ease;
+            overscroll-behavior: contain;
+            touch-action: none;
         }
         #customPickerOverlay.open {
             opacity: 1;
@@ -964,6 +966,8 @@
             transform: translateY(100%);
             transition: transform 0.28s cubic-bezier(0.34, 1.2, 0.64, 1);
             box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
+            overscroll-behavior: contain;
+            touch-action: pan-y;
         }
         #customPickerOverlay.open #customPickerPanel {
             transform: translateY(0);
@@ -988,6 +992,8 @@
         #customPickerList {
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
             padding: 0.375rem 0.625rem 1.5rem;
             flex: 1;
         }

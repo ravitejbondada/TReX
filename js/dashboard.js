@@ -484,7 +484,7 @@ function renderSpendHeatmap() {
                     openLedgerWithDate(dateISO);
                 });
 
-                if (dp('dinoFootprints') && !isFuture) {
+                if (dp('dinoMode') && dp('dinoFootprints') && !isFuture) {
                     if (spend === 0) {
                         const m = document.createElement('span');
                         m.className = 'heatmap-egg'; m.textContent = '🥚'; cell.appendChild(m);

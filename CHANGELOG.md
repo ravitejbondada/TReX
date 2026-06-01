@@ -2,6 +2,30 @@
 
 Format: `[version] YYYY-MM-DD — summary`
 Files listed are the ones modified. Always update this on any meaningful change.
+
+## [v4.14] 2026-06-01 — Mobile polish and Dino Mode guardrails
+
+**What changed:** Tightened mobile navigation/dropdown behavior and made Dino Mode opt-in/experimental.
+
+**Files modified:**
+- `js/core.js` — added picker page scroll lock/unlock so the page behind the custom picker cannot scroll on mobile; added `resetAppScrollToTop(viewName)` so navigation resets `window`, document/body, `<main>`, `#screenContainer`, and the active panel; changed clean-start `dinoPrefs.dinoMode` default to `false`.
+- `styles.css` — added `overscroll-behavior` and `touch-action` guards to the custom picker overlay/panel/list so picker scrolling stays inside the sheet.
+- `index.html` — labelled Dino Mode as `(experimental)` in Settings.
+- `js/dashboard.js` — heatmap footprints now require both `dinoMode` and `dinoFootprints`, preventing footprint/egg markers while Dino Mode is off.
+- `js/settings.js` — Dino dependent controls default to disabled/hidden when Dino Mode is off; dependent toggle handlers bail out if Dino Mode is off.
+- `js/backup.js`, `js/sync.js` — backup/sync normalization and reset defaults now preserve Dino Mode as opt-in (`false`) when absent.
+- `README.md`, `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md` — updated docs.
+
+**Behavior:**
+- Fresh installs start with Dino Mode off.
+- Dino Mode is explicitly marked experimental.
+- Fossil Mode, Dino Footprints, and Extinction Warnings have no visible/runtime effect while Dino Mode is off.
+- Opening the custom picker locks the page behind it; only the picker list scrolls.
+- Bottom nav switches reliably scroll the target page to the top across mobile browsers.
+- The header sync icon intentionally spins while `state.syncStatus === "syncing"`; it should stop when sync settles to idle/offline/error.
+
+---
+
 ## [v4.13] 2026-06-01 — Central custom picker replaces native OS select on all dropdowns
 
 **What changed:** All `<select class="app-dropdown">` elements now open a branded bottom-sheet custom picker instead of the native OS scroll-wheel picker. A central `openCustomPicker()` utility in `core.js` handles the full interaction; no other module needed changes. The previously non-functional ledger sort button is now fully wired.

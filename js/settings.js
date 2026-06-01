@@ -1,6 +1,6 @@
 /**
  * settings.js — Settings, Categories & Payments
- * TReX � Devour Your Expenses
+ * TReX — Devour Your Expenses
  *
  * Settings form sync, currency selector, budget/cycle save, credit card
  * toggle, billing day helpers, credit card cycle utilities and snapshot
@@ -1185,7 +1185,7 @@ function syncPersonalitySettings() {
 
     const dinoModeEl = document.getElementById('dinoModeToggle');
     const drawerDinoModeEl = document.getElementById('drawerDinoModeToggle');
-    const dinoOn = p.dinoMode ?? true;
+    const dinoOn = p.dinoMode ?? false;
     if (dinoModeEl) dinoModeEl.checked = dinoOn;
     if (drawerDinoModeEl) drawerDinoModeEl.checked = dinoOn;
 
@@ -1211,7 +1211,7 @@ function syncPersonalitySettings() {
 }
 
 function syncDinoDependentControls() {
-    const dinoEnabled = document.getElementById('dinoModeToggle')?.checked ?? (state.dinoPrefs?.dinoMode ?? true);
+    const dinoEnabled = document.getElementById('dinoModeToggle')?.checked ?? (state.dinoPrefs?.dinoMode ?? false);
     const dependentIds = [
         'fossilModeToggle',
         'dinoFootprintsToggle',
@@ -1239,7 +1239,7 @@ function syncDinoDependentControls() {
 
 function toggleDinoMode(sourceEl = null) {
     if (!state.dinoPrefs) state.dinoPrefs = {};
-    const checked = sourceEl ? sourceEl.checked : (document.getElementById('dinoModeToggle')?.checked ?? true);
+    const checked = sourceEl ? sourceEl.checked : (document.getElementById('dinoModeToggle')?.checked ?? false);
     state.dinoPrefs.dinoMode = checked;
     const dinoModeEl = document.getElementById('dinoModeToggle');
     const drawerDinoModeEl = document.getElementById('drawerDinoModeToggle');
@@ -1269,6 +1269,7 @@ function saveSoundVolume() {
 
 function toggleFossilMode() {
     if (!state.dinoPrefs) state.dinoPrefs = {};
+    if (!state.dinoPrefs.dinoMode) return;
     state.dinoPrefs.fossilMode = document.getElementById('fossilModeToggle').checked;
     saveStateToLocalStorage();
     applyTheme(state.theme, state.dinoPrefs.dinoMode && state.dinoPrefs.fossilMode);
@@ -1277,6 +1278,7 @@ function toggleFossilMode() {
 
 function toggleDinoFootprints() {
     if (!state.dinoPrefs) state.dinoPrefs = {};
+    if (!state.dinoPrefs.dinoMode) return;
     state.dinoPrefs.dinoFootprints = document.getElementById('dinoFootprintsToggle').checked;
     saveStateToLocalStorage();
     if (typeof renderSpendHeatmap === 'function') renderSpendHeatmap();
@@ -1284,6 +1286,7 @@ function toggleDinoFootprints() {
 
 function toggleExtinctionWarnings() {
     if (!state.dinoPrefs) state.dinoPrefs = {};
+    if (!state.dinoPrefs.dinoMode) return;
     state.dinoPrefs.extinctionWarnings = document.getElementById('extinctionWarningsToggle').checked;
     saveStateToLocalStorage();
 }
