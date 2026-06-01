@@ -365,25 +365,19 @@ function wrapAllSelects(root) {
             wrapper.appendChild(sel);
             sel.style.width = "100%";
         }
-        // Intercept tap/click to show custom picker instead of native OS picker
+        // Attach click-catcher overlay inside the wrapper (idempotent via data-picker-attached)
         if (!sel.dataset.pickerAttached) {
             sel.dataset.pickerAttached = "1";
-            // mousedown/touchstart fires before the native picker opens — preventDefault stops it
-            sel.addEventListener("mousedown", function(e) {
-                e.preventDefault();
-                this.blur();
-                openCustomPicker(this);
-            });
-            sel.addEventListener("touchstart", function(e) {
-                e.preventDefault();
-                openCustomPicker(this);
-            }, { passive: false });
-            // Also intercept keydown space/enter to stay consistent
-            sel.addEventListener("keydown", function(e) {
-                if (e.key === " " || e.key === "Enter") {
-                    e.preventDefault();
-                    openCustomPicker(this);
-                }
+            // Make the native <select> non-interactive — the catcher div handles all taps
+            sel.style.pointerEvents = "none";
+            sel.style.userSelect = "none";
+            // Insert a transparent full-size div on top that intercepts all taps
+            const catcher = document.createElement("div");
+            catcher.className = "select-catcher";
+            sel.parentElement.appendChild(catcher);
+            catcher.addEventListener("click", function(e) {
+                e.stopPropagation();
+                openCustomPicker(sel);
             });
         }
     });

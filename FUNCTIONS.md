@@ -28,7 +28,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `closeCustomPicker()` | Slides the custom picker sheet away and clears the active select reference |
 | `openLedgerSortPicker()` | Thin wrapper — calls `openCustomPicker` on `#ledgerSortSelect` with title "Sort by"; wired to the ledger sort button |
 | `forceDropdownDarkTheme(sel)` | Sets `color-scheme: dark` on a `<select>` element |
-| `wrapAllSelects(root?)` | Wraps all `.app-dropdown` selects in a `.select-wrap` div, attaches `mousedown`/`touchstart`/`keydown` interceptors to open the custom picker instead of the native OS picker; uses `data-picker-attached` guard so it is safe to call multiple times |
+| `wrapAllSelects(root?)` | Wraps all `.app-dropdown` selects in a `.select-wrap` div; sets `pointer-events:none` on each select; injects a `.select-catcher` sibling div (absolute, fills wrapper) that intercepts all taps and calls `openCustomPicker()`; `data-picker-attached` guard makes it idempotent; safe to call multiple times after dynamic option injection |
 | `generateDynamicIcons()` | **Deprecated — no longer used.** Static app icon is now served from `assets/favicon.png`, with the PWA manifest moved to external `manifest.json`. Previously drew the logo to canvas and set the favicon + Apple touch icon |
 | `initLucideIcons(root?)` | Calls `lucide.createIcons()` on the document or a scoped root element |
 | `cleanArchivedPayments()` | Removes archived payments that have zero linked transactions |

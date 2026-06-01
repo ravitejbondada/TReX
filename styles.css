@@ -925,6 +925,17 @@
            Central bottom-sheet picker that replaces the native OS <select>
            picker on all app-dropdown elements. Triggered by openCustomPicker().
         ──────────────────────────────────────────────────────────────────── */
+
+        /* Transparent click-catcher div placed on top of each app-dropdown <select>.
+           The <select> itself gets pointer-events:none so only this div receives taps.
+           This is the only reliable cross-browser way to fully suppress the native picker. */
+        .select-catcher {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
         #customPickerOverlay {
             position: fixed;
             inset: 0;

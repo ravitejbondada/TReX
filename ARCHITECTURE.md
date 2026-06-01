@@ -297,7 +297,7 @@ Dino Mode is the master preference. `toggleDinoMode(sourceEl?)` keeps the Settin
 All `<select class="app-dropdown">` elements use a central bottom-sheet custom picker instead of the native OS picker. This ensures consistent app-branded UI across iOS, Android, and desktop.
 
 ### How it works
-- `wrapAllSelects()` wraps each select in `.select-wrap` and attaches `mousedown`/`touchstart`/`keydown` interceptors that call `preventDefault()` (stopping the native OS picker from opening) then call `openCustomPicker(selectEl)`.
+- `wrapAllSelects()` wraps each select in `.select-wrap`, sets `pointer-events:none` on the `<select>` itself, and injects a `.select-catcher` div (absolute, fills the wrapper) that intercepts all taps and calls `openCustomPicker(selectEl)`. Setting `pointer-events:none` is the only fully reliable cross-browser method to prevent the native OS picker — `mousedown` + `preventDefault` does not work consistently on desktop Chrome.
 - A `MutationObserver` in `core.js` automatically calls `wrapAllSelects()` when new `app-dropdown` selects are injected into the DOM (e.g. after a drawer section renders) — no manual call needed in other modules.
 - `openCustomPicker(selectEl, titleOverride?)` reads the live `<option>` list from the underlying `<select>` at call time (so dynamically populated selects like category/payment always show current data), builds styled rows in `#customPickerList`, and slides the `#customPickerPanel` up.
 - On row tap: `select.value = opt.value` then `select.dispatchEvent(new Event('change', { bubbles: true }))` — every existing `onchange` handler (e.g. `filterHistory`, `renderMomReport`, `applyCategoryDefaultPayment`, `syncPaymentBillingDayRequirement`) fires automatically with zero changes to other modules.
