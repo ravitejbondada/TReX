@@ -1,6 +1,6 @@
 /**
  * transactions.js — Expense Form & Ledger
- * TReX � Devour Your Expenses
+ * TReX — Devour Your Expenses
  *
  * Add/edit expense form setup, form submission, category/payment dropdowns,
  * inline category & payment modals, history list renderer, ledger date
@@ -404,6 +404,67 @@ function resetLedgerToCycle() {
     filterHistory();
 }
 
+function toggleLedgerFilterSheet() {
+    const sheet = document.getElementById("ledgerFilterSheet");
+    if (!sheet) return;
+    sheet.classList.toggle("hidden");
+}
+
+function clearLedgerSearch() {
+    const input = document.getElementById("historySearchInput");
+    if (input) input.value = "";
+    filterHistory();
+}
+
+function _removeLedgerFilter(type) {
+    if (type === "category") {
+        const el = document.getElementById("historyFilterCategory");
+        if (el) el.value = "";
+    }
+    if (type === "payment") {
+        const el = document.getElementById("historyFilterPayment");
+        if (el) el.value = "";
+    }
+    if (type === "date") {
+        initLedgerMonthSelector();
+    }
+    filterHistory();
+}
+
+function _renderLedgerChips(catId, payId, from, to) {
+    const chipHost = document.getElementById("ledgerActiveChips");
+    const dot = document.getElementById("ledgerFilterDot");
+    if (!chipHost) return;
+
+    const cycle = calculateActiveCycleRange();
+    const pad = n => String(n).padStart(2, "0");
+    const cycleFrom = `${cycle.startDate.getFullYear()}-${pad(cycle.startDate.getMonth() + 1)}-${pad(cycle.startDate.getDate())}`;
+    const cycleTo = `${cycle.endDate.getFullYear()}-${pad(cycle.endDate.getMonth() + 1)}-${pad(cycle.endDate.getDate())}`;
+    const chips = [];
+
+    if (catId) {
+        const cat = state.categories.find(c => c.id === catId);
+        chips.push({ type: "category", label: cat ? cat.name : "Category" });
+    }
+    if (payId) {
+        const pay = state.payments.find(p => p.id === payId);
+        chips.push({ type: "payment", label: pay ? pay.name : "Account" });
+    }
+    if ((from && from !== cycleFrom) || (to && to !== cycleTo)) {
+        chips.push({ type: "date", label: `${from || "Start"} to ${to || "Today"}` });
+    }
+
+    chipHost.innerHTML = chips.map(chip => `
+        <button onclick="_removeLedgerFilter('${chip.type}')"
+            class="inline-flex items-center gap-1 rounded-full bg-slate-900 border border-slate-800 px-2 py-1 text-[8px] font-bold text-slate-400 max-w-[120px]">
+            <span class="truncate">${chip.label}</span>
+            <i data-lucide="x" class="w-2.5 h-2.5 shrink-0"></i>
+        </button>
+    `).join("");
+    if (dot) dot.classList.toggle("hidden", chips.length === 0);
+    initLucideIcons(chipHost);
+}
+
 function getLedgerDateRange() {
     return {
         from: document.getElementById("ledgerDateFrom").value || "1900-01-01",
@@ -425,13 +486,17 @@ function filterHistory() {
     const historyTitle = document.getElementById("historyViewTitle");
     if (historyTitle) historyTitle.textContent = dp('dinoMode') ? "Fossil Record" : "Transaction History";
     const search = searchInput ? searchInput.value.toLowerCase() : "";
-    const catId = document.getElementById("historyFilterCategory").value;
-    const payId = document.getElementById("historyFilterPayment").value;
+    const catId = (document.getElementById("historyFilterCategory") || {}).value || "";
+    const payId = (document.getElementById("historyFilterPayment") || {}).value || "";
     const container = document.getElementById("allHistoryList");
+    if (!container) return;
     container.innerHTML = "";
 
     // Get date range from month selector
     const { from, to } = getLedgerDateRange();
+    _renderLedgerChips(catId, payId, from, to);
+    const clearBtn = document.getElementById("ledgerSearchClear");
+    if (clearBtn) clearBtn.classList.toggle("hidden", !search);
 
     let items = state.transactions.filter(t => {
         const matchesCat  = !catId || t.categoryId === catId;

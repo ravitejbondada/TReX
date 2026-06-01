@@ -748,7 +748,7 @@
                         <!-- Sort picker anchor -->
                         <div id="ledgerSortAnchor" class="relative">
                             <!-- Hidden backing select — populated statically; value read by filterHistory() -->
-                            <select id="ledgerSortSelect" class="app-dropdown" aria-label="Sort by"
+                            <select id="ledgerSortSelect" class="app-dropdown" aria-label="Sort by" data-picker-skip-wrap="true"
                                 style="position:absolute;opacity:0;pointer-events:none;width:0;height:0"
                                 onchange="document.getElementById('ledgerSortLabel').textContent=this.options[this.selectedIndex].text;filterHistory();">
                                 <option value="date-desc">Dated ↓</option>

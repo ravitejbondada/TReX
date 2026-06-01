@@ -357,6 +357,7 @@ function wrapAllSelects(root) {
     const scope = root || document;
     scope.querySelectorAll("select.app-dropdown").forEach(sel => {
         forceDropdownDarkTheme(sel);
+        if (sel.dataset.pickerSkipWrap === "true") return;
         // Wrap in .select-wrap if not already
         if (!sel.parentElement || !sel.parentElement.classList.contains("select-wrap")) {
             const wrapper = document.createElement("div");
