@@ -3,6 +3,25 @@
 Format: `[version] YYYY-MM-DD — summary`
 Files listed are the ones modified. Always update this on any meaningful change.
 
+## [v4.16] 2026-06-01 - Ledger running balance and transaction presets
+
+**What changed:** Implemented Phase 1 items 4 and 5.
+
+**Files modified:**
+- `index.html` - added preset bars to Add Expense and Ledger, added Save as Preset action, and loaded `js/ledger-templates.js`.
+- `js/transactions.js` - added per-row running balance calculation and rendering.
+- `js/ledger-templates.js` - added saved preset creation, one-tap preset logging, preset manager, preset deletion, and apply-to-form behavior.
+- `js/core.js`, `js/backup.js`, `js/sync.js` - added `state.transactionTemplates` defaults, restore normalization, CSV backup/import support, and Drive sync merge support.
+- `styles.css` - added running balance, preset chip/bar, preset manager modal, and light-theme styles.
+- `README.md`, `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`, `working.md` - updated docs.
+
+**Behavior:**
+- Ledger rows now show a subtle chronological running spend total for the currently filtered transaction set.
+- Users can save the current Add Expense combo as a preset and log it later with one tap from Add Expense or Ledger.
+- Presets are included in local state, JSON/CSV backup restore, and Google Drive sync merge.
+
+---
+
 ## [v4.15] 2026-06-01 - Ledger swipe, bulk select, and amount filters
 
 **What changed:** Implemented the first three Phase 1 ledger UX items.

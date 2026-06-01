@@ -99,6 +99,7 @@ function buildFreshStateAfterReset(marker) {
         categories: [...DEFAULT_CATEGORIES],
         payments: [...DEFAULT_PAYMENTS],
         transactions: [],
+        transactionTemplates: [],
         savingGoals: [...DEFAULT_SAVING_GOALS],
         recurringExpenses: [],
         emis: [],
@@ -531,6 +532,7 @@ function buildMergedSyncState(localState, remoteState) {
     merged.categories = mergeById(localState.categories, remoteState.categories);
     merged.payments = mergeById(localState.payments, remoteState.payments);
     merged.transactions = mergeById(localState.transactions, remoteState.transactions);
+    merged.transactionTemplates = mergeById(localState.transactionTemplates, remoteState.transactionTemplates);
     merged.savingGoals = mergeById(localState.savingGoals, remoteState.savingGoals);
     merged.trips = mergeById(localState.trips, remoteState.trips);
     merged.recurringExpenses = mergeById(localState.recurringExpenses, remoteState.recurringExpenses);
@@ -570,7 +572,7 @@ function buildMergedSyncState(localState, remoteState) {
 }
 
 function sameSyncArrays(a, b) {
-    const arrayKeys = ["categories", "payments", "transactions", "savingGoals", "trips", "recurringExpenses", "emis"];
+    const arrayKeys = ["categories", "payments", "transactions", "transactionTemplates", "savingGoals", "trips", "recurringExpenses", "emis"];
     const scalarKeys = ["currency", "currencySymbol", "monthlyBudget", "cycleType", "cycleDay", "theme", "creditCardsEnabled"];
     return arrayKeys.every(key => JSON.stringify(a[key] || []) === JSON.stringify(b[key] || [])) &&
         scalarKeys.every(key => (a[key] ?? null) === (b[key] ?? null));
@@ -590,6 +592,7 @@ async function _applyRemoteSilent(remoteState, isInitialLinkage, token, fileId) 
             return Array.from(map.values());
         };
         remoteState.transactions   = mergeById(state.transactions, remoteState.transactions);
+        remoteState.transactionTemplates = mergeById(state.transactionTemplates, remoteState.transactionTemplates);
         remoteState.savingGoals    = mergeById(state.savingGoals, remoteState.savingGoals);
         remoteState.trips          = mergeById(state.trips, remoteState.trips);
         console.log("Initial linkage: deduplication merge complete.");
@@ -714,6 +717,7 @@ function normalizeSyncState(remoteState) {
     next.categories = Array.isArray(src.categories) ? src.categories : (state.categories || []);
     next.payments = Array.isArray(src.payments) ? src.payments : (state.payments || []);
     next.transactions = Array.isArray(src.transactions) ? src.transactions : [];
+    next.transactionTemplates = Array.isArray(src.transactionTemplates) ? src.transactionTemplates : [];
     next.savingGoals = Array.isArray(src.savingGoals) ? src.savingGoals : [];
     next.recurringExpenses = Array.isArray(src.recurringExpenses) ? src.recurringExpenses : [];
     next.emis = Array.isArray(src.emis) ? src.emis : [];

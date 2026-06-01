@@ -61,6 +61,7 @@ let state = {
     categories: [...DEFAULT_CATEGORIES],
     payments: [...DEFAULT_PAYMENTS],
     transactions: [],
+    transactionTemplates: [],
     savingGoals: [...DEFAULT_SAVING_GOALS],
     recurringExpenses: [],
     emis: [],
@@ -148,6 +149,7 @@ window.onload = function () {
     applyTheme(state.theme || "dark", (state.dinoPrefs?.dinoMode ?? false) && state.dinoPrefs?.fossilMode);
 
     if (!state.recurringExpenses) state.recurringExpenses = [];
+    if (!Array.isArray(state.transactionTemplates)) state.transactionTemplates = [];
     if (!state.emis) state.emis = [];
     if (!state.trips) state.trips = [];
     if (!state.pinCode) state.pinCode = "1234";

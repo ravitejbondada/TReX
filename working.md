@@ -1,14 +1,14 @@
 # TReX Working Log
 
 **Last updated:** June 1, 2026
-**Current version:** v4.15
+**Current version:** v4.16
 **Plan:** `TREX_IMPLEMENTATION_PLAN.md` - Feature Implementation Plan
 
 ---
 
 ## Current Item
 
-Phase 1 - Items 1-3: Swipe-to-delete, bulk select, amount range filter
+Phase 1 - Items 4-5: Running balance, transaction templates / presets
 
 ## Status
 
@@ -21,6 +21,8 @@ Phase 1 - Items 1-3: Swipe-to-delete, bulk select, amount range filter
 - Before touching source for an item, update this file to `[~] In progress`; after verification, mark `[x] Done` and add a brief completion note.
 - Implementing the first three ledger UX items together because they share the ledger row/header/filter surface.
 - Completed ledger swipe-to-delete, bulk select/delete, and amount range filtering.
+- Implementing running balance and transaction presets together because both touch ledger row rendering and the add-expense form.
+- Completed ledger running balance and transaction presets/preset manager.
 
 ---
 
@@ -38,8 +40,8 @@ Phase 1 - Items 1-3: Swipe-to-delete, bulk select, amount range filter
 [x] 1. Swipe-to-delete
 [x] 2. Bulk delete / select mode
 [x] 3. Filter by amount range
-[ ] 4. Running balance
-[ ] 5. Transaction templates / presets
+[x] 4. Running balance
+[x] 5. Transaction templates / presets
 [ ] 6. Inline edit (amount + note)
 
 ### Phase 2 - Analytics & Insights

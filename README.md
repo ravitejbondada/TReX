@@ -60,7 +60,8 @@ TReX/
     ├── core.js             State, boot, persistence, routing, theme, notifications
     ├── auth.js             PIN lock/unlock, WebAuthn biometrics, locked expense sheet (slide-up)
     ├── dashboard.js        Budget widgets, forecast, heatmap, quick logs, alerts/reminders
-    ├── transactions.js     Add/edit expense form, ledger history, filter/search, swipe/bulk actions
+    ├── transactions.js     Add/edit expense form, ledger history, filter/search, swipe/bulk actions, running balance
+    ├── ledger-templates.js Transaction presets/preset manager and one-tap preset logging
     ├── reports.js          Chart.js renderers, analytics reports, MoM comparison
     ├── settings.js         Settings form, category/payment CRUD, CC helpers
     ├── credit-cards.js     Credit card view, card analytics, payment lock UI
@@ -94,6 +95,8 @@ On boot, `window.onload` reads it back. If the key is missing, seed data (defaul
 **localStorage key:** `androidWalletState_v4`
 
 **Transaction sort order:** Every transaction carries a `createdAt` full ISO 8601 timestamp stamped at creation time. The recent activity feed sorts by `createdAt` descending. The ledger defaults to **Dated ↓** (expense date field, descending) on every open — the sort dropdown offers Dated ↓↑ and Amt ↓↑. Recurring catch-up entries use end-of-day (`23:59:59`) on their due date as `createdAt` so multi-day batches posted at once sort correctly. Existing transactions without `createdAt` fall back to sorting by `date`.
+
+**Transaction presets:** `state.transactionTemplates[]` stores reusable expense combos (`name`, `amount`, `categoryId`, `paymentId`, `note`) for one-tap logging from Add Expense or Ledger. Presets are included in JSON/CSV backup and Drive sync.
 
 > ⚠️ Local-only data is lost if the browser cache is cleared. Enable Google Drive sync in Settings to keep a persistent backup.
 
@@ -150,6 +153,8 @@ The Reports / Premium Insights screen includes a **Download PDF Summary Report**
 
 - **Ledger header:** Compact three-row design — title + Sort button + Select button + Filter icon button / search bar / summary + active filter chips. Filter sheet (date range, category, payment, amount range) is collapsed by default; tap the filter icon to expand. Sort uses 4 picker options (Dated ↓↑, Amt ↓↑) and resets to Dated ↓ on each ledger open. Active filters appear as dismissible chips; a dot on the filter icon signals active filters.
 - **Ledger row actions:** Swipe a normal ledger row left to reveal Delete. Select mode supports multi-select bulk delete; trip-synced ledger rows stay locked/read-only.
+- **Ledger running balance:** Each visible ledger row shows a subtle running spend total computed chronologically over the currently filtered result set.
+- **Transaction presets:** Add Expense can save the current amount/category/payment/note as a preset; preset chips appear in Add Expense and Ledger for one-tap logging.
 - **Heatmap legend:** Compact right-aligned ultra-muted swatches (Low → High: green, yellow, amber, rose) rendered below the heatmap grid. Matches `heatColor()` thresholds while staying subtle on the dark dashboard.
 - **Heatmap → Ledger:** Tapping a heatmap day opens the ledger scoped to that single day, sorted Dated ↓ by default.
 - **Ledger sort:** Tap the sort button to open the custom picker with 4 options — Dated ↓, Dated ↑, Amt ↓, Amt ↑. "Dated" sorts by the expense date field. Resets to Dated ↓ on every ledger open.

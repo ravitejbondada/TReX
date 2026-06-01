@@ -987,6 +987,105 @@
             background: rgba(79, 70, 229, 0.38);
         }
 
+        /* Running balance and transaction presets */
+        .running-balance {
+            font-size: 0.52rem;
+            line-height: 1;
+            color: rgba(148, 163, 184, 0.62);
+            font-weight: 800;
+            text-align: right;
+            white-space: nowrap;
+        }
+        .templates-bar {
+            border: 1px solid rgba(30, 41, 59, 0.9);
+            background: rgba(15, 23, 42, 0.48);
+            border-radius: 1rem;
+            padding: 0.65rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .templates-bar.hidden {
+            display: none;
+        }
+        .templates-scroll {
+            display: flex;
+            gap: 0.45rem;
+            overflow-x: auto;
+            padding-bottom: 0.05rem;
+            scrollbar-width: none;
+        }
+        .templates-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .template-chip {
+            --template-color: #818cf8;
+            min-width: 0;
+            height: 2.25rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex: 0 0 auto;
+            border-radius: 999px;
+            border: 1px solid color-mix(in srgb, var(--template-color) 42%, transparent);
+            background: color-mix(in srgb, var(--template-color) 16%, rgba(15, 23, 42, 0.86));
+            color: rgb(226, 232, 240);
+            padding: 0 0.7rem;
+            font-size: 0.62rem;
+            font-weight: 800;
+        }
+        .template-dot {
+            width: 0.42rem;
+            height: 0.42rem;
+            border-radius: 999px;
+            background: var(--template-color);
+            box-shadow: 0 0 10px color-mix(in srgb, var(--template-color) 50%, transparent);
+            flex-shrink: 0;
+        }
+        .template-amount {
+            color: rgb(199, 210, 254);
+            font-size: 0.58rem;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+        .templates-modal {
+            width: 100%;
+            max-width: 24rem;
+            border-radius: 1.5rem;
+            border: 1px solid rgba(30, 41, 59, 0.95);
+            background: #0f172a;
+            padding: 1rem;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+        .template-manager-row {
+            display: flex;
+            align-items: stretch;
+            gap: 0.65rem;
+            border-radius: 1rem;
+            border: 1px solid rgba(30, 41, 59, 0.9);
+            background: rgba(2, 6, 23, 0.42);
+            padding: 0.65rem;
+        }
+        html[data-theme="light"] .running-balance {
+            color: rgba(71, 85, 105, 0.72);
+        }
+        html[data-theme="light"] .templates-bar,
+        html[data-theme="light"] .templates-modal {
+            background: rgba(248, 250, 252, 0.92);
+            border-color: rgba(148, 163, 184, 0.45);
+        }
+        html[data-theme="light"] .template-manager-row {
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(148, 163, 184, 0.36);
+        }
+        html[data-theme="light"] .template-chip {
+            color: #0f172a;
+            background: #eef2ff;
+        }
+
         /* ── CUSTOM PICKER SHEET ─────────────────────────────────────────────
            Central bottom-sheet picker that replaces the native OS <select>
            picker on all app-dropdown elements. Triggered by openCustomPicker().

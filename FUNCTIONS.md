@@ -148,12 +148,12 @@ To find where to add/edit something, scan the relevant section header then go to
 | `openInlinePaymentModal(mode?)` | Calls `closeDrawer()` then opens the quick-add payment modal; works from expense form and drawer |
 | `closeInlinePaymentModal()` | Closes the inline payment modal |
 | `saveInlinePayment()` | Creates a new payment method from the inline modal, updates dropdowns |
-| `renderHistoryList()` | Renders the full ledger/history list; resets `#ledgerSortSelect` to `date-desc` and sort label to "Dated ↓" on every open; seeds date pickers with current cycle; populates category and payment filter dropdowns sorted A→Z |
+| `renderHistoryList()` | Renders the full ledger/history list; resets `#ledgerSortSelect` to `date-desc` and sort label to "Dated ↓" on every open; seeds date pickers with current cycle; populates category/payment filters and preset bars |
 | `initLedgerMonthSelector()` | Populates the ledger date range pickers with the current active cycle |
 | `resetLedgerToCycle()` | Resets ledger date range and amount filters to the current active cycle, then re-runs filterHistory |
 | `getLedgerDateRange()` | Returns `{ from, to }` ISO strings from the ledger date pickers |
 | `openLedgerWithDate(dateISO)` | Switches to history view (resetting sort + cycle dates), then overrides both date pickers to a single day and calls filterHistory; used by the spend heatmap |
-| `filterHistory()` | Applies search text + category/payment/date/amount filters; reads `#ledgerSortSelect` value (`date-desc`, `date-asc`, `amt-desc`, `amt-asc`) for dynamic sort; renders summary bar, chips, bulk bar, and search-clear button visibility |
+| `filterHistory()` | Applies search text + category/payment/date/amount filters; reads `#ledgerSortSelect` value (`date-desc`, `date-asc`, `amt-desc`, `amt-asc`) for dynamic sort; computes chronological running balances; renders summary bar, chips, bulk bar, and search-clear button visibility |
 | ~~`cycleLedgerSort()`~~ | **Removed** — replaced by `openLedgerSortPicker()` + the central custom picker system |
 | `toggleLedgerFilterSheet()` | Toggles the collapsed filter sheet (date range + category + payment dropdowns) |
 | `clearLedgerSearch()` | Clears the search input and re-runs filterHistory |
@@ -166,6 +166,23 @@ To find where to add/edit something, scan the relevant section header then go to
 | `attachSwipeToDelete(rowEl, txId)` | Adds mobile touch handlers that reveal the row's delete action after a left swipe |
 | `_renderLedgerChips(catId, payId, from, to)` | Renders dismissible active-filter chips, including amount range chips; shows/hides the filter dot indicator on the filter button |
 | `deleteTransaction(id)` | Async - confirms then removes a transaction; recurring-created transactions are plain ledger rows, so delete behavior is the same as manual expenses |
+
+---
+
+## ledger-templates.js - Transaction Presets (10 functions)
+
+| Function | Description |
+|---|---|
+| `ensureTransactionTemplates()` | Ensures `state.transactionTemplates` exists and returns it |
+| `getTemplateMeta(template)` | Resolves display category/payment metadata for a preset |
+| `renderTransactionTemplatesBars()` | Renders preset chips in Add Expense and Ledger, hiding bars when there are no presets |
+| `saveCurrentAsTemplate()` | Saves or updates a preset from the current Add Expense amount/category/payment/note |
+| `applyTemplateToExpenseForm(templateId)` | Opens Add Expense and fills the form from a preset |
+| `logTemplateExpense(templateId)` | Confirms and logs a new transaction for today from a preset |
+| `openTemplatesManager()` | Opens the preset manager modal |
+| `renderTemplatesManagerList()` | Renders preset manager rows with apply/delete actions |
+| `deleteTemplate(templateId)` | Confirms and deletes a preset |
+| `closeTemplatesManager()` | Closes the preset manager modal |
 
 ---
 
@@ -381,7 +398,7 @@ To find where to add/edit something, scan the relevant section header then go to
 |---|---|
 | `cloneStateSnapshot()` | Returns a deep clone of the current state via JSON parse/stringify |
 | `buildBackupPayload()` | Wraps state snapshot with metadata for export |
-| `normalizeImportedState(raw)` | Sanitizes and fills defaults on an imported state object |
+| `normalizeImportedState(raw)` | Sanitizes and fills defaults on an imported state object, including transaction presets |
 | `isValidBackupPayload(parsed)` | Returns true if the parsed object has the required backup structure |
 | `applyFullStateRestore(importedRaw)` | Validates, normalizes, applies, and saves an imported state |
 | `csvEscape(val)` | Escapes a value for CSV output (quotes if contains comma/newline) |
@@ -389,7 +406,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `parseCSVLine(line)` | Parses a single CSV line, handles quoted fields |
 | `parseBackupCSVSections(text)` | Splits a multi-section CSV backup into a `{ SECTION: lines[] }` map |
 | `parseSectionTable(sectionLines)` | Converts section lines (header + rows) into an array of objects |
-| `buildStateFromCSVSections(sections)` | Reconstructs a state draft from parsed CSV sections |
+| `buildStateFromCSVSections(sections)` | Reconstructs a state draft from parsed CSV sections, including `[TRANSACTION_TEMPLATES]` |
 | `downloadBackupFile(filename, content, mime)` | Creates a Blob and triggers a browser file download |
 | `exportDataToJSON()` | Builds and downloads a full JSON backup file |
 | `exportDataToCSV()` | Builds and downloads a full CSV backup file |
@@ -421,7 +438,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | Function | Description |
 |---|---|
 | `pushToDrive()` | Serializes `state` and uploads it to Drive; updates `state.lastSyncedAt` on success |
-| `syncFromDrive()` | Silent background pull: reconciles categories, payments, transactions, goals, trips, recurring expenses, and EMIs by `id`; applies newer shared settings; pushes converged state back to Drive when needed |
+| `syncFromDrive()` | Silent background pull: reconciles categories, payments, transactions, transaction presets, goals, trips, recurring expenses, and EMIs by `id`; applies newer shared settings; pushes converged state back to Drive when needed |
 | `buildMergedSyncState(localState, remoteState)` | Builds a converged state object from local + remote collections and shared settings; `monthlyBudget` uses non-zero-wins logic — the higher non-zero value is kept regardless of timestamp |
 | `sameSyncArrays(a, b)` | Compares sync-relevant arrays and scalar settings to detect whether reconciliation changed either side |
 | `applyRemoteState(remoteState, silent?)` | Normalizes and applies a remote state object; preserves `googleClientId`, `syncUserEmail`, `syncDriveFileId`; forces `syncEnabled=true`; re-renders UI without page reload |

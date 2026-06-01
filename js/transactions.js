@@ -33,6 +33,7 @@ function setupExpenseFormForAdd() {
         pendingExpensePaymentLockId = "";
     }
     applyCategoryDefaultPayment();
+    if (typeof renderTransactionTemplatesBars === "function") renderTransactionTemplatesBars();
 }
 
 function populateExpenseFormDropdowns(currentPaymentId) {
@@ -394,6 +395,7 @@ function renderHistoryList() {
         payFilter.appendChild(opt);
     });
 
+    if (typeof renderTransactionTemplatesBars === "function") renderTransactionTemplatesBars();
     filterHistory();
 }
 
@@ -676,6 +678,20 @@ function filterHistory() {
         return sortMode === "date-asc" ? ta - tb : tb - ta;
     });
 
+    const runningById = new Map();
+    let runningTotal = 0;
+    [...items].sort((a, b) => {
+        const da = new Date(a.date || a.createdAt || 0).getTime();
+        const db = new Date(b.date || b.createdAt || 0).getTime();
+        if (da !== db) return da - db;
+        const ca = new Date(a.createdAt || a.date || 0).getTime();
+        const cb = new Date(b.createdAt || b.date || 0).getTime();
+        return ca - cb;
+    }).forEach(tx => {
+        runningTotal += Number(tx.amount || 0);
+        runningById.set(tx.id, runningTotal);
+    });
+
     // Update summary bar
     const total = items.reduce((s, t) => s + t.amount, 0);
     const countEl = document.getElementById("ledgerTxCount");
@@ -773,6 +789,7 @@ function filterHistory() {
             </div>
             <div class="flex flex-col items-end gap-1.5 shrink-0 ml-1">
                 <span class="text-xs font-black text-indigo-300">${state.currencySymbol}${t.amount.toLocaleString()}</span>
+                <span class="running-balance">Run ${state.currencySymbol}${(runningById.get(t.id) || t.amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                 <div class="flex items-center gap-1">
                     ${actionButtons}
                 </div>

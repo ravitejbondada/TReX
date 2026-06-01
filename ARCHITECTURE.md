@@ -22,12 +22,13 @@ index.html
     ├── 3. auth.js           ← lock/PIN, WebAuthn biometric unlock, locked expense sheet (circle-plus keypad key)
     ├── 4. dashboard.js      ← dashboard, quick logs, alerts, PWA reminders
     ├── 5. transactions.js   ← reads/writes state.transactions, state.categories, state.payments
-    ├── 6. reports.js        ← reads state.transactions, state.categories, state.payments (read-only)
-    ├── 7. settings.js       ← reads/writes all state fields; owns CC billing logic and drawer sub-panels
-    ├── 8. credit-cards.js   ← reads state via settings.js helpers; renders card views
-    ├── 9. recurring.js      ← reads/writes state.recurringExpenses, state.emis, state.transactions
-    ├── 10. goals-trips.js   ← reads/writes state.savingGoals, state.trips, state.transactions
-    └── 11. backup.js        ← reads full state for export; writes full state on import
+    ├── 6. ledger-templates.js ← reads/writes state.transactionTemplates; one-tap preset logging
+    ├── 7. reports.js        ← reads state.transactions, state.categories, state.payments (read-only)
+    ├── 8. settings.js       ← reads/writes all state fields; owns CC billing logic and drawer sub-panels
+    ├── 9. credit-cards.js   ← reads state via settings.js helpers; renders card views
+    ├── 10. recurring.js     ← reads/writes state.recurringExpenses, state.emis, state.transactions
+    ├── 11. goals-trips.js   ← reads/writes state.savingGoals, state.trips, state.transactions
+    └── 12. backup.js        ← reads full state for export; writes full state on import
 ```
 
 ---
@@ -154,6 +155,11 @@ let state = {
     // Recurring-created transactions are intentionally plain transactions with no recurringId.
     // tripRef: true if this tx was synced from a trip expense (read-only in ledger)
     // tripType: "pre" | "on" | null
+  ],
+  transactionTemplates: [
+    // Starts empty [].
+    { id, name, amount, categoryId, paymentId, note, createdAt, updatedAt }
+    // Used by ledger-templates.js for one-tap transaction logging.
   ],
   savingGoals: [
     // Starts empty [] (no mock/dummy goals)
@@ -312,6 +318,11 @@ The ledger sort button (`openLedgerSortPicker()`) is a thin wrapper over `openCu
 `transactions.js` keeps ledger-only UI state outside persisted app state: `ledgerSelectMode`, `ledgerSelectedIds`, `ledgerAmountMin`, `ledgerAmountMax`, and `openSwipeRowEl`. `filterHistory()` applies category, payment, date, search text, amount min/max, and sort in one pass, then renders chips and the bulk-select bar.
 
 Normal rows are wrapped in `.swipe-row-wrapper`; `attachSwipeToDelete()` handles mobile left-swipe gestures and reveals `.swipe-delete-btn`. Trip-synced rows (`tripRef`) do not get destructive swipe/select affordances and remain read-only in the ledger.
+
+`filterHistory()` also builds a chronological running total map for the currently filtered result set. The displayed row order can still follow the active sort mode, but each `.running-balance` value is based on oldest-to-newest spend within the filtered set.
+
+### Transaction presets
+`ledger-templates.js` owns `state.transactionTemplates[]`. The Add Expense screen can save the current amount/category/payment/note as a preset, and both Add Expense and Ledger render preset chips through `renderTransactionTemplatesBars()`. Tapping a chip confirms and logs a new transaction for `getTodayISO()` with the preset's saved combo. The preset manager supports apply-to-form and delete actions. Presets are normalized in backup restore and included in Drive sync merge comparisons.
 
 ### DOM elements (injected once by `_ensurePickerDOM()`)
 | ID | Role |

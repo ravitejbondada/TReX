@@ -74,6 +74,17 @@ function normalizeImportedState(raw) {
                 tripRef:  !!t.tripRef
             }))
             : [],
+        transactionTemplates: Array.isArray(src.transactionTemplates)
+            ? src.transactionTemplates.map(t => ({
+                id: String(t.id || `tpl_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`),
+                name: String(t.name || "Preset"),
+                amount: parseFloat(t.amount) || 0,
+                categoryId: String(t.categoryId || ""),
+                paymentId: String(t.paymentId || ""),
+                note: String(t.note || ""),
+                createdAt: t.createdAt || new Date().toISOString()
+            })).filter(t => t.amount > 0 && t.categoryId && t.paymentId)
+            : [],
         savingGoals: Array.isArray(src.savingGoals)
             ? src.savingGoals.map(g => ({
                 id: String(g.id),
@@ -269,6 +280,7 @@ function buildStateFromCSVSections(sections) {
         categories: [],
         payments: [],
         transactions: [],
+        transactionTemplates: [],
         savingGoals: [],
         recurringExpenses: []
     };
@@ -316,6 +328,18 @@ function buildStateFromCSVSections(sections) {
             note: row.note,
             isRecurring: row.isRecurring === "true",
             recurringId: row.recurringId || ""
+        });
+    });
+
+    parseSectionTable(sections.TRANSACTION_TEMPLATES).forEach(row => {
+        draft.transactionTemplates.push({
+            id: row.id,
+            name: row.name,
+            amount: parseFloat(row.amount) || 0,
+            categoryId: row.categoryId,
+            paymentId: row.paymentId,
+            note: row.note || "",
+            createdAt: row.createdAt || ""
         });
     });
 
@@ -406,6 +430,13 @@ function exportDataToCSV() {
             t.id, t.amount, t.categoryId, t.paymentId, t.date, t.note || "",
             t.isRecurring ? "true" : "false", t.recurringId || ""
         ]);
+    });
+    csv += "\n";
+
+    csv += "[TRANSACTION_TEMPLATES]\n";
+    csv += csvRow(["id", "name", "amount", "categoryId", "paymentId", "note", "createdAt"]);
+    (state.transactionTemplates || []).forEach(t => {
+        csv += csvRow([t.id, t.name, t.amount, t.categoryId, t.paymentId, t.note || "", t.createdAt || ""]);
     });
     csv += "\n";
 
