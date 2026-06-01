@@ -330,7 +330,7 @@ Full dark / light / fossil theme variants defined in `styles.css`.
 
 ## Add Expense Mobile Layout
 
-The main Add Expense view is optimized for frequent mobile entry. Date and note fields use a two-column grid even on phones: the date column has a protected minimum width so native date text remains readable, while note flexes into the remaining space. Goal and trip date pairs also reserve extra date-column width. Shared `input[type="date"].date-compact` styling reduces calendar icon padding and uses tabular numeric rendering. The Add Expense view includes bottom padding so the save button clears the fixed bottom nav.
+The main Add Expense view is optimized for frequent mobile entry. Date and note fields stack on phones and switch to a two-column grid at the `sm` breakpoint. Goal target/date and trip start/end follow the same rule so date inputs have enough width and never overflow their cards. Shared `input[type="date"].date-compact` styling reduces calendar icon padding and uses tabular numeric rendering. The Add Expense view includes bottom padding so the save button clears the fixed bottom nav.
 
 ## Credit Card Billing Logic (settings.js)
 
