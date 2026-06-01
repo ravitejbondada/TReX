@@ -160,11 +160,18 @@ function _setSplitModeUI(isSplit) {
     const container = document.getElementById('splitRowsContainer');
     const toggle = document.getElementById('splitModeToggleBtn');
     const display = document.getElementById('splitTotalDisplay');
+    const amountInput = document.getElementById('expenseAmount');
     const categorySelect = document.getElementById('expenseCategory');
     const validMsg = document.getElementById('splitValidationMsg');
     _splitMode = !!isSplit;
     if (toggle && toggle.checked !== _splitMode) toggle.checked = _splitMode;
     if (container) container.classList.toggle('hidden', !_splitMode);
+    if (amountInput) {
+        amountInput.readOnly = _splitMode;
+        amountInput.classList.toggle('split-derived-amount', _splitMode);
+        amountInput.setAttribute('aria-readonly', _splitMode ? 'true' : 'false');
+        if (_splitMode) _updateSplitTotal();
+    }
     if (categorySelect) {
         const categoryWrap = categorySelect.closest('.select-wrap');
         if (categoryWrap) categoryWrap.classList.toggle('hidden', _splitMode);
@@ -189,22 +196,20 @@ function _updateSplitTotal() {
     });
     const display = document.getElementById('splitTotalDisplay');
     const mainAmtInput = document.getElementById('expenseAmount');
-    const target = mainAmtInput ? parseFloat(mainAmtInput.value) : NaN;
+    if (_splitMode && mainAmtInput) {
+        mainAmtInput.value = total > 0 ? Number(total.toFixed(2)) : "";
+    }
     if (display) {
         const totalLabel = `${state.currencySymbol}${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-        const targetLabel = Number.isFinite(target) && target > 0
-            ? `${state.currencySymbol}${target.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
-            : "target";
-        display.textContent = `${totalLabel} / ${targetLabel}`;
+        display.textContent = `Split total ${totalLabel}`;
         display.classList.toggle('hidden', !_splitMode);
-        display.classList.toggle('text-emerald-300', Number.isFinite(target) && Math.abs(total - target) < 0.01);
-        display.classList.toggle('text-indigo-300', !Number.isFinite(target) || Math.abs(total - target) >= 0.01);
+        display.classList.toggle('text-emerald-300', total > 0);
+        display.classList.toggle('text-indigo-300', total <= 0);
     }
 }
 
 function validateSplitRows() {
     const validMsg = document.getElementById('splitValidationMsg');
-    const target = parseFloat(document.getElementById("expenseAmount").value);
     const rows = [...document.querySelectorAll('.split-row-item')];
 
     const fail = message => {
@@ -212,12 +217,9 @@ function validateSplitRows() {
             validMsg.textContent = message;
             validMsg.classList.remove('hidden');
         }
-        return { valid: false, parts: [], target: 0, total: 0 };
+        return { valid: false, parts: [], total: 0 };
     };
 
-    if (!Number.isFinite(target) || target <= 0) {
-        return fail("Enter the total amount before saving a split.");
-    }
     if (rows.length < 2) {
         return fail("Add at least two split rows.");
     }
@@ -235,12 +237,11 @@ function validateSplitRows() {
     }
 
     const total = parts.reduce((sum, part) => sum + part.amount, 0);
-    if (Math.abs(total - target) >= 0.01) {
-        return fail(`Split rows must total ${state.currencySymbol}${target.toLocaleString(undefined, { maximumFractionDigits: 2 })}.`);
-    }
+    const mainAmtInput = document.getElementById("expenseAmount");
+    if (mainAmtInput) mainAmtInput.value = Number(total.toFixed(2));
 
     if (validMsg) validMsg.classList.add('hidden');
-    return { valid: true, parts, target, total };
+    return { valid: true, parts, total };
 }
 
 function addSplitRow(catId, amount) {
@@ -1039,6 +1040,72 @@ function openLedgerWithDate(dateISO) {
     switchScreen("history");
 }
 
+function _txTime(tx) {
+    const primary = tx?.createdAt || tx?.date || "1970-01-01";
+    const time = new Date(primary).getTime();
+    return Number.isFinite(time) ? time : 0;
+}
+
+function _txChronologicalCompare(a, b) {
+    const dateCmp = String(a.date || "").localeCompare(String(b.date || ""));
+    if (dateCmp !== 0) return dateCmp;
+    const timeCmp = _txTime(a) - _txTime(b);
+    if (timeCmp !== 0) return timeCmp;
+    return String(a.id || "").localeCompare(String(b.id || ""));
+}
+
+function _entryChronologicalCompare(a, b) {
+    return _txChronologicalCompare(a.sortTx, b.sortTx);
+}
+
+function _entryDisplayCompare(sortMode) {
+    return (a, b) => {
+        if (sortMode === "amt-desc") return b.total - a.total || _entryChronologicalCompare(b, a);
+        if (sortMode === "amt-asc") return a.total - b.total || _entryChronologicalCompare(a, b);
+        const cmp = _entryChronologicalCompare(a, b);
+        return sortMode === "date-asc" ? cmp : -cmp;
+    };
+}
+
+function _buildLedgerEntries(items) {
+    const splitMap = new Map();
+    const entries = [];
+
+    items.forEach(tx => {
+        if (!tx.splitGroupId) {
+            entries.push({ key: tx.id, tx, parts: [tx], total: Number(tx.amount || 0), sortTx: tx });
+            return;
+        }
+
+        if (!splitMap.has(tx.splitGroupId)) {
+            const entry = { key: tx.splitGroupId, tx, parts: [], total: 0, sortTx: tx };
+            splitMap.set(tx.splitGroupId, entry);
+            entries.push(entry);
+        }
+        const entry = splitMap.get(tx.splitGroupId);
+        entry.parts.push(tx);
+        entry.total += Number(tx.amount || 0);
+        if (_txChronologicalCompare(tx, entry.sortTx) < 0) entry.sortTx = tx;
+    });
+
+    splitMap.forEach(entry => {
+        entry.parts.sort(_txChronologicalCompare);
+        entry.tx = entry.parts[0] || entry.tx;
+    });
+
+    return entries;
+}
+
+function _computeRunningBalances(entries) {
+    const runningById = new Map();
+    let runningTotal = 0;
+    [...entries].sort(_entryChronologicalCompare).forEach(entry => {
+        runningTotal += entry.total;
+        runningById.set(entry.key, runningTotal);
+    });
+    return runningById;
+}
+
 function filterHistory() {
     const searchInput = document.getElementById("historySearchInput");
     if (searchInput) searchInput.placeholder = dp('dinoMode') ? "Search the fossil record…" : "Search transactions…";
@@ -1081,80 +1148,29 @@ function filterHistory() {
     });
 
     const sortMode = (document.getElementById("ledgerSortSelect") || {}).value || "date-desc";
-    items.sort((a, b) => {
-        if (sortMode === "amt-desc") return b.amount - a.amount;
-        if (sortMode === "amt-asc")  return a.amount - b.amount;
-        // date-desc (default) and date-asc both use createdAt for tiebreak
-        const ta = a.createdAt ? new Date(a.createdAt) : new Date(a.date);
-        const tb = b.createdAt ? new Date(b.createdAt) : new Date(b.date);
-        return sortMode === "date-asc" ? ta - tb : tb - ta;
-    });
-
-    const runningById = new Map();
-    let runningTotal = 0;
-    const runningSplitGroups = new Set();
-    const allSplitTotals = new Map();
-    state.transactions.forEach(tx => {
-        if (tx.splitGroupId) {
-            allSplitTotals.set(tx.splitGroupId, (allSplitTotals.get(tx.splitGroupId) || 0) + Number(tx.amount || 0));
-        }
-    });
-    // Deduplicate split groups for running total: keep only first occurrence per group
-    const seenGroups = new Set();
-    const dedupedItems = items.filter(tx => {
-        if (!tx.splitGroupId) return true;
-        if (seenGroups.has(tx.splitGroupId)) return false;
-        seenGroups.add(tx.splitGroupId);
-        return true;
-    });
-    // Sort deduped items the same way as the display sort
-    dedupedItems.sort((a, b) => {
-        if (sortMode === "amt-desc") return b.amount - a.amount;
-        if (sortMode === "amt-asc")  return a.amount - b.amount;
-        const ta = a.createdAt ? new Date(a.createdAt) : new Date(a.date);
-        const tb = b.createdAt ? new Date(b.createdAt) : new Date(b.date);
-        return sortMode === "date-asc" ? ta - tb : tb - ta;
-    });
-    dedupedItems.forEach(tx => {
-        if (tx.splitGroupId) {
-            runningTotal += Number(allSplitTotals.get(tx.splitGroupId) || tx.amount || 0);
-            runningById.set(tx.splitGroupId, runningTotal);
-        } else {
-            runningTotal += Number(tx.amount || 0);
-            runningById.set(tx.id, runningTotal);
-        }
-    });
+    const ledgerEntries = _buildLedgerEntries(items).sort(_entryDisplayCompare(sortMode));
+    const runningById = _computeRunningBalances(ledgerEntries);
 
     // Update summary bar
-    const total = items.reduce((s, t) => s + t.amount, 0);
-    const visibleCount = items.reduce((acc, tx, idx, arr) => {
-        if (!tx.splitGroupId) return acc + 1;
-        return arr.findIndex(p => p.splitGroupId === tx.splitGroupId) === idx ? acc + 1 : acc;
-    }, 0);
+    const total = ledgerEntries.reduce((s, entry) => s + entry.total, 0);
+    const visibleCount = ledgerEntries.length;
     const countEl = document.getElementById("ledgerTxCount");
     const totalEl = document.getElementById("ledgerPeriodTotal");
     if (countEl) countEl.textContent = `${visibleCount} transaction${visibleCount !== 1 ? "s" : ""}`;
-    if (totalEl) totalEl.textContent  = items.length ? `${state.currencySymbol}${total.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` : "—";
+    if (totalEl) totalEl.textContent  = ledgerEntries.length ? `${state.currencySymbol}${total.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` : "—";
     syncLedgerBulkBar();
 
-    if (items.length === 0) {
+    if (ledgerEntries.length === 0) {
         container.innerHTML = `<p class="text-xs text-slate-500 text-center py-12">${t("No matching transactions found.", "🦴 No fossils match your search.")}</p>`;
         return;
     }
 
-    // Separate split groups from normal transactions
-    const renderedSplitGroups = new Set();
-
-    items.forEach(t => {
+    ledgerEntries.forEach(entry => {
+        const t = entry.tx;
         // Split group: render once as a parent+children block
         if (t.splitGroupId) {
-            if (renderedSplitGroups.has(t.splitGroupId)) return;
-            renderedSplitGroups.add(t.splitGroupId);
-
-            // Collect ALL members of this group from filtered items
-            const groupParts = items.filter(tx => tx.splitGroupId === t.splitGroupId)
-                .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
-            const groupTotal = groupParts.reduce((s, tx) => s + tx.amount, 0);
+            const groupParts = entry.parts;
+            const groupTotal = entry.total;
             const groupTags = Array.from(new Set(groupParts.flatMap(tx => Array.isArray(tx.tags) ? tx.tags : []).map(normalizeTag).filter(Boolean)));
             const pay = state.payments.find(p => p.id === t.paymentId) || { name: "Cash" };
             const dateStr = formatDateReadable(new Date(t.date), { year: '2-digit' });
@@ -1223,7 +1239,7 @@ function filterHistory() {
             if (splitDeleteBtn) {
                 splitDeleteBtn.addEventListener('click', event => {
                     event.stopPropagation();
-                    deleteTransaction(splitTxId);
+                    deleteTransaction(splitTxId, "all");
                 });
             }
 
@@ -1245,7 +1261,21 @@ function filterHistory() {
                         </span>
                         <span class="text-[10px] text-slate-500 truncate">${part.note || part.splitLabel || ''}</span>
                     </div>
-                    <span class="text-[11px] font-bold text-slate-300 shrink-0">${state.currencySymbol}${part.amount.toLocaleString()}</span>`;
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <span class="text-[11px] font-bold text-slate-300">${state.currencySymbol}${part.amount.toLocaleString()}</span>
+                        <button type="button" data-action="delete-split-part" data-tx-id="${part.id}"
+                            class="p-1 text-slate-600 hover:text-rose-400 rounded hover:bg-slate-900 transition-all"
+                            title="Delete this split part">
+                            <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>`;
+                const childDeleteBtn = child.querySelector('[data-action="delete-split-part"]');
+                if (childDeleteBtn) {
+                    childDeleteBtn.addEventListener('click', event => {
+                        event.stopPropagation();
+                        deleteTransaction(part.id, "part");
+                    });
+                }
                 childrenContainer.appendChild(child);
             });
             groupWrapper.appendChild(childrenContainer);
@@ -1466,113 +1496,46 @@ function commitInlineEdit(txId, field, rawValue, inputEl) {
     const span = _buildInlineSpan(txId, field, tx);
     if (inputEl.parentNode) inputEl.replaceWith(span);
 
-    // If note changed, also update the running balance display (amount didn't change, skip)
+    // If amount changed, rebuild visible rows so every cumulative badge stays consistent.
     if (field === "amount") {
-        // Recompute running balances for all visible rows
-        _refreshRunningBalances();
+        filterHistory();
     }
 
     updateAppDashboardView();
 }
 
 function _refreshRunningBalances() {
-    // Re-compute running totals over the currently rendered rows
-    const container = document.getElementById("historyList");
-    if (!container) return;
-    const rows = [...container.querySelectorAll("[data-tx-id]")];
-    const ids = rows.map(r => r.dataset.txId);
-    const txMap = new Map(state.transactions.map(t => [t.id, t]));
-
-    // Sort ascending (same logic as renderHistoryList running total)
-    const sorted = ids
-        .map(id => txMap.get(id))
-        .filter(Boolean)
-        .sort((a, b) => {
-            const da = new Date(a.date || a.createdAt || 0).getTime();
-            const db = new Date(b.date || b.createdAt || 0).getTime();
-            if (da !== db) return da - db;
-            return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
-        });
-
-    let running = 0;
-    const runningById = new Map();
-    sorted.forEach(tx => {
-        running += Number(tx.amount || 0);
-        runningById.set(tx.id, running);
-    });
-
-    ids.forEach(id => {
-        const tx = txMap.get(id);
-        if (!tx) return;
-        const balEl = container.querySelector(`#tx-row-${id} .running-balance`);
-        if (balEl) {
-            balEl.textContent = `Spent ${state.currencySymbol}${(runningById.get(id) || tx.amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-        }
-    });
+    filterHistory();
 }
 
-function chooseSplitDeleteScope(tx, groupParts, total) {
-    return new Promise(resolve => {
-        const old = document.getElementById("splitDeleteChoiceModal");
-        if (old) old.remove();
-
-        const div = document.createElement("div");
-        div.id = "splitDeleteChoiceModal";
-        div.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[125] flex items-center justify-center p-4";
-        div.innerHTML = `
-            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 max-w-xs w-full shadow-2xl space-y-4">
-                <div class="flex items-start gap-3">
-                    <div class="w-9 h-9 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
-                        <i data-lucide="split" class="w-4 h-4"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-xs font-extrabold text-white uppercase tracking-wider">Delete split?</h3>
-                        <p class="text-[10px] text-slate-400 leading-relaxed mt-1">
-                            This split has ${groupParts.length} parts totaling ${state.currencySymbol}${total.toLocaleString()}.
-                        </p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 gap-2">
-                    <button type="button" id="splitDeletePartBtn"
-                        class="w-full bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-bold py-2.5 rounded-xl text-xs active:scale-95">
-                        Delete This Part Only
-                    </button>
-                    <button type="button" id="splitDeleteAllBtn"
-                        class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-xs active:scale-95">
-                        Delete All Parts
-                    </button>
-                    <button type="button" id="splitDeleteCancelBtn"
-                        class="w-full text-slate-500 font-bold py-2 rounded-xl text-xs active:scale-95">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        `;
-
-        const cleanup = value => {
-            div.remove();
-            resolve(value);
-        };
-
-        document.body.appendChild(div);
-        document.getElementById("splitDeletePartBtn").onclick = () => cleanup("part");
-        document.getElementById("splitDeleteAllBtn").onclick = () => cleanup("all");
-        document.getElementById("splitDeleteCancelBtn").onclick = () => cleanup(null);
-        initLucideIcons(div);
-    });
-}
-
-async function deleteTransaction(id) {
+async function deleteTransaction(id, splitDeleteMode = "part") {
     const tx = state.transactions.find(t => t.id === id);
     if (tx && tx.tripRef) { showNotification(t("Edit this expense inside the Trip.", "This fossil belongs to a trip. Edit it there.")); return; }
 
     if (tx && tx.splitGroupId) {
         const groupParts = state.transactions.filter(t => t.splitGroupId === tx.splitGroupId);
         const total = groupParts.reduce((s, t) => s + t.amount, 0);
-        const scope = await chooseSplitDeleteScope(tx, groupParts, total);
-        if (!scope) return;
+        const deleteAll = splitDeleteMode === "all";
+        const txToDelete = tx;
 
-        const rowEls = (scope === "all" ? groupParts : [tx])
+        if (deleteAll) {
+            const confirmed = await customConfirm(
+                `Delete the entire split transaction? This will remove all ${groupParts.length} parts totaling ${state.currencySymbol}${total.toLocaleString()}. To delete one part, open the split tile and use that row's delete button.`,
+                "Delete entire split?",
+                "Delete All"
+            );
+            if (!confirmed) return;
+        } else {
+            const cat = _getCategory(txToDelete.categoryId);
+            const confirmed = await customConfirm(
+                `Delete only ${cat.name} (${state.currencySymbol}${Number(txToDelete.amount || 0).toLocaleString()}) from this split?`,
+                "Delete split part?",
+                "Delete Part"
+            );
+            if (!confirmed) return;
+        }
+
+        const rowEls = (deleteAll ? groupParts : [txToDelete])
             .map(t => document.getElementById(`tx-row-${t.id}`))
             .filter(Boolean);
         if (dp('dinoMode') && rowEls.length) {
@@ -1580,11 +1543,11 @@ async function deleteTransaction(id) {
             await new Promise(r => setTimeout(r, 380));
         }
 
-        if (scope === "all") {
+        if (deleteAll) {
             state.transactions = state.transactions.filter(t => t.splitGroupId !== tx.splitGroupId);
             showNotification(t("Split transaction deleted.", "🦴 Split fossils gone extinct."));
         } else {
-            state.transactions = state.transactions.filter(t => t.id !== tx.id);
+            state.transactions = state.transactions.filter(t => t.id !== txToDelete.id);
             const remaining = state.transactions.filter(t => t.splitGroupId === tx.splitGroupId);
             if (remaining.length === 1) {
                 remaining[0].splitGroupId = null;
