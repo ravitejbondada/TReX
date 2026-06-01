@@ -38,7 +38,7 @@ function normalizeImportedState(raw) {
         cycleDay: Math.min(31, Math.max(1, parseInt(src.cycleDay, 10) || 5)),
         pinEnabled: src.pinEnabled !== false && src.pinEnabled !== "false",
         pinCode: String(src.pinCode || "1234").replace(/\D/g, "").slice(0, 4) || "1234",
-        theme: src.theme === "light" ? "light" : "dark",
+        theme: ["dark", "light", "high-contrast"].includes(src.theme) ? src.theme : "dark",
         categories: Array.isArray(src.categories) && src.categories.length
             ? src.categories.map(c => ({
                 id: String(c.id),

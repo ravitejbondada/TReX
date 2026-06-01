@@ -18,9 +18,90 @@ let tokenExpiry = 0;
 // loading in browsers.
 const SYNC_DEFAULT_CLIENT_ID = "219866394954-pg9187uvcq3gu0c4l51728m1u1hojt0c.apps.googleusercontent.com";
 const SYNC_RESET_MARKER_TYPE = "trex_reset_marker";
+const OFFLINE_QUEUE_KEY = "trex_offline_queue";
+
+let offlineQueueFlushing = false;
 
 function createSyncId(prefix) {
     return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function getOfflineQueue() {
+    try {
+        const raw = localStorage.getItem(OFFLINE_QUEUE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        console.warn("Offline queue corrupted. Clearing.", e);
+        localStorage.removeItem(OFFLINE_QUEUE_KEY);
+        return [];
+    }
+}
+
+function hasOfflineQueue() {
+    return getOfflineQueue().length > 0;
+}
+
+function enqueueOfflineMutation(type, payload) {
+    if (!state.syncEnabled) return;
+    try {
+        const snapshot = JSON.parse(JSON.stringify(payload || state));
+        const item = {
+            id: createSyncId("offline"),
+            type: type || "fullSnapshot",
+            payload: snapshot,
+            timestamp: new Date().toISOString()
+        };
+        localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify([item]));
+        updateSyncStatus("offline", "Queued offline");
+    } catch (e) {
+        console.error("enqueueOfflineMutation error:", e);
+    }
+}
+
+async function flushOfflineQueue() {
+    if (offlineQueueFlushing || !state.syncEnabled || !navigator.onLine) return false;
+    const queue = getOfflineQueue();
+    const latest = queue[queue.length - 1];
+    if (!latest) return false;
+
+    offlineQueueFlushing = true;
+    try {
+        if (latest.payload && latest.type === "fullSnapshot") {
+            const queuedTime = new Date(latest.payload.updatedAt || latest.timestamp || 0).getTime();
+            const currentTime = new Date(state.updatedAt || 0).getTime();
+            if (queuedTime > currentTime && typeof normalizeSyncState === "function") {
+                state = normalizeSyncState(latest.payload);
+                localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
+            }
+        }
+        await pushToDrive();
+        if (state.syncStatus !== "idle") return false;
+        localStorage.removeItem(OFFLINE_QUEUE_KEY);
+        return true;
+    } catch (e) {
+        console.error("flushOfflineQueue error:", e);
+        updateSyncStatus("error", e.message || "Failed to flush offline queue");
+        return false;
+    } finally {
+        offlineQueueFlushing = false;
+    }
+}
+
+function initOfflineListener() {
+    if (window.__trexOfflineListenerReady) return;
+    window.__trexOfflineListenerReady = true;
+    window.addEventListener("online", () => {
+        if (!state.syncEnabled) return;
+        if (hasOfflineQueue()) {
+            flushOfflineQueue();
+        } else {
+            syncFromDrive();
+        }
+    });
+    window.addEventListener("offline", () => {
+        updateSyncStatus("offline");
+    });
 }
 
 function ensureSyncIdentity(target = state) {
@@ -141,7 +222,11 @@ window._trexGISReady = function () {
     initGoogleAuth(false);
     // If sync was already enabled (returning user), kick off a sync now that auth is ready
     if (state && state.syncEnabled) {
-        syncFromDrive();
+        if (navigator.onLine && hasOfflineQueue()) {
+            flushOfflineQueue();
+        } else {
+            syncFromDrive();
+        }
     }
 };
 
@@ -332,6 +417,9 @@ async function downloadSyncFile(token, fileId) {
  */
 async function pushToDrive() {
     if (!state.syncEnabled) return;
+    if (!offlineQueueFlushing && navigator.onLine && hasOfflineQueue()) {
+        return flushOfflineQueue();
+    }
     ensureSyncIdentity(state);
     if (state.pendingCloudResetEpoch) {
         updateSyncStatus("offline", "Reset pending");
@@ -744,7 +832,7 @@ function normalizeSyncState(remoteState) {
     if (!next.currencySymbol) next.currencySymbol = "\u20B9";
     if (!next.cycleType) next.cycleType = "calendar";
     if (!next.cycleDay) next.cycleDay = 1;
-    if (!next.theme) next.theme = "dark";
+    next.theme = ["dark", "light", "high-contrast"].includes(next.theme) ? next.theme : "dark";
     if (!next.pinCode) next.pinCode = "1234";
     if (!next.updatedAt) next.updatedAt = new Date().toISOString();
     if (next.lastSyncedAt === undefined) next.lastSyncedAt = "";
@@ -1292,16 +1380,6 @@ document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && state.syncEnabled && navigator.onLine) {
         syncFromDrive();
     }
-});
-
-// Window online/offline status listeners
-window.addEventListener("online", () => {
-    if (state.syncEnabled) {
-        syncFromDrive();
-    }
-});
-window.addEventListener("offline", () => {
-    updateSyncStatus("offline");
 });
 
 /**

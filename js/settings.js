@@ -32,6 +32,8 @@ function syncSettingsFormFields() {
     if (creditCardsToggle) creditCardsToggle.checked = !!state.creditCardsEnabled;
     const lightToggle = document.getElementById("settingLightTheme");
     if (lightToggle) lightToggle.checked = (state.theme || "dark") === "light";
+    const themeSelect = document.getElementById("settingThemeSelect");
+    if (themeSelect) themeSelect.value = typeof normalizeTheme === "function" ? normalizeTheme(state.theme) : (state.theme || "dark");
     
     // Cloud Sync Settings
     const clientIdInput = document.getElementById("settingGoogleClientId");

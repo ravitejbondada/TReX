@@ -19,7 +19,7 @@ To find where to add/edit something, scan the relevant section header then go to
 
 ---
 
-## core.js — App Core (18 functions)
+## core.js — App Core
 
 | Function | Description |
 |---|---|
@@ -34,11 +34,13 @@ To find where to add/edit something, scan the relevant section header then go to
 | `generateDynamicIcons()` | **Deprecated — no longer used.** Static app icon is now served from `assets/favicon.png`, with the PWA manifest moved to external `manifest.json`. Previously drew the logo to canvas and set the favicon + Apple touch icon |
 | `initLucideIcons(root?)` | Calls `lucide.createIcons()` on the document or a scoped root element |
 | `cleanArchivedPayments()` | Removes archived payments that have zero linked transactions |
-| `saveStateToLocalStorage()` | Serializes `state` to `localStorage` key `androidWalletState_v4`; sets `state.updatedAt` timestamp; triggers debounced `pushToDrive()` if sync is enabled |
+| `saveStateToLocalStorage()` | Serializes `state` to `localStorage` key `androidWalletState_v4`; sets `state.updatedAt`; queues a latest snapshot with `enqueueOfflineMutation()` when sync is enabled but offline; otherwise triggers debounced `pushToDrive()` |
 | `showNotification(message)` | Shows the bottom toast banner for 2.8 seconds |
 | `customConfirm(message, title?, okLabel?)` | Promise-based confirm dialog replacing `window.confirm`. Returns `true`/`false` |
-| `applyTheme(theme)` | Sets `data-theme` attribute on `<html>` for light/dark CSS switching |
-| `toggleThemeSetting()` | Reads the theme toggle checkbox and calls `applyTheme()` + saves state |
+| `normalizeTheme(theme)` | Returns a valid theme id: `dark`, `light`, or `high-contrast`; falls back to `dark` |
+| `applyTheme(theme, fossilMode?)` | Sets `data-theme` on `<html>` for light, high contrast, or fossil mode; dark removes the attribute |
+| `setThemeSetting(theme)` | Applies and persists the selected theme from Settings |
+| `toggleThemeSetting()` | Backward-compatible theme toggle helper; retained for old callers |
 | `openDrawer()` | Opens the hamburger side drawer and refreshes the drawer sync status pill |
 | `closeDrawer()` | Closes the side drawer/backdrop and resets any open drawer sub-panel |
 | `dp(key)` | Safely reads a value from `state.dinoPrefs` |
@@ -87,7 +89,7 @@ To find where to add/edit something, scan the relevant section header then go to
 
 ---
 
-## dashboard.js — Dashboard & Budget Widgets (30 functions)
+## dashboard.js — Dashboard & Budget Widgets
 
 | Function | Description |
 |---|---|
@@ -128,19 +130,33 @@ To find where to add/edit something, scan the relevant section header then go to
 | `setTrendPeriod(period)` | Sets `activeTrendPeriod` and re-renders the trend chart |
 | `renderWeeklyTrendChartLine()` | Renders the weekly/monthly line trend chart using Chart.js |
 | `renderRecentActivityList()` | Renders the recent transactions feed at the bottom of the dashboard; sorted by `createdAt` desc (falls back to `date` for transactions without `createdAt`), shows top 4 |
+| `setDashCompareMode(mode)` | Sets dashboard comparison mode to `week` or `month` and re-renders the comparison chart |
+| `renderDashboardSpendComparison()` | Renders current-vs-previous week/month spend comparison as a compact Chart.js grouped bar chart |
 
 ---
 
-## transactions.js — Expense Form & Ledger (27 functions)
+## transactions.js — Expense Form & Ledger
 
 | Function | Description |
 |---|---|
+| `getKnownTags()` | Returns deduped known tags from `state.knownTags` and all transaction tags |
+| `rememberTags(tags)` | Merges newly used tags into `state.knownTags` |
+| `renderTagSuggestions(partial?)` | Renders matching tag suggestion buttons under the expense tag input |
+| `addExpenseTag(raw?)` | Adds a normalized tag to the expense form tag set |
+| `removeExpenseTag(tag)` | Removes a tag from the current expense form tag set |
+| `renderTagInput(containerId, initialTags?)` | Renders the expense tag chip input and autocomplete host |
+| `getExpenseTags()` | Returns the current normalized expense-form tags |
+| `applyTagFilter()` | Reads the ledger tag filter input and re-runs `filterHistory()` |
+| `validateSplitRows()` | Validates split rows: matching total, non-empty rows, and no duplicate categories |
+| `addSplitRow(catId?, amount?)` | Adds one category/amount row to the split section |
+| `removeSplitRow(rowId)` | Removes a split row and recomputes split totals |
+| `toggleSplitMode(force?)` | Enables/disables split mode, replacing the category picker with split rows |
 | `setupExpenseFormForAdd()` | Resets the expense form for a new transaction |
 | `populateExpenseFormDropdowns(currentPaymentId?)` | Populates category and payment `<select>` options, both sorted A→Z by name; payments filtered to non-archived |
 | `populateEMIFormDropdowns()` | Populates EMI form category and payment dropdowns |
 | `applyCategoryDefaultPayment()` | Auto-selects the default payment when a category is chosen |
 | `loadExpenseToFormForEdit(txId, returnCardId?)` | Populates the expense form for editing an existing transaction |
-| `handleExpenseSubmit(e)` | Form submit handler - validates, creates/updates normal transactions, saves state; stamps `createdAt` on create; on edit, preserves `createdAt` if date unchanged and updates it when the date changes |
+| `handleExpenseSubmit(e)` | Form submit handler - validates, creates/updates normal or split transactions, saves tags, stamps `createdAt`, preserves `createdAt` when date is unchanged, and updates it when date changes |
 | `populateInlineCategoryPaymentOptions()` | Populates dropdowns inside the inline add category/payment modals |
 | `openInlineCategoryModal(mode?)` | Calls `closeDrawer()` then opens the quick-add category modal; works from expense form and drawer |
 | `closeInlineCategoryModal()` | Closes the inline category modal |
@@ -153,7 +169,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `resetLedgerToCycle()` | Resets ledger date range and amount filters to the current active cycle, then re-runs filterHistory |
 | `getLedgerDateRange()` | Returns `{ from, to }` ISO strings from the ledger date pickers |
 | `openLedgerWithDate(dateISO)` | Switches to history view (resetting sort + cycle dates), then overrides both date pickers to a single day and calls filterHistory; used by the spend heatmap |
-| `filterHistory()` | Applies search text + category/payment/date/amount filters; reads `#ledgerSortSelect` value (`date-desc`, `date-asc`, `amt-desc`, `amt-asc`) for dynamic sort; computes chronological running balances; renders summary bar, chips, bulk bar, and search-clear button visibility |
+| `filterHistory()` | Applies search text + category/payment/date/amount/tag filters; reads `#ledgerSortSelect` value (`date-desc`, `date-asc`, `amt-desc`, `amt-asc`); groups split rows; computes chronological running balances with split groups counted once; renders summary bar, chips, bulk bar, and search-clear button visibility |
 | ~~`cycleLedgerSort()`~~ | **Removed** — replaced by `openLedgerSortPicker()` + the central custom picker system |
 | `toggleLedgerFilterSheet()` | Toggles the collapsed filter sheet (date range + category + payment dropdowns) |
 | `clearLedgerSearch()` | Clears the search input and re-runs filterHistory |
@@ -165,7 +181,8 @@ To find where to add/edit something, scan the relevant section header then go to
 | `bulkDeleteSelected()` | Confirms and deletes all selected non-trip ledger transactions, then refreshes dependent views |
 | `attachSwipeToDelete(rowEl, txId)` | Adds mobile touch handlers that reveal the row's delete action after a left swipe |
 | `_renderLedgerChips(catId, payId, from, to)` | Renders dismissible active-filter chips, including amount range chips; shows/hides the filter dot indicator on the filter button |
-| `deleteTransaction(id)` | Async - confirms then removes a transaction; recurring-created transactions are plain ledger rows, so delete behavior is the same as manual expenses |
+| `chooseSplitDeleteScope(tx, groupParts, total)` | Shows the split delete scope prompt and returns whether to delete one part, all parts, or cancel |
+| `deleteTransaction(id)` | Async - confirms then removes a transaction; split rows offer part-only vs all-parts deletion; recurring-created transactions are plain ledger rows |
 
 ---
 
@@ -186,7 +203,7 @@ To find where to add/edit something, scan the relevant section header then go to
 
 ---
 
-## reports.js — Analytics & Reports (20 functions)
+## reports.js — Analytics & Reports
 
 | Function | Description |
 |---|---|
@@ -209,16 +226,18 @@ To find where to add/edit something, scan the relevant section header then go to
 | `sumByCategory(txs)` | Aggregates transaction array into `{ categoryId: totalAmount }` map |
 | `cycleLabelFromKey(key)` | Converts a cycle key string to a human-readable label |
 | `renderMomReport()` | Renders the full month-over-month comparison section |
+| `setCategoryTrendPeriod(n)` | Sets the reports Trends period to 3 or 6 months |
+| `renderCategoryTrendChart()` | Renders the category spend trend multi-line chart for the selected period |
 | `generatePDFReport()` | Generates and downloads a PDF summary report for the selected statement cycle using html2canvas + jsPDF |
 
 ---
 
-## settings.js — Settings, Categories & Payments (47 functions)
+## settings.js — Settings, Categories & Payments
 
 | Function | Description |
 |---|---|
 | `buildCurrencySelectorOptions()` | Populates the currency `<select>` from the CURRENCIES constant |
-| `syncSettingsFormFields()` | Syncs all settings form inputs from current state on screen open |
+| `syncSettingsFormFields()` | Syncs all settings form inputs from current state on screen open, including the three-option theme selector |
 | `toggleCycleDateSelector()` | Shows/hides the cycle day input based on cycle type selection |
 | `updateCurrencySetting()` | Reads currency selector and saves to state |
 | `toggleCreditCardsSetting()` | Enables/disables credit card mode, backfills billing days |
@@ -284,7 +303,7 @@ To find where to add/edit something, scan the relevant section header then go to
 
 ---
 
-## recurring.js — Recurring Expenses & EMIs (28 functions)
+## recurring.js — Recurring Expenses & EMIs
 
 **Date Utilities**
 
@@ -323,23 +342,28 @@ To find where to add/edit something, scan the relevant section header then go to
 | `closeEMIScheduleModal()` | Closes the EMI schedule modal |
 | `calculateEMILivePreview()` | Updates the live EMI preview as principal/rate/tenure change |
 | `calculateEMIDetails(principal, rateYear, tenure)` | Returns `{ monthlyEMI, totalAmount, totalInterest }` |
+| `calcEMIOutstandingPrincipal(emi, asOfDate?)` | Walks the EMI amortization schedule through a date and returns outstanding principal, interest paid, principal paid, and months completed |
+| `openEMIPrepayModal(emiId)` | Opens the EMI prepay/foreclosure modal with outstanding principal and payoff preview |
+| `closeEMIPrepayModal()` | Closes the EMI prepay/foreclosure modal |
+| `confirmEMIForeclosure(emiId)` | Records final EMI payoff as a transaction, marks the EMI foreclosed, stores charge metadata, and removes future EMI installments |
 | `saveEMI()` | Creates or updates an EMI rule in state |
 | `deleteEMI(id)` | Async — confirms, removes future EMI transactions, removes rule |
 | `removeFutureEMITransactions(emiId)` | Removes all future-dated EMI transactions |
 | `renderEMIsList()` | Renders the EMI list in settings |
-| `processEMIs()` | Posts any missing EMI installment entries up to today |
+| `processEMIs()` | Posts any missing EMI installment entries up to today, skipping foreclosed EMIs |
 | `getEMIOccurrenceDates(emi, today)` | Returns all installment dates for an EMI up to today |
 | `hasEMITxOnDate(emiId, dateStr)` | Returns true if an EMI transaction already exists for that date |
 | `postEMIEntry(emi, dateStr, monthNumber)` | Creates and saves one EMI installment transaction (and processing fee on month 1); stamps `createdAt` with full ISO timestamp on both |
 
 ---
 
-## goals-trips.js — Saving Goals & Trips (44 functions)
+## goals-trips.js — Saving Goals & Trips
 
 **Saving Goals**
 
 | Function | Description |
 |---|---|
+| `calcGoalProjectedDate(goal)` | Projects a goal completion date from contribution history and remaining target |
 | `renderSavingGoalsDedicated()` | Renders all saving goals in the goals tab |
 | `toggleGoalAccordion(id)` | Expands/collapses a goal's contribution history |
 | `editGoalContribution(cid)` | Opens inline edit form for a contribution |
@@ -378,6 +402,7 @@ To find where to add/edit something, scan the relevant section header then go to
 | `closeTripDetail()` | Navigates back to the goals/trips screen |
 | `renderTripDetailStats()` | Renders the stats header in the trip detail view |
 | `getTripDaysCount(trip)` | Returns the number of days in a trip |
+| `renderTripDailyBreakdown(trip)` | Renders per-day on-trip spend vs daily budget below trip detail stats |
 | `renderTripExpenses()` | Renders the trip expenses list in the detail view |
 | `switchTripTab(tab)` | Switches between "pre-trip" and "on-trip" expense tabs |
 | `populateTripExpenseDropdowns()` | Populates category/payment dropdowns in the trip expense form |
@@ -398,7 +423,7 @@ To find where to add/edit something, scan the relevant section header then go to
 |---|---|
 | `cloneStateSnapshot()` | Returns a deep clone of the current state via JSON parse/stringify |
 | `buildBackupPayload()` | Wraps state snapshot with metadata for export |
-| `normalizeImportedState(raw)` | Sanitizes and fills defaults on an imported state object, including transaction presets |
+| `normalizeImportedState(raw)` | Sanitizes and fills defaults on an imported state object, including transaction presets, split fields, tags, high contrast theme, and EMI foreclosure fields |
 | `isValidBackupPayload(parsed)` | Returns true if the parsed object has the required backup structure |
 | `applyFullStateRestore(importedRaw)` | Validates, normalizes, applies, and saves an imported state |
 | `csvEscape(val)` | Escapes a value for CSV output (quotes if contains comma/newline) |
@@ -414,7 +439,7 @@ To find where to add/edit something, scan the relevant section header then go to
 
 ---
 
-## sync.js — Google Drive Cloud Sync (31 functions)
+## sync.js — Google Drive Cloud Sync
 
 **Auth & Token Management**
 
@@ -437,14 +462,19 @@ To find where to add/edit something, scan the relevant section header then go to
 
 | Function | Description |
 |---|---|
+| `getOfflineQueue()` | Reads and parses localStorage key `trex_offline_queue`, clearing corrupted queue data safely |
+| `hasOfflineQueue()` | Returns true when an offline full-snapshot queue item exists |
+| `enqueueOfflineMutation(type, payload)` | Stores the latest full-state snapshot while sync is enabled but the browser is offline |
+| `flushOfflineQueue()` | Pushes queued offline state before normal sync and clears the queue only after sync settles successfully |
+| `initOfflineListener()` | Installs online/offline listeners; online flushes queued edits before normal Drive pull |
 | `pushToDrive()` | Serializes `state` and uploads it to Drive; updates `state.lastSyncedAt` on success |
-| `syncFromDrive()` | Silent background pull: reconciles categories, payments, transactions, transaction presets, goals, trips, recurring expenses, and EMIs by `id`; applies newer shared settings; pushes converged state back to Drive when needed |
+| `syncFromDrive()` | Silent background pull: reconciles categories, payments, transactions, transaction presets, known tags, goals, trips, recurring expenses, and EMIs by `id`; applies newer shared settings; pushes converged state back to Drive when needed |
 | `buildMergedSyncState(localState, remoteState)` | Builds a converged state object from local + remote collections and shared settings; `monthlyBudget` uses non-zero-wins logic — the higher non-zero value is kept regardless of timestamp |
 | `sameSyncArrays(a, b)` | Compares sync-relevant arrays and scalar settings to detect whether reconciliation changed either side |
 | `applyRemoteState(remoteState, silent?)` | Normalizes and applies a remote state object; preserves `googleClientId`, `syncUserEmail`, `syncDriveFileId`; forces `syncEnabled=true`; re-renders UI without page reload |
 | `_applyRemoteSilent(remoteState, isInitialLinkage, token, fileId)` | Legacy/internal helper for applying remote state after budget conflict decisions |
 | `_showBudgetConflictModal(localBudget, remoteBudget, onResolved)` | Scoped two-button modal for budget-only discrepancy; calls `onResolved(keepRemote: boolean)` |
-| `normalizeSyncState(remoteState)` | Normalizes Drive sync state while preserving the full live app shape, including `creditCardsEnabled`, EMIs, alerts, reminders, and sync metadata |
+| `normalizeSyncState(remoteState)` | Normalizes Drive sync state while preserving the full live app shape, including split fields, tags, `creditCardsEnabled`, EMIs, alerts, reminders, high contrast theme, and sync metadata |
 
 **Account & Metadata**
 

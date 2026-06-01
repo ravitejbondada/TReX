@@ -106,7 +106,7 @@ let state = {
   creditCardsEnabled: false,     // Master toggle for CC billing day features
   pinEnabled: false,
   pinCode: "1234",
-  theme: "dark" | "light",
+  theme: "dark" | "light" | "high-contrast",
   dailyReminderEnabled: false,   // Push notification reminder toggle
   dailyReminderTime: "21:00",    // HH:MM
   dailyReminderLastShownDate: "",// YYYY-MM-DD, missed-reminder guard
@@ -142,7 +142,7 @@ let state = {
   transactions: [
     // Starts empty [] (no mock/dummy transactions)
     { id, amount, categoryId, paymentId, date, note,
-      tripId, tripType, tripRef, createdAt }
+      tripId, tripType, tripRef, createdAt, tags, splitGroupId, splitLabel }
     // date: "YYYY-MM-DD" ISO string — the user-facing expense date
     // createdAt: full ISO 8601 timestamp (e.g. "2026-05-31T14:23:07.412Z") — set at creation time;
     //   preserved on edit if the date field is unchanged, updated to now if the date changes.
@@ -155,11 +155,17 @@ let state = {
     // Recurring-created transactions are intentionally plain transactions with no recurringId.
     // tripRef: true if this tx was synced from a trip expense (read-only in ledger)
     // tripType: "pre" | "on" | null
+    // tags: optional Array<string> used by free-text transaction labels and ledger tag filtering
+    // splitGroupId: shared id linking split-expense parts; null for normal rows
+    // splitLabel: optional display label for split-created parts
   ],
   transactionTemplates: [
     // Starts empty [].
     { id, name, amount, categoryId, paymentId, note, createdAt, updatedAt }
     // Used by ledger-templates.js for one-tap transaction logging.
+  ],
+  knownTags: [
+    // Starts empty []. Dedupe/autocomplete source for transaction tag input.
   ],
   savingGoals: [
     // Starts empty [] (no mock/dummy goals)
@@ -167,7 +173,11 @@ let state = {
       contributions?: [{ id, amount, note, date }] }
   ],
   recurringExpenses: [],
-  emis: [],
+  emis: [
+    // EMI objects may include:
+    // foreclosed: boolean, foreclosedDate: "YYYY-MM-DD" | null,
+    // foreclosureCharge: number, foreclosureChargePct?: number
+  ],
   trips: [],
 
   // ── Cloud Sync (sync.js) ──────────────────────────────────────
@@ -275,6 +285,8 @@ renderSettingsLists();        // re-render affected UI
 showNotification("Saved.");
 ```
 
+When `state.syncEnabled` is true and `navigator.onLine === false`, `saveStateToLocalStorage()` still writes `androidWalletState_v4` immediately, then calls `enqueueOfflineMutation("fullSnapshot", state)` instead of scheduling a Drive push. The offline queue stores only the latest full-state snapshot in `trex_offline_queue`.
+
 ### ID Generation
 IDs use `Date.now()` as a string: `id: "cat_" + Date.now()` or `"tx_" + Date.now()`.
 
@@ -323,6 +335,16 @@ Normal rows are wrapped in `.swipe-row-wrapper`; `attachSwipeToDelete()` handles
 
 ### Transaction presets
 `ledger-templates.js` owns `state.transactionTemplates[]`. The Add Expense screen can save the current amount/category/payment/note as a preset, and both Add Expense and Ledger render preset chips through `renderTransactionTemplatesBars()`. Tapping a chip confirms and logs a new transaction for `getTodayISO()` with the preset's saved combo. The preset manager supports apply-to-form and delete actions. Presets are normalized in backup restore and included in Drive sync merge comparisons.
+
+### Split transactions and tags
+`transactions.js` owns split-entry UI and tag input/filtering.
+
+- Split mode is toggled from the Category Tag header in Add Expense. When enabled, the normal category picker is hidden and replaced by split rows.
+- `validateSplitRows()` requires at least two rows, no duplicate categories, and a split sum that matches the main amount.
+- A split expense persists as multiple normal transactions sharing the same `splitGroupId`; each part keeps its own `categoryId`, amount, optional tags, and `splitLabel`.
+- Ledger rendering collapses a split group into one bordered card with a Split badge, grouped total, date/payment line, up to three category chips, and a vertical stripe using up to three category colors. Running balance counts each split group once.
+- Split delete prompts for part-only vs all-parts; edit loads the whole group into split mode.
+- Tags are normalized free-text labels. `state.knownTags[]` plus existing transaction tags power suggestions. Ledger search includes tags, and `activeTagFilter` narrows results by tag text.
 
 ### DOM elements (injected once by `_ensurePickerDOM()`)
 | ID | Role |
@@ -442,6 +464,20 @@ window.onload (core.js):
 saveStateToLocalStorage() → sets state.updatedAt = now → debounced pushToDrive() (3 s)
 ```
 
+Queue-sensitive sync behavior:
+- `window.onload` calls `initOfflineListener()` before starting cloud sync.
+- If `state.syncEnabled`, the app is online, and `trex_offline_queue` has an item, boot calls `flushOfflineQueue()` before `syncFromDrive()`.
+- When saving while sync is enabled but the browser is offline, `saveStateToLocalStorage()` writes `androidWalletState_v4` immediately, then stores the latest full-state snapshot in `trex_offline_queue` instead of scheduling a Drive push.
+- `pushToDrive()` checks `hasOfflineQueue()` before uploading so a normal push cannot jump ahead of queued offline edits.
+
+### Offline Queue
+The offline queue is intentionally a latest-snapshot queue, not an operation replay log.
+
+- localStorage key: `trex_offline_queue`
+- Shape: `[{ id, type: "fullSnapshot", payload: state, timestamp }]`
+- `enqueueOfflineMutation(type, payload)` replaces the queue with one latest snapshot while offline.
+- `flushOfflineQueue()` runs when the app comes online or before the next normal `pushToDrive()`. It pushes the queued/current local state first and clears the queue only after sync settles to `idle`.
+
 ### Tab Visibility Auto-Sync
 A `visibilitychange` event listener fires `syncFromDrive()` whenever
 `document.visibilityState === 'visible'` and sync is enabled — ensures the device
@@ -543,9 +579,11 @@ Populated by `renderSyncMetaBadge()`, called from `renderSyncControls()` and `co
 
 ## CSS Themes
 
-The app supports dark (default) and light themes via a `data-theme` attribute on `<html>`.
+Current theme contract:
+- Dark is default and removes the `data-theme` attribute.
+- Light sets `data-theme="light"`.
+- High contrast sets `data-theme="high-contrast"` with black surfaces, white text/borders, and yellow accent controls.
+- Dino Fossil Mode can override the visual attribute to `data-theme="fossil"` only when Dino Mode is enabled.
+- Settings uses `#settingThemeSelect` with Dark / Light / High contrast and `setThemeSetting(theme)` for persistence.
 
-- `applyTheme("dark")` — removes `data-theme` attribute
-- `applyTheme("light")` — sets `data-theme="light"`
-
-Light theme overrides are defined in `styles.css` via `html[data-theme="light"] ...` selectors.
+Theme overrides are defined in `styles.css` via `html[data-theme="light"]`, `html[data-theme="high-contrast"]`, and `html[data-theme="fossil"]` selectors.

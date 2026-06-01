@@ -1317,15 +1317,16 @@
                         <i data-lucide="sun-moon" class="w-4 h-4 text-amber-400"></i> Appearance
                     </h3>
 
-                    <div class="flex justify-between items-center text-xs">
+                    <div class="grid grid-cols-[1fr_minmax(8.5rem,11rem)] items-center gap-3 text-xs">
                         <span class="text-slate-300 font-medium flex items-center gap-1.5">
-                            <i data-lucide="sun-moon" class="w-4 h-4 text-amber-400"></i> Light Theme Mode
+                            <i data-lucide="sun-moon" class="w-4 h-4 text-amber-400"></i> Theme
                         </span>
-                        <label class="relative inline-flex items-center cursor-pointer ml-3" title="Light Theme Mode">
-                            <input type="checkbox" id="settingLightTheme" onchange="toggleThemeSetting()" class="sr-only peer" />
-                            <span class="w-10 h-5 bg-slate-800 peer-checked:bg-indigo-500 rounded-full transition-all"></span>
-                            <span class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
-                        </label>
+                        <select id="settingThemeSelect" onchange="setThemeSetting(this.value)"
+                            class="app-dropdown app-dropdown-sm text-[11px]">
+                            <option value="dark">Dark</option>
+                            <option value="light">Light</option>
+                            <option value="high-contrast">High contrast</option>
+                        </select>
                     </div>
 
                     <!-- App Sounds -->

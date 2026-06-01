@@ -147,7 +147,7 @@ window.onload = function () {
     updateAppLockButton();
     buildCurrencySelectorOptions();
     syncSettingsFormFields();
-    applyTheme(state.theme || "dark", (state.dinoPrefs?.dinoMode ?? false) && state.dinoPrefs?.fossilMode);
+    applyTheme(normalizeTheme(state.theme), (state.dinoPrefs?.dinoMode ?? false) && state.dinoPrefs?.fossilMode);
 
     if (!state.recurringExpenses) state.recurringExpenses = [];
     if (!Array.isArray(state.transactionTemplates)) state.transactionTemplates = [];
@@ -155,7 +155,7 @@ window.onload = function () {
     if (!state.emis) state.emis = [];
     if (!state.trips) state.trips = [];
     if (!state.pinCode) state.pinCode = "1234";
-    if (!state.theme) state.theme = "dark";
+    state.theme = normalizeTheme(state.theme);
     if (state.creditCardsEnabled === undefined) state.creditCardsEnabled = false;
     if (state.syncEnabled === undefined) state.syncEnabled = false;
     if (state.updatedAt === undefined) state.updatedAt = new Date().toISOString();
@@ -241,7 +241,12 @@ window.onload = function () {
         scheduleDailyReminder();
     }
     try { renderNewTripEmojiPicker(); } catch (e) { }
-    if (state.syncEnabled && typeof syncFromDrive === "function") {
+    if (typeof initOfflineListener === "function") {
+        initOfflineListener();
+    }
+    if (state.syncEnabled && navigator.onLine && typeof hasOfflineQueue === "function" && hasOfflineQueue() && typeof flushOfflineQueue === "function") {
+        flushOfflineQueue();
+    } else if (state.syncEnabled && typeof syncFromDrive === "function") {
         syncFromDrive();
     } else if (typeof updateSyncStatus === "function") {
         updateSyncStatus("offline");
@@ -486,6 +491,10 @@ function saveStateToLocalStorage() {
     cleanArchivedPayments();
     state.updatedAt = new Date().toISOString();
     localStorage.setItem("androidWalletState_v4", JSON.stringify(state));
+    if (state.syncEnabled && navigator.onLine === false && typeof enqueueOfflineMutation === "function") {
+        enqueueOfflineMutation("fullSnapshot", state);
+        return;
+    }
     if (state.syncEnabled) {
         debouncedPushToDrive();
     }
@@ -543,12 +552,19 @@ function customConfirm(message, title = "Confirm Action", okLabel = "Delete") {
 }
 
 /* CLIENT COLOR THEME SETTINGS */
+function normalizeTheme(theme) {
+    return ["dark", "light", "high-contrast"].includes(theme) ? theme : "dark";
+}
+
 function applyTheme(theme, fossilMode) {
+    theme = normalizeTheme(theme);
     state.theme = theme;
     const html = document.documentElement;
     const useFossil = dp('dinoMode') && (fossilMode ?? dp('fossilMode'));
     if (useFossil) {
         html.setAttribute('data-theme', 'fossil');
+    } else if (theme === 'high-contrast') {
+        html.setAttribute('data-theme', 'high-contrast');
     } else if (theme === 'light') {
         html.setAttribute('data-theme', 'light');
     } else {
@@ -556,10 +572,23 @@ function applyTheme(theme, fossilMode) {
     }
     const lightToggle = document.getElementById("settingLightTheme");
     if (lightToggle) lightToggle.checked = theme === "light";
+    const themeSelect = document.getElementById("settingThemeSelect");
+    if (themeSelect) themeSelect.value = theme;
+}
+
+function setThemeSetting(theme) {
+    const nextTheme = normalizeTheme(theme);
+    applyTheme(nextTheme);
+    saveStateToLocalStorage();
+    playSound(S.SYSTEM);
+    const label = nextTheme === "high-contrast" ? "High contrast" : nextTheme === "light" ? "Light" : "Dark";
+    showNotification(t(`${label} theme applied.`, `${label} theme applied.`));
+    initLucideIcons();
 }
 
 function toggleThemeSetting() {
-    const isLight = document.getElementById("settingLightTheme").checked;
+    const toggle = document.getElementById("settingLightTheme");
+    const isLight = toggle ? toggle.checked : normalizeTheme(state.theme) !== "light";
     applyTheme(isLight ? "light" : "dark");
     saveStateToLocalStorage();
     playSound(S.SYSTEM);

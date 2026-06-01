@@ -593,8 +593,8 @@ Phase 3
 [x] 12. Split transactions
 [x] 13. Tag / label system
 [x] 14. EMI foreclosure calculator
-[ ] 15. Offline conflict queue
+[x] 15. Offline conflict queue
 
 Phase 4
-[ ] 16. High contrast theme
+[x] 16. High contrast theme
 ```

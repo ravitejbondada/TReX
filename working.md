@@ -1,14 +1,14 @@
 # TReX Working Log
 
 **Last updated:** June 1, 2026
-**Current version:** v4.18
+**Current version:** v4.19
 **Plan:** `TREX_IMPLEMENTATION_PLAN.md` - Feature Implementation Plan
 
 ---
 
 ## Current Item
 
-Phase 3 - Split transaction polish fixes
+Documentation refresh - completed feature plan
 
 ## Status
 
@@ -36,6 +36,9 @@ Phase 3 - Split transaction polish fixes
 - Completed tag labels and EMI foreclosure. Expense form now saves transaction tags, ledger can search/filter tags, rows show compact tag chips, backup/sync/core preserve tag state, EMI cards expose Foreclose on active schedules, and foreclosure records a payoff transaction while stopping future EMI processing.
 - Fixing split transaction UX issues: toggle placement, category replacement behavior, duplicate-category warning, dashboard recent spend inclusion, ledger visual parity, running totals, and split edit/delete actions.
 - Completed split polish pass. Split toggle now lives in the Category Tag header and replaces the category picker with split rows, duplicate split categories are blocked with a warning, dashboard recent logs collapse split parts into one item, ledger split cards share the normal bordered tile style, running balance counts split groups once, and split edit/delete buttons stop event bleed-through.
+- Starting the final two implementation-plan items together: offline conflict queue and high contrast theme. Full README/ARCHITECTURE/FUNCTIONS update is intentionally deferred.
+- Completed offline queue and high contrast theme. Offline sync-enabled edits now persist a latest-snapshot queue and flush before the next Drive push when the app comes online. Settings now has a three-option theme selector with Dark, Light, and High contrast.
+- Completed documentation refresh for the finished implementation plan. README, ARCHITECTURE, FUNCTIONS, CHANGELOG, working log, and implementation checklist now describe Phase 1-4 through offline queue and high contrast theme.
 
 ---
 
@@ -70,11 +73,11 @@ Phase 3 - Split transaction polish fixes
 [x] 12. Split transactions
 [x] 13. Tag / label system
 [x] 14. EMI foreclosure calculator
-[ ] 15. Offline conflict queue
+[x] 15. Offline conflict queue
 
 ### Phase 4 - Low Priority
 
-[ ] 16. High contrast theme
+[x] 16. High contrast theme
 
 ---
 

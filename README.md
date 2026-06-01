@@ -60,7 +60,7 @@ TReX/
     ├── core.js             State, boot, persistence, routing, theme, notifications
     ├── auth.js             PIN lock/unlock, WebAuthn biometrics, locked expense sheet (slide-up)
     ├── dashboard.js        Budget widgets, forecast, heatmap, quick logs, alerts/reminders
-    ├── transactions.js     Add/edit expense form, ledger history, filter/search, swipe/bulk actions, running balance
+    ├── transactions.js     Add/edit expense form, split expenses, tags, ledger filter/search, swipe/bulk actions, running balance
     ├── ledger-templates.js Transaction presets/preset manager and one-tap preset logging
     ├── reports.js          Chart.js renderers, analytics reports, MoM comparison
     ├── settings.js         Settings form, category/payment CRUD, CC helpers
@@ -68,7 +68,7 @@ TReX/
     ├── recurring.js        Recurring expenses, EMI engine, date utilities
     ├── goals-trips.js      Saving goals, trip budgets, trip expense tracking
     ├── backup.js           JSON/CSV export & import, state restore
-    └── sync.js             Google Drive OAuth, push/pull sync, conflict resolution, onboarding
+    └── sync.js             Google Drive OAuth, push/pull sync, offline queue, conflict resolution, onboarding
 ```
 
 ---
@@ -98,6 +98,8 @@ On boot, `window.onload` reads it back. If the key is missing, seed data (defaul
 
 **Transaction presets:** `state.transactionTemplates[]` stores reusable expense combos (`name`, `amount`, `categoryId`, `paymentId`, `note`) for one-tap logging from Add Expense or Ledger. Presets are included in JSON/CSV backup and Drive sync.
 
+**Split transactions and tags:** Split expenses are stored as multiple normal transactions linked by `splitGroupId`, with optional `splitLabel` and `tags`. `state.knownTags[]` powers tag suggestions. Split/tag fields are preserved by JSON/CSV backup and Drive sync.
+
 > ⚠️ Local-only data is lost if the browser cache is cleared. Enable Google Drive sync in Settings to keep a persistent backup.
 
 ---
@@ -117,6 +119,7 @@ Cloud sync is **live** via `js/sync.js`. It uses the Google Identity Services (G
 
 **Key behaviours:**
 - On every `saveStateToLocalStorage()` call a debounced (3 s) `pushToDrive()` is triggered.
+- If sync is enabled and the browser is offline, `saveStateToLocalStorage()` stores the latest full snapshot in localStorage key `trex_offline_queue`. When the app comes online, the queued snapshot is flushed before normal Drive push/pull resumes.
 - On `window.onload`, `syncFromDrive()` pulls the remote state and applies a **silent background reconciliation** with no intrusive conflict modals.
 - A `visibilitychange` listener fires `syncFromDrive()` whenever the user switches back to the app tab.
 - **Multi-device convergence:** categories, payments, transactions, saving goals, trips, recurring expenses, and EMIs are merged by stable `id`; merged results are pushed back to Drive so devices converge.
@@ -155,12 +158,16 @@ The Reports / Premium Insights screen includes a **Download PDF Summary Report**
 - **Ledger row actions:** Swipe a normal ledger row left to reveal Delete. Select mode supports multi-select bulk delete; trip-synced ledger rows stay locked/read-only.
 - **Ledger running balance:** Each visible ledger row shows a subtle running spend total computed chronologically over the currently filtered result set.
 - **Transaction presets:** Add Expense can save the current amount/category/payment/note as a preset; preset chips appear in Add Expense and Ledger for one-tap logging.
+- **Split transactions:** Add Expense has a Split across cat toggle in the Category Tag header. Split mode replaces the single category picker with split rows, blocks duplicate categories, requires split amounts to match the total, and renders one grouped ledger card with a Split badge, up to three category chips, and a multi-color vertical stripe.
+- **Transaction tags:** Expense rows can carry free-text tags. Ledger search includes tags, tag chips render on rows, and the tag filter narrows the ledger by matching tag text.
+- **EMI foreclosure:** Active EMI cards expose Foreclose. The payoff modal estimates outstanding principal, applies an optional foreclosure charge, records a final payoff transaction, and stops future EMI posting.
 - **Heatmap legend:** Compact right-aligned ultra-muted swatches (Low → High: green, yellow, amber, rose) rendered below the heatmap grid. Matches `heatColor()` thresholds while staying subtle on the dark dashboard.
 - **Heatmap → Ledger:** Tapping a heatmap day opens the ledger scoped to that single day, sorted Dated ↓ by default.
 - **Ledger sort:** Tap the sort button to open the custom picker with 4 options — Dated ↓, Dated ↑, Amt ↓, Amt ↑. "Dated" sorts by the expense date field. Resets to Dated ↓ on every ledger open.
 - **Mobile date fields:** Add Expense keeps Date and Note side by side in a compact row. Goals and Trips stack date-heavy rows on phones and switch to two columns only at wider breakpoints so full date values remain visible without overflow.
 - **Custom picker scroll lock:** Opening any custom dropdown locks the page behind the picker on mobile; only the picker sheet/list scrolls.
 - **Dino Mode:** Off by default for new users and labelled experimental in Settings. Fossil Mode, Dino Footprints, and Extinction Warnings are dependent on Dino Mode and have no visible effect while it is off.
+- **Theme selector:** Settings → Appearance uses a three-option selector: Dark, Light, and High contrast. High contrast sets `data-theme="high-contrast"` and uses black surfaces, white borders/text, and yellow accents.
 - **Sync icon:** The header sync icon spins while Drive sync is actively pushing/pulling (`syncStatus="syncing"`), then returns to synced/offline/error when the operation settles.
 - **Goal editing:** Each goal card has a pencil icon that opens an inline edit row (target amount + goal date) inside the accordion. `toggleGoalEdit` / `saveGoalEdit` handle open/save.
 - **Drawer — Goals & Trips:** Now open sub-panels (`openDrawerSection('goals'/'trips')`) showing live tiles with Fund/Edit/Delete (goals) and Add Expense/View/Edit (trips, auto-detects pre/on status). Each panel has a "View" link at top and "+ New" at bottom.

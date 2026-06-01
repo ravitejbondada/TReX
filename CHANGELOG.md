@@ -3,6 +3,22 @@
 Format: `[version] YYYY-MM-DD — summary`
 Files listed are the ones modified. Always update this on any meaningful change.
 
+## [v4.19] 2026-06-01 - Feature plan wrap and documentation refresh
+
+**What changed:** Completed the remaining implementation-plan items and refreshed project documentation for the finished Phase 1-4 feature set.
+
+**Files modified:**
+- `js/sync.js`, `js/core.js` - added latest-snapshot offline queue support via `trex_offline_queue`, online flushing, and queue-first Drive push behavior.
+- `index.html`, `js/core.js`, `js/settings.js`, `js/backup.js`, `js/sync.js`, `styles.css` - replaced the light-theme toggle with a Dark / Light / High contrast selector and preserved `high-contrast` through backup and sync.
+- `README.md`, `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md`, `working.md`, `TREX_IMPLEMENTATION_PLAN.md` - updated docs and checklists for split transactions, tags, EMI foreclosure, analytics additions, offline queue, and high contrast theme.
+
+**Behavior:**
+- Sync-enabled offline edits are queued as a latest full-state snapshot and flushed before normal Drive sync resumes.
+- Settings Appearance now supports High contrast mode.
+- Documentation now reflects the completed feature plan through item 16.
+
+---
+
 ## [v4.16] 2026-06-01 - Ledger running balance and transaction presets
 
 **What changed:** Implemented Phase 1 items 4 and 5.
