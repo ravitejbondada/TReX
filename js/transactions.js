@@ -1099,26 +1099,30 @@ function filterHistory() {
             allSplitTotals.set(tx.splitGroupId, (allSplitTotals.get(tx.splitGroupId) || 0) + Number(tx.amount || 0));
         }
     });
-    [...items].sort((a, b) => {
-        const da = new Date(a.date || a.createdAt || 0).getTime();
-        const db = new Date(b.date || b.createdAt || 0).getTime();
-        if (da !== db) return da - db;
-        const ca = new Date(a.createdAt || a.date || 0).getTime();
-        const cb = new Date(b.createdAt || b.date || 0).getTime();
-        return ca - cb;
-    }).forEach(tx => {
+    // Deduplicate split groups for running total: keep only first occurrence per group
+    const seenGroups = new Set();
+    const dedupedItems = items.filter(tx => {
+        if (!tx.splitGroupId) return true;
+        if (seenGroups.has(tx.splitGroupId)) return false;
+        seenGroups.add(tx.splitGroupId);
+        return true;
+    });
+    // Sort deduped items the same way as the display sort
+    dedupedItems.sort((a, b) => {
+        if (sortMode === "amt-desc") return b.amount - a.amount;
+        if (sortMode === "amt-asc")  return a.amount - b.amount;
+        const ta = a.createdAt ? new Date(a.createdAt) : new Date(a.date);
+        const tb = b.createdAt ? new Date(b.createdAt) : new Date(b.date);
+        return sortMode === "date-asc" ? ta - tb : tb - ta;
+    });
+    dedupedItems.forEach(tx => {
         if (tx.splitGroupId) {
-            if (runningSplitGroups.has(tx.splitGroupId)) {
-                runningById.set(tx.id, runningTotal);
-                return;
-            }
-            runningSplitGroups.add(tx.splitGroupId);
             runningTotal += Number(allSplitTotals.get(tx.splitGroupId) || tx.amount || 0);
+            runningById.set(tx.splitGroupId, runningTotal);
         } else {
             runningTotal += Number(tx.amount || 0);
+            runningById.set(tx.id, runningTotal);
         }
-        runningById.set(tx.id, runningTotal);
-        if (tx.splitGroupId) runningById.set(tx.splitGroupId, runningTotal);
     });
 
     // Update summary bar
@@ -1164,13 +1168,13 @@ function filterHistory() {
             // Parent row
             const parentRow = document.createElement("div");
             parentRow.id = `tx-group-row-${t.splitGroupId}`;
-            parentRow.className = "split-group-header tx-row bg-slate-900 border border-slate-850 rounded-2xl px-3 py-3 flex justify-between items-stretch gap-2 cursor-pointer active:scale-95 transition-all";
-            parentRow.onclick = event => {
+            parentRow.className = "split-group-header tx-row bg-slate-900 border border-slate-850 rounded-2xl px-3 py-3 flex justify-between items-stretch gap-2 cursor-pointer transition-all";
+            parentRow.addEventListener('click', event => {
                 if (event.target.closest("button")) return;
                 groupWrapper.classList.toggle('split-group-expanded');
-            };
+            });
             parentRow.innerHTML = `
-                <div class="flex items-stretch gap-2.5 min-w-0 flex-1">
+                <div class="flex items-stretch gap-2.5 min-w-0 flex-1 pointer-events-none">
                     <span class="w-1 self-stretch rounded-full shrink-0" style="${_splitStripeStyle(groupParts)}"></span>
                     <div class="min-w-0 flex-1 space-y-1 py-0.5">
                         <div class="flex items-center gap-1.5 min-w-0">
@@ -1196,15 +1200,32 @@ function filterHistory() {
                     <span class="text-xs font-black text-indigo-300">${state.currencySymbol}${groupTotal.toLocaleString()}</span>
                     <span class="running-balance">Spent ${state.currencySymbol}${(runningById.get(t.splitGroupId) || groupTotal).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                     <div class="flex items-center gap-1">
-                        <button type="button" onclick="event.stopPropagation(); loadExpenseToFormForEdit('${t.id}')" class="p-1 text-slate-600 hover:text-indigo-400 rounded hover:bg-slate-950 transition-all" title="Edit split">
+                        <button type="button" data-action="edit-split" class="p-1 text-slate-600 hover:text-indigo-400 rounded hover:bg-slate-950 transition-all" title="Edit split">
                             <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                         </button>
-                        <button type="button" onclick="event.stopPropagation(); deleteTransaction('${t.id}')" class="p-1 text-slate-600 hover:text-rose-400 rounded hover:bg-slate-950 transition-all" title="Delete split">
+                        <button type="button" data-action="delete-split" class="p-1 text-slate-600 hover:text-rose-400 rounded hover:bg-slate-950 transition-all" title="Delete split">
                             <i data-lucide="trash" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
                 </div>`;
             groupWrapper.appendChild(parentRow);
+
+            // Attach button handlers via addEventListener (avoids inline onclick competing with parent row touch handling)
+            const splitEditBtn = parentRow.querySelector('[data-action="edit-split"]');
+            const splitDeleteBtn = parentRow.querySelector('[data-action="delete-split"]');
+            const splitTxId = t.id;
+            if (splitEditBtn) {
+                splitEditBtn.addEventListener('click', event => {
+                    event.stopPropagation();
+                    loadExpenseToFormForEdit(splitTxId);
+                });
+            }
+            if (splitDeleteBtn) {
+                splitDeleteBtn.addEventListener('click', event => {
+                    event.stopPropagation();
+                    deleteTransaction(splitTxId);
+                });
+            }
 
             // Child rows container (collapsed by default)
             const childrenContainer = document.createElement("div");
