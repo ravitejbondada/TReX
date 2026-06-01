@@ -18,6 +18,7 @@ Files listed are the ones modified. Always update this on any meaningful change.
 - Select mode lets multiple normal ledger rows be selected and deleted together with one confirmation.
 - Ledger filter sheet now supports min/max amount filtering; active amount filters appear as dismissible chips and clear with Current Cycle.
 - Heatmap fills remain ultra-subtle while colored borders are slightly brighter for better readability on dark backgrounds.
+- Ledger sort control now matches the other header icon-button height; multi-select no longer shows swipe-delete backing layers; a stronger left swipe opens delete confirmation directly.
 
 ---
 

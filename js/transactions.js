@@ -526,7 +526,7 @@ function attachSwipeToDelete(rowEl, txId) {
         if (Math.abs(deltaY) > Math.abs(deltaX)) return;
         if (deltaX < 0) {
             event.preventDefault();
-            const offset = Math.max(deltaX, -84);
+            const offset = Math.max(deltaX, -116);
             rowEl.style.transform = `translateX(${offset}px)`;
         }
     }, { passive: false });
@@ -534,7 +534,12 @@ function attachSwipeToDelete(rowEl, txId) {
     rowEl.addEventListener("touchend", () => {
         if (!tracking || ledgerSelectMode) return;
         tracking = false;
-        if (deltaX < -60) {
+        if (deltaX < -110) {
+            rowEl.classList.remove("swiped");
+            rowEl.style.transform = "";
+            closeOpenSwipeRow();
+            deleteTransaction(txId);
+        } else if (deltaX < -60) {
             rowEl.classList.add("swiped");
             rowEl.style.transform = "";
             openSwipeRowEl = rowEl;
@@ -699,7 +704,7 @@ function filterHistory() {
         wrapper.className = "swipe-row-wrapper";
         wrapper.id = `tx-wrap-${t.id}`;
 
-        if (!t.tripRef) {
+        if (!t.tripRef && !ledgerSelectMode) {
             const deleteBtn = document.createElement("button");
             deleteBtn.type = "button";
             deleteBtn.className = "swipe-delete-btn";
@@ -775,7 +780,7 @@ function filterHistory() {
         `;
         wrapper.appendChild(card);
         container.appendChild(wrapper);
-        if (!t.tripRef) attachSwipeToDelete(card, t.id);
+        if (!t.tripRef && !ledgerSelectMode) attachSwipeToDelete(card, t.id);
     });
 
     initLucideIcons();
