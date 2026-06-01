@@ -391,12 +391,12 @@ function renderSpendHeatmap() {
     const maxSpend = Math.max(1, ...Object.values(dailySpend).filter(v => v > 0));
 
     function heatColor(amount) {
-        if (!amount) return { bg: "bg-slate-800/60", border: "border-slate-800", text: "text-slate-600" };
+        if (!amount) return { bg: "bg-slate-700/10", border: "border-slate-700/65", text: "text-slate-500" };
         const r = amount / maxSpend;
-        if (r < 0.25) return { bg: "bg-emerald-500/12", border: "border-emerald-400/25", text: "text-emerald-200/80" };
-        if (r < 0.55) return { bg: "bg-yellow-400/12",  border: "border-yellow-300/25",  text: "text-yellow-100/80" };
-        if (r < 0.80) return { bg: "bg-amber-500/14",   border: "border-amber-400/30",   text: "text-amber-100/80" };
-        return             { bg: "bg-rose-500/16",    border: "border-rose-400/35",    text: "text-rose-100/80" };
+        if (r < 0.25) return { bg: "bg-emerald-500/10", border: "border-emerald-400/45", text: "text-emerald-200/85" };
+        if (r < 0.55) return { bg: "bg-yellow-400/10",  border: "border-yellow-300/45",  text: "text-yellow-100/85" };
+        if (r < 0.80) return { bg: "bg-amber-500/12",   border: "border-amber-400/50",   text: "text-amber-100/85" };
+        return             { bg: "bg-rose-500/14",    border: "border-rose-400/55",    text: "text-rose-100/85" };
     }
 
     // ── Build flat list of all cells the grid will show ───────────────────────
@@ -459,14 +459,14 @@ function renderSpendHeatmap() {
             const spend      = dailySpend[dateISO] || 0;
 
             if (isOutOfCycle) {
-                cell.className = "aspect-square rounded-md border border-slate-800/40 heatmap-crosshatch relative cursor-default flex items-center justify-center";
-                cell.innerHTML = `<span class="text-[8px] font-bold text-slate-700/50">${cDay}</span>`;
+                cell.className = "aspect-square rounded-md border border-slate-700/50 heatmap-crosshatch relative cursor-default flex items-center justify-center";
+                cell.innerHTML = `<span class="text-[8px] font-bold text-slate-600/60">${cDay}</span>`;
             } else {
                 const colors = heatColor(spend);
                 cell.className = [
                     "aspect-square rounded-md border flex items-center justify-center transition-all relative",
                     isFuture
-                        ? "opacity-30 cursor-default bg-slate-800/60 border-slate-800"
+                        ? "opacity-35 cursor-default bg-slate-700/10 border-slate-700/50"
                         : `cursor-pointer hover:scale-110 hover:z-10 hover:ring-1 hover:ring-indigo-400/60 hover:ring-offset-1 hover:ring-offset-slate-950 ${colors.bg} ${colors.border}`,
                     isToday ? "ring-1 ring-indigo-400 ring-offset-1 ring-offset-slate-950" : "",
                 ].join(" ");

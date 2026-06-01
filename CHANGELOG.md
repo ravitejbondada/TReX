@@ -18,6 +18,8 @@ Files listed are the ones modified. Always update this on any meaningful change.
 - Split category rows now show every unique category instead of a `+` overflow marker, and the split color stripe uses all unique split category colors.
 - Dashboard recurring expenses panel was removed; recurring schedules stay in the sidebar/drawer, with a subtle "Make this recurring" link on Add Expense that opens the recurring modal.
 - Split toggle icon/text now shows rose/red while off and light green/green while on.
+- Settings Appearance now uses a compact three-way segmented switch instead of a dropdown.
+- Spend heatmap cells have slightly stronger borders and a very light baseline tint for better visibility.
 - Ledger cumulative values are calculated only from the visible ledger tiles by summing bottom-to-top after the current filter/search/sort is applied. Split groups count once as grouped tiles.
 - Deleting from the parent split card warns that the entire split will be deleted. To delete one part, expand the split card and use the row-level delete action.
 

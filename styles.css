@@ -993,7 +993,7 @@
             rgba(148,163,184,0.06) 3px,
             rgba(148,163,184,0.06) 4px
           );
-          background-color: rgba(15,23,42,0.3);
+            background-color: rgba(148,163,184,0.045);
           display: flex; align-items: center; justify-content: center;
         }
 
@@ -1215,6 +1215,47 @@
         }
         #customPickerOverlay.open #customPickerPanel {
             transform: translateY(0);
+        }
+        .theme-segment {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.125rem;
+            padding: 0.125rem;
+            border-radius: 0.75rem;
+            background: #020617;
+            border: 1px solid rgba(30, 41, 59, 0.9);
+        }
+        .theme-segment button {
+            min-width: 0;
+            border-radius: 0.625rem;
+            padding: 0.45rem 0.25rem;
+            color: #64748b;
+            font-size: 0.625rem;
+            font-weight: 800;
+            line-height: 1;
+            transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+        }
+        .theme-segment button.active {
+            color: #e0e7ff;
+            background: rgba(79, 70, 229, 0.32);
+            box-shadow: inset 0 0 0 1px rgba(129, 140, 248, 0.35);
+        }
+        html[data-theme="light"] .theme-segment {
+            background: #e2e8f0;
+            border-color: #cbd5e1;
+        }
+        html[data-theme="light"] .theme-segment button {
+            color: #64748b;
+        }
+        html[data-theme="light"] .theme-segment button.active {
+            color: #312e81;
+            background: #ffffff;
+            box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.25);
+        }
+        html[data-theme="high-contrast"] .theme-segment button.active {
+            color: #020617;
+            background: #facc15;
+            box-shadow: none;
         }
         #customPickerHandle {
             width: 2.5rem;

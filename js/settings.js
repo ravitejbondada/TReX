@@ -34,6 +34,7 @@ function syncSettingsFormFields() {
     if (lightToggle) lightToggle.checked = (state.theme || "dark") === "light";
     const themeSelect = document.getElementById("settingThemeSelect");
     if (themeSelect) themeSelect.value = typeof normalizeTheme === "function" ? normalizeTheme(state.theme) : (state.theme || "dark");
+    if (typeof syncThemeSegment === "function") syncThemeSegment(state.theme);
     
     // Cloud Sync Settings
     const clientIdInput = document.getElementById("settingGoogleClientId");

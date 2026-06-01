@@ -1306,12 +1306,11 @@
                         <span class="text-slate-300 font-medium flex items-center gap-1.5">
                             <i data-lucide="sun-moon" class="w-4 h-4 text-amber-400"></i> Theme
                         </span>
-                        <select id="settingThemeSelect" onchange="setThemeSetting(this.value)"
-                            class="app-dropdown app-dropdown-sm text-[11px]">
-                            <option value="dark">Dark</option>
-                            <option value="light">Light</option>
-                            <option value="high-contrast">High contrast</option>
-                        </select>
+                        <div id="settingThemeSegment" class="theme-segment" role="group" aria-label="Theme">
+                            <button type="button" data-theme-option="dark" onclick="setThemeSetting('dark')">Dark</button>
+                            <button type="button" data-theme-option="light" onclick="setThemeSetting('light')">Light</button>
+                            <button type="button" data-theme-option="high-contrast" onclick="setThemeSetting('high-contrast')">High</button>
+                        </div>
                     </div>
 
                     <!-- App Sounds -->

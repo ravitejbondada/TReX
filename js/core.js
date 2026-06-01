@@ -574,6 +574,16 @@ function applyTheme(theme, fossilMode) {
     if (lightToggle) lightToggle.checked = theme === "light";
     const themeSelect = document.getElementById("settingThemeSelect");
     if (themeSelect) themeSelect.value = theme;
+    syncThemeSegment(theme);
+}
+
+function syncThemeSegment(theme = state.theme) {
+    const normalized = normalizeTheme(theme);
+    document.querySelectorAll("[data-theme-option]").forEach(btn => {
+        const active = btn.dataset.themeOption === normalized;
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-pressed", active ? "true" : "false");
+    });
 }
 
 function setThemeSetting(theme) {
