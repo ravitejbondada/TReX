@@ -10,7 +10,7 @@ Files listed are the ones modified. Always update this on any meaningful change.
 **Files modified:**
 - `js/core.js` — added picker page scroll lock/unlock so the page behind the custom picker cannot scroll on mobile; added `resetAppScrollToTop(viewName)` so navigation resets `window`, document/body, `<main>`, `#screenContainer`, and the active panel; changed clean-start `dinoPrefs.dinoMode` default to `false`.
 - `styles.css` — added `overscroll-behavior` and `touch-action` guards to the custom picker overlay/panel/list so picker scrolling stays inside the sheet.
-- `js/dashboard.js`, `index.html` — updated heatmap and budget-progress risk colors to light green → light yellow → amber/orange → rose/red; compacted and right-aligned the heatmap legend.
+- `js/dashboard.js`, `index.html` — updated heatmap and budget-progress risk colors to green → yellow → amber/orange → rose/red; muted the heatmap fills/borders; compacted and right-aligned the heatmap legend.
 - `index.html` — labelled Dino Mode as `(experimental)` in Settings.
 - `js/dashboard.js` — heatmap footprints now require both `dinoMode` and `dinoFootprints`, preventing footprint/egg markers while Dino Mode is off.
 - `js/settings.js` — Dino dependent controls default to disabled/hidden when Dino Mode is off; dependent toggle handlers bail out if Dino Mode is off.

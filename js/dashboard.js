@@ -392,10 +392,10 @@ function renderSpendHeatmap() {
     function heatColor(amount) {
         if (!amount) return { bg: "bg-slate-800/60", border: "border-slate-800", text: "text-slate-600" };
         const r = amount / maxSpend;
-        if (r < 0.25) return { bg: "bg-emerald-300/85", border: "border-emerald-200/80", text: "text-emerald-950" };
-        if (r < 0.55) return { bg: "bg-yellow-200/90",  border: "border-yellow-100/80",  text: "text-yellow-950" };
-        if (r < 0.80) return { bg: "bg-amber-300/90",   border: "border-amber-200/80",   text: "text-amber-950" };
-        return             { bg: "bg-rose-300/90",    border: "border-rose-200/80",    text: "text-rose-950" };
+        if (r < 0.25) return { bg: "bg-emerald-500/25", border: "border-emerald-400/25", text: "text-emerald-100" };
+        if (r < 0.55) return { bg: "bg-yellow-400/25",  border: "border-yellow-300/25",  text: "text-yellow-100" };
+        if (r < 0.80) return { bg: "bg-amber-500/28",   border: "border-amber-400/30",   text: "text-amber-100" };
+        return             { bg: "bg-rose-500/30",    border: "border-rose-400/30",    text: "text-rose-100" };
     }
 
     // ── Build flat list of all cells the grid will show ───────────────────────

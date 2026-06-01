@@ -149,7 +149,7 @@ The Reports / Premium Insights screen includes a **Download PDF Summary Report**
 ## UX Notes
 
 - **Ledger header:** Compact three-row design — title + Sort button + Filter icon button / search bar / summary + active filter chips. Filter sheet (date range, category, payment) is collapsed by default; tap the filter icon to expand. Sort uses 4 picker options (Dated ↓↑, Amt ↓↑) and resets to Dated ↓ on each ledger open. Active filters appear as dismissible chips; a dot on the filter icon signals active filters.
-- **Heatmap legend:** Compact right-aligned swatches (Low → High: light green, light yellow, amber, light rose) rendered below the heatmap grid. Matches `heatColor()` thresholds and the forecast risk palette.
+- **Heatmap legend:** Compact right-aligned muted swatches (Low → High: green, yellow, amber, rose) rendered below the heatmap grid. Matches `heatColor()` thresholds and the forecast risk palette without overpowering the dashboard.
 - **Heatmap → Ledger:** Tapping a heatmap day opens the ledger scoped to that single day, sorted Dated ↓ by default.
 - **Ledger sort:** Tap the sort button to open the custom picker with 4 options — Dated ↓, Dated ↑, Amt ↓, Amt ↑. "Dated" sorts by the expense date field. Resets to Dated ↓ on every ledger open.
 - **Mobile date fields:** Add Expense keeps Date and Note side by side in a compact row. Goals and Trips stack date-heavy rows on phones and switch to two columns only at wider breakpoints so full date values remain visible without overflow.
