@@ -8,7 +8,7 @@
 
 ## Current Item
 
-Phase 1 - Item 6: Inline edit (amount + note)
+Phase 2 - Item 8: Weekly/monthly spend comparison (dashboard)
 
 ## Status
 
@@ -23,7 +23,9 @@ Phase 1 - Item 6: Inline edit (amount + note)
 - Completed ledger swipe-to-delete, bulk select/delete, and amount range filtering.
 - Implementing running balance and transaction presets together because both touch ledger row rendering and the add-expense form.
 - Completed ledger running balance and transaction presets/preset manager.
-- Completed inline edit for amount + note on ledger rows. Scoped to non-tripRef, non-selectMode rows. Tap amount or note span to edit in-place; Escape cancels, Enter/blur commits. Running balances recomputed in-place on amount change with no full re-render.
+- Completed inline edit for amount + note on ledger rows. Non-tripRef, non-selectMode only. Tap in-place; Escape cancels, Enter/blur commits. Running balances recomputed in-place on amount change.
+- Item 7 (payment split chart) skipped by design decision.
+- Completed spend comparison chart on dashboard. Week mode: grouped bar per day Mon–Sun, this week vs last week. Month mode: this month-to-date vs same date range last month. Toggle matches Spend Velocity style. Chart instance destroyed/recreated on toggle.
 
 ---
 
@@ -47,8 +49,8 @@ Phase 1 - Item 6: Inline edit (amount + note)
 
 ### Phase 2 - Analytics & Insights
 
-[ ] 7. Payment split chart (dashboard)
-[ ] 8. Weekly/monthly comparison (dashboard)
+[-] 7. Payment split chart (dashboard) — skipped
+[x] 8. Weekly/monthly comparison (dashboard)
 [ ] 9. Category spend trend (reports)
 [ ] 10. Goal progress bar + projected date
 [ ] 11. Trip daily budget breakdown

@@ -197,6 +197,7 @@ function updateAppDashboardView() {
     renderDashboardPaymentStackedBar(metrics.startDate, metrics.endDate);
     renderDashboardPaymentHorizontalBars(metrics.startDate, metrics.endDate);
     renderWeeklyTrendChartLine();
+    renderDashboardSpendComparison();
     renderRecentActivityList();
     renderRecurringExpenses();
     renderSpendHeatmap();
@@ -1192,6 +1193,151 @@ function renderWeeklyTrendChartLine() {
         }
     });
 }
+
+/* ──── SPEND COMPARISON CHART (Phase 2 Item 8) ──────────────────────────────────────────── */
+let _dashCompareMode = 'week';
+let _dashCompareChartInstance = null;
+
+function setDashCompareMode(mode) {
+    _dashCompareMode = mode;
+    const weekBtn  = document.getElementById('dashCompareWeekBtn');
+    const monthBtn = document.getElementById('dashCompareMonthBtn');
+    if (weekBtn && monthBtn) {
+        const active   = 'px-2.5 py-1 rounded-md text-[9px] font-black transition-all bg-indigo-600 text-white';
+        const inactive = 'px-2.5 py-1 rounded-md text-[9px] font-black transition-all text-slate-400 hover:text-white';
+        weekBtn.className  = mode === 'week'  ? active : inactive;
+        monthBtn.className = mode === 'month' ? active : inactive;
+    }
+    renderDashboardSpendComparison();
+}
+
+function renderDashboardSpendComparison() {
+    const canvas = document.getElementById('dashSpendCompareChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const sym = state.currencySymbol;
+
+    if (_dashCompareChartInstance) {
+        _dashCompareChartInstance.destroy();
+        _dashCompareChartInstance = null;
+    }
+
+    const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    // Helper: get ISO date string yyyy-mm-dd
+    function isoDate(d) {
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    // Sum transactions for an array of ISO date strings
+    function sumDates(isoDates) {
+        const set = new Set(isoDates);
+        return state.transactions
+            .filter(t => set.has(t.date))
+            .reduce((s, t) => s + parseFloat(t.amount || 0), 0);
+    }
+
+    let labels, thisData, lastData;
+
+    if (_dashCompareMode === 'week') {
+        // Monday-anchored week
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const dayOfWeek = (today.getDay() + 6) % 7; // 0=Mon … 6=Sun
+
+        // Build this-week and last-week ISO dates for each day Mon–Sun
+        thisData = [];
+        lastData = [];
+        for (let i = 0; i < 7; i++) {
+            const thisDay = new Date(today);
+            thisDay.setDate(today.getDate() - dayOfWeek + i);
+            const lastDay = new Date(thisDay);
+            lastDay.setDate(thisDay.getDate() - 7);
+            thisData.push(sumDates([isoDate(thisDay)]));
+            lastData.push(sumDates([isoDate(lastDay)]));
+        }
+        labels = DAY_NAMES;
+    } else {
+        // Month mode: this month total vs last month total (single pair of bars)
+        const today = new Date();
+        const thisYear  = today.getFullYear();
+        const thisMonth = today.getMonth();
+
+        const thisMonthDates = [];
+        const lastMonthDates = [];
+
+        // This month: 1st to today
+        for (let d = 1; d <= today.getDate(); d++) {
+            thisMonthDates.push(isoDate(new Date(thisYear, thisMonth, d)));
+        }
+        // Last month: same day range (1st to same day-of-month)
+        const lastMonthRef = new Date(thisYear, thisMonth - 1, 1);
+        const lastMonthMax = new Date(thisYear, thisMonth, 0).getDate(); // last day of last month
+        const lastDayBound = Math.min(today.getDate(), lastMonthMax);
+        for (let d = 1; d <= lastDayBound; d++) {
+            lastMonthDates.push(isoDate(new Date(lastMonthRef.getFullYear(), lastMonthRef.getMonth(), d)));
+        }
+
+        const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        labels   = [MONTHS[thisMonth], MONTHS[(thisMonth + 11) % 12]];
+        thisData = [sumDates(thisMonthDates), 0];
+        lastData = [0, sumDates(lastMonthDates)];
+    }
+
+    _dashCompareChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: _dashCompareMode === 'week' ? 'This Week' : 'This Month',
+                    data: thisData,
+                    backgroundColor: 'rgba(99,102,241,0.75)',
+                    borderRadius: 4,
+                    borderSkipped: false,
+                },
+                {
+                    label: _dashCompareMode === 'week' ? 'Last Week' : 'Last Month',
+                    data: lastData,
+                    backgroundColor: 'rgba(99,102,241,0.25)',
+                    borderRadius: 4,
+                    borderSkipped: false,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: { color: '#64748b', font: { size: 8, weight: 'bold' }, boxWidth: 10, padding: 8 },
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${sym}${Math.round(ctx.parsed.y).toLocaleString()}`,
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#64748b', font: { size: 8, weight: 'bold' } },
+                },
+                y: {
+                    grid: { color: 'rgba(255,255,255,0.03)' },
+                    ticks: {
+                        color: '#64748b',
+                        font: { size: 8, weight: 'bold' },
+                        callback: v => sym + Math.round(v).toLocaleString(),
+                    },
+                },
+            },
+        },
+    });
+}
+/* ──── END SPEND COMPARISON CHART ───────────────────────────────────────────────────────── */
 
 function renderRecentActivityList() {
     const container = document.getElementById("recentTransactionsList");

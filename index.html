@@ -579,6 +579,24 @@
                         </div>
                     </div>
 
+                    <!-- Spend Comparison: this week vs last week / this month vs last month -->
+                    <div class="pt-4 border-t border-slate-900">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-[10px] font-extrabold text-slate-300 uppercase tracking-widest flex items-center gap-1.5">
+                                <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-400"></i> Spend Comparison
+                            </h3>
+                            <div class="flex bg-slate-950 p-0.5 rounded-lg border border-slate-850">
+                                <button onclick="setDashCompareMode('week')" id="dashCompareWeekBtn"
+                                    class="px-2.5 py-1 rounded-md text-[9px] font-black transition-all bg-indigo-600 text-white">Week</button>
+                                <button onclick="setDashCompareMode('month')" id="dashCompareMonthBtn"
+                                    class="px-2.5 py-1 rounded-md text-[9px] font-black transition-all text-slate-400 hover:text-white">Month</button>
+                            </div>
+                        </div>
+                        <div class="h-36 w-full">
+                            <canvas id="dashSpendCompareChart"></canvas>
+                        </div>
+                    </div>
+
                     <!-- Category Spend Ratio (stacked bar, mirrors Account Utilization) -->
                     <div class="pt-4 border-t border-slate-900">
                         <h3
