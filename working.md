@@ -1,14 +1,14 @@
 # TReX Working Log
 
 **Last updated:** June 1, 2026
-**Current version:** v4.16
+**Current version:** v4.17
 **Plan:** `TREX_IMPLEMENTATION_PLAN.md` - Feature Implementation Plan
 
 ---
 
 ## Current Item
 
-Phase 2 - Item 11: Trip daily budget breakdown
+Phase 3 - Item 12: Split transactions
 
 ## Status
 
@@ -29,6 +29,9 @@ Phase 2 - Item 11: Trip daily budget breakdown
 - Completed category spend trend in reports. New Trends tab (4th tab) added to reports tab bar. Multi-line Chart.js, one line per category (top 6 by total spend). 3M/6M toggle. Empty state handled. `categoryTrendChartInstance` added to `resizeReportCharts`. `_catTrendPeriod` defaults to 3.
 - Completed goal progress bar + projected date. `calcGoalProjectedDate(goal)` computes average daily contribution rate from contribution history and projects forward from today. Projected date shown inline below the progress bar in each goal card. Color-coded: emerald if on track to beat target date, rose if late, slate if no target set. Hidden when goal is fully funded or has no contributions.
 - Completed trip daily budget breakdown. `renderTripDailyBreakdown(trip)` renders below the stats card in trip detail view. Groups on-trip expenses by day, computes daily budget = total budget / trip days, renders a mini bar per day with actual vs budget. Over-budget days get a rose bar and a "+₹N" badge. Header shows daily budget rate and a count of over-budget days. Empty (no on-trip expenses) renders nothing. Called at end of `renderTripDetailStats`. `<div id="tripDailyBreakdown">` added to index.html between the stats card and the tab bar.
+
+- Corrected implementation-plan numbering after skipped Item 3 caused later headings to drift by one.
+- Completed split transactions. Split mode now validates rows against the total amount, stores parts with shared `splitGroupId`, renders grouped ledger rows, supports split edit, preserves split fields in backup/core migration, and delete now offers part-only vs all-parts choices.
 
 ---
 
@@ -60,7 +63,7 @@ Phase 2 - Item 11: Trip daily budget breakdown
 
 ### Phase 3 - Power Features
 
-[ ] 12. Split transactions
+[x] 12. Split transactions
 [ ] 13. Tag / label system
 [ ] 14. EMI foreclosure calculator
 [ ] 15. Offline conflict queue

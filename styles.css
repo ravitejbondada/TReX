@@ -1287,3 +1287,54 @@
             border-color: rgba(252, 165, 165, 0.6);
             color: #dc2626;
         }
+
+        /* === Split Transactions === */
+        .split-badge {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #fff;
+            background: #6366f1;
+            border-radius: 4px;
+            padding: 1px 6px;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+        .split-group-wrapper {
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+        .split-group-children {
+            display: none;
+        }
+        .split-group-wrapper.split-group-expanded .split-group-children {
+            display: block;
+        }
+        .split-child-row {
+            min-height: 2.25rem;
+        }
+        .split-row-item select.app-dropdown {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 0.5rem;
+            padding: 0.375rem 0.625rem;
+            color: #e2e8f0;
+            font-size: 0.625rem;
+        }
+        html[data-theme="light"] .split-badge {
+            background: #4338ca;
+        }
+        html[data-theme="light"] .split-row-item select.app-dropdown {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+            color: #0f172a;
+        }
+        html[data-theme="light"] .split-group-header {
+            background: #f8fafc;
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+        html[data-theme="light"] .split-group-children {
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+        html[data-theme="light"] .split-child-row {
+            background: rgba(241, 245, 249, 0.8);
+        }

@@ -117,7 +117,7 @@ let ledgerSelectedIds = new Set();
 
 ---
 
-### Item 4 — Filter by amount range in ledger
+### Item 3 — Filter by amount range in ledger
 
 **Goal:** Two number inputs (Min ₹ / Max ₹) in the ledger filter bar.
 
@@ -143,7 +143,7 @@ let ledgerAmountMax = null;
 
 ---
 
-### Item 5 — Running balance in ledger
+### Item 4 — Running balance in ledger
 
 **Goal:** Show a cumulative spend column beside each row in the ledger (oldest → newest running total).
 
@@ -163,7 +163,7 @@ let ledgerAmountMax = null;
 
 ---
 
-### Item 6 — Transaction templates / presets
+### Item 5 — Transaction templates / presets
 
 **Goal:** Save an expense combo (amount + category + payment + note) as a named preset; 1-tap log from the ledger or add-expense screen.
 
@@ -208,7 +208,7 @@ Add `transactionTemplates: []` to the default state in `core.js`, plus backup/im
 
 ---
 
-### Item 7 — Inline edit (amount + note from ledger)
+### Item 6 — Inline edit (amount + note from ledger)
 
 > **Implement only if it can be done elegantly.** Do not force it.
 
@@ -238,7 +238,9 @@ Add `transactionTemplates: []` to the default state in `core.js`, plus backup/im
 
 ## Phase 2 — Analytics & Insights
 
-### Item 8 — Payment method split chart (dashboard)
+### Item 7 — Payment method split chart (dashboard)
+
+**Status:** Skipped by design decision. The existing budget/forecast and reports surfaces cover this need without adding another dashboard chart.
 
 **Goal:** A doughnut / pill chart on the dashboard showing spend by payment method for the current cycle.
 
@@ -259,7 +261,7 @@ Add `transactionTemplates: []` to the default state in `core.js`, plus backup/im
 
 ---
 
-### Item 9 — Weekly/monthly spend comparison on dashboard
+### Item 8 — Weekly/monthly spend comparison on dashboard
 
 **Goal:** A compact bar chart on the dashboard: current week vs last week (or current month vs last month), togglable.
 
@@ -286,7 +288,7 @@ Add `transactionTemplates: []` to the default state in `core.js`, plus backup/im
 
 ---
 
-### Item 10 — Category spend trend (last 3–6 months)
+### Item 9 — Category spend trend (last 3–6 months)
 
 **Goal:** In Reports, a new "Trends" tab showing a line chart per category over 3 or 6 months.
 
@@ -310,7 +312,7 @@ Add `transactionTemplates: []` to the default state in `core.js`, plus backup/im
 
 ---
 
-### Item 11 — Goal target date progress bar with projected completion
+### Item 10 — Goal target date progress bar with projected completion
 
 **Goal:** Each saving goal card shows a progress bar and a projected completion date.
 
@@ -338,7 +340,7 @@ html[data-theme="light"] .goal-progress-bar { background:rgba(0,0,0,0.1); }
 
 ---
 
-### Item 12 — Trip daily budget breakdown
+### Item 11 — Trip daily budget breakdown
 
 **Goal:** In the trip detail view, show a per-day spend breakdown table alongside the daily budget.
 
@@ -358,7 +360,7 @@ html[data-theme="light"] .goal-progress-bar { background:rgba(0,0,0,0.1); }
 
 ## Phase 3 — Power Features
 
-### Item 13 — Split transactions across multiple categories
+### Item 12 — Split transactions across multiple categories
 
 **Goal:** On the add/edit expense form, a "Split" mode lets the user divide one total across multiple category+amount rows.
 
@@ -397,7 +399,7 @@ Add `splitGroupId` and `splitLabel` as optional fields to the transaction shape 
 
 ---
 
-### Item 14 — Tag / label system beyond category
+### Item 13 — Tag / label system beyond category
 
 **Goal:** Any transaction can have one or more free-text tags. Ledger can filter by tag.
 
@@ -445,7 +447,7 @@ state.knownTags = []   // add to default state in core.js
 
 ---
 
-### Item 15 — EMI prepayment / foreclosure calculator
+### Item 14 — EMI prepayment / foreclosure calculator
 
 **Goal:** In the EMI detail view, a "Prepay / Foreclose" button opens a modal that calculates the outstanding principal as of today, applies an optional foreclosure charge %, and lets the user record the settlement as a transaction.
 
@@ -478,7 +480,7 @@ state.knownTags = []   // add to default state in core.js
 
 ---
 
-### Item 16 — Offline-first conflict queue
+### Item 15 — Offline-first conflict queue
 
 **Goal:** When the user edits while offline, queue mutations. On reconnection, flush the queue before the next `pushToDrive()`.
 
@@ -504,7 +506,7 @@ state.knownTags = []   // add to default state in core.js
 
 ## Phase 4 — Low Priority
 
-### Item 17 — High contrast theme
+### Item 16 — High contrast theme
 
 **Goal:** A third theme option (high contrast) togglable in Settings → Appearance.
 
@@ -573,22 +575,22 @@ All new transaction/EMI optional fields must also be preserved by backup export/
 
 ```
 Phase 1
-[ ] 1. Swipe-to-delete
-[ ] 2. Bulk delete / select mode
-[ ] 3. Filter by amount range
-[ ] 4. Running balance
-[ ] 5. Transaction templates / presets
-[ ] 6. Inline edit (amount + note)
+[x] 1. Swipe-to-delete
+[x] 2. Bulk delete / select mode
+[x] 3. Filter by amount range
+[x] 4. Running balance
+[x] 5. Transaction templates / presets
+[x] 6. Inline edit (amount + note)
 
 Phase 2
-[ ] 7.  Payment split chart (dashboard)
-[ ] 8.  Weekly/monthly comparison (dashboard)
-[ ] 9. Category spend trend (reports)
-[ ] 10. Goal progress bar + projected date
-[ ] 11. Trip daily budget breakdown
+[-] 7.  Payment split chart (dashboard) - skipped
+[x] 8.  Weekly/monthly comparison (dashboard)
+[x] 9. Category spend trend (reports)
+[x] 10. Goal progress bar + projected date
+[x] 11. Trip daily budget breakdown
 
 Phase 3
-[ ] 12. Split transactions
+[x] 12. Split transactions
 [ ] 13. Tag / label system
 [ ] 14. EMI foreclosure calculator
 [ ] 15. Offline conflict queue

@@ -16,7 +16,173 @@ let ledgerAmountMin = null;
 let ledgerAmountMax = null;
 let openSwipeRowEl = null;
 
+let _splitMode = false;
+let _splitRowCounter = 0;
+
+function _buildSplitCategoryOptions(selectedId) {
+    const sorted = [...state.categories].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    return sorted.map(c => `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${c.name}</option>`).join('');
+}
+
+function _updateSplitTotal() {
+    const rows = document.querySelectorAll('.split-row-item');
+    let total = 0;
+    rows.forEach(row => {
+        const amt = parseFloat(row.querySelector('.split-row-amount').value) || 0;
+        total += amt;
+    });
+    const display = document.getElementById('splitTotalDisplay');
+    const mainAmtInput = document.getElementById('expenseAmount');
+    const target = mainAmtInput ? parseFloat(mainAmtInput.value) : NaN;
+    if (display) {
+        const totalLabel = `${state.currencySymbol}${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+        const targetLabel = Number.isFinite(target) && target > 0
+            ? `${state.currencySymbol}${target.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+            : "target";
+        display.textContent = `${totalLabel} / ${targetLabel}`;
+        display.classList.toggle('hidden', !_splitMode);
+        display.classList.toggle('text-emerald-300', Number.isFinite(target) && Math.abs(total - target) < 0.01);
+        display.classList.toggle('text-indigo-300', !Number.isFinite(target) || Math.abs(total - target) >= 0.01);
+    }
+}
+
+function validateSplitRows() {
+    const validMsg = document.getElementById('splitValidationMsg');
+    const target = parseFloat(document.getElementById("expenseAmount").value);
+    const rows = [...document.querySelectorAll('.split-row-item')];
+
+    const fail = message => {
+        if (validMsg) {
+            validMsg.textContent = message;
+            validMsg.classList.remove('hidden');
+        }
+        return { valid: false, parts: [], target: 0, total: 0 };
+    };
+
+    if (!Number.isFinite(target) || target <= 0) {
+        return fail("Enter the total amount before saving a split.");
+    }
+    if (rows.length < 2) {
+        return fail("Add at least two split rows.");
+    }
+
+    const parts = rows.map(row => ({
+        catId: row.querySelector('.split-row-cat').value,
+        amount: parseFloat(row.querySelector('.split-row-amount').value)
+    }));
+    if (parts.some(p => !p.catId || isNaN(p.amount) || p.amount <= 0)) {
+        return fail("Every split row needs a category and positive amount.");
+    }
+
+    const total = parts.reduce((sum, part) => sum + part.amount, 0);
+    if (Math.abs(total - target) >= 0.01) {
+        return fail(`Split rows must total ${state.currencySymbol}${target.toLocaleString(undefined, { maximumFractionDigits: 2 })}.`);
+    }
+
+    if (validMsg) validMsg.classList.add('hidden');
+    return { valid: true, parts, target, total };
+}
+
+function addSplitRow(catId, amount) {
+    const list = document.getElementById('splitRowsList');
+    if (!list) return;
+    const rowId = 'srow_' + (++_splitRowCounter);
+    const defaultCatId = catId || (state.categories.length > 0 ? state.categories[0].id : '');
+    const div = document.createElement('div');
+    div.className = 'split-row-item flex items-center gap-2';
+    div.id = rowId;
+    div.innerHTML = `
+        <div class="flex-1 min-w-0">
+            <select class="split-row-cat w-full app-dropdown rounded-lg text-[10px] focus:outline-none"
+                data-picker-skip-wrap="true"
+                onchange="_updateSplitTotal()">
+                ${_buildSplitCategoryOptions(defaultCatId)}
+            </select>
+        </div>
+        <div class="flex items-center gap-1 shrink-0">
+            <span class="text-[10px] text-slate-500 font-bold">${state.currencySymbol}</span>
+            <input type="number" step="any" min="0.01" placeholder="0"
+                class="split-row-amount w-20 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-[10px] text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 text-right"
+                value="${amount || ''}"
+                oninput="_updateSplitTotal()" />
+        </div>
+        <button type="button" onclick="removeSplitRow('${rowId}')"
+            class="p-1 text-slate-600 hover:text-rose-400 transition-all shrink-0">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>`;
+    list.appendChild(div);
+    initLucideIcons(div);
+    wrapAllSelects(div);
+    _updateSplitTotal();
+}
+
+function removeSplitRow(rowId) {
+    const el = document.getElementById(rowId);
+    if (el) el.remove();
+    const rows = document.querySelectorAll('.split-row-item');
+    if (rows.length === 0 && _splitMode) toggleSplitMode();
+    else _updateSplitTotal();
+}
+
+function toggleSplitMode() {
+    _splitMode = !_splitMode;
+    const container = document.getElementById('splitRowsContainer');
+    const btn = document.getElementById('splitModeToggleBtn');
+    const label = document.getElementById('splitModeToggleLabel');
+    const display = document.getElementById('splitTotalDisplay');
+    const amountPanel = document.getElementById('expenseAmount')?.closest('.bg-slate-950');
+    const validMsg = document.getElementById('splitValidationMsg');
+
+    if (_splitMode) {
+        container.classList.remove('hidden');
+        if (amountPanel) amountPanel.classList.remove('hidden');
+        if (label) label.textContent = 'Cancel split';
+        if (btn) btn.classList.add('text-rose-400');
+        if (btn) btn.classList.remove('text-slate-400');
+        if (display) display.classList.remove('hidden');
+        if (validMsg) validMsg.classList.add('hidden');
+        // Pre-populate two rows
+        const list = document.getElementById('splitRowsList');
+        if (list) list.innerHTML = '';
+        _splitRowCounter = 0;
+        addSplitRow();
+        addSplitRow();
+    } else {
+        _splitMode = false;
+        container.classList.add('hidden');
+        if (amountPanel) amountPanel.classList.remove('hidden');
+        if (label) label.textContent = 'Split across categories';
+        if (btn) btn.classList.remove('text-rose-400');
+        if (btn) btn.classList.add('text-slate-400');
+        if (display) display.classList.add('hidden');
+        if (validMsg) validMsg.classList.add('hidden');
+        const list = document.getElementById('splitRowsList');
+        if (list) list.innerHTML = '';
+    }
+}
+
+function _exitSplitMode() {
+    if (!_splitMode) return;
+    _splitMode = false;
+    const container = document.getElementById('splitRowsContainer');
+    const label = document.getElementById('splitModeToggleLabel');
+    const btn = document.getElementById('splitModeToggleBtn');
+    const display = document.getElementById('splitTotalDisplay');
+    const amountPanel = document.getElementById('expenseAmount')?.closest('.bg-slate-950');
+    const validMsg = document.getElementById('splitValidationMsg');
+    if (container) container.classList.add('hidden');
+    if (amountPanel) amountPanel.classList.remove('hidden');
+    if (label) label.textContent = 'Split across categories';
+    if (btn) { btn.classList.remove('text-rose-400'); btn.classList.add('text-slate-400'); }
+    if (display) display.classList.add('hidden');
+    if (validMsg) validMsg.classList.add('hidden');
+    const list = document.getElementById('splitRowsList');
+    if (list) list.innerHTML = '';
+    _splitRowCounter = 0;
+}
+
 function setupExpenseFormForAdd() {
+    _exitSplitMode();
     document.getElementById("expenseFormTitle").textContent = "Record Expense";
     document.getElementById("editExpenseId").value = "";
     document.getElementById("expenseAmount").value = "";
@@ -96,6 +262,47 @@ function loadExpenseToFormForEdit(txId, returnCardId = "") {
     expenseFormReturnCardId = returnCardId || "";
     switchScreen('addExpense');
 
+    // ── Split group edit ─────────────────────────────────────────────────
+    if (tx.splitGroupId) {
+        const parts = state.transactions
+            .filter(t => t.splitGroupId === tx.splitGroupId)
+            .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+
+        document.getElementById("expenseFormTitle").textContent = "Modify Split";
+        document.getElementById("editExpenseId").value = tx.id;
+        document.getElementById("expenseAmount").value = parts.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+        const editDateEl = document.getElementById("expenseDate");
+        editDateEl.value = tx.date;
+        editDateEl.max = getTodayISO();
+        document.getElementById("expenseNote").value = tx.note || "";
+
+        populateExpenseFormDropdowns(tx.paymentId);
+        document.getElementById("expensePayment").value = tx.paymentId;
+
+        // Enter split mode and populate rows from existing parts
+        if (!_splitMode) {
+            const container = document.getElementById('splitRowsContainer');
+            const btn = document.getElementById('splitModeToggleBtn');
+            const label = document.getElementById('splitModeToggleLabel');
+            const display = document.getElementById('splitTotalDisplay');
+            const amountPanel = document.getElementById('expenseAmount')?.closest('.bg-slate-950');
+            _splitMode = true;
+            if (container) container.classList.remove('hidden');
+            if (amountPanel) amountPanel.classList.remove('hidden');
+            if (label) label.textContent = 'Cancel split';
+            if (btn) { btn.classList.add('text-rose-400'); btn.classList.remove('text-slate-400'); }
+            if (display) display.classList.remove('hidden');
+            const list = document.getElementById('splitRowsList');
+            if (list) list.innerHTML = '';
+            _splitRowCounter = 0;
+        }
+        parts.forEach(p => addSplitRow(p.categoryId, p.amount));
+        _updateSplitTotal();
+        return;
+    }
+
+    // ── Normal edit ──────────────────────────────────────────────────────
     document.getElementById("expenseFormTitle").textContent = "Modify Expense";
     document.getElementById("editExpenseId").value = tx.id;
     document.getElementById("expenseAmount").value = tx.amount;
@@ -112,6 +319,74 @@ function loadExpenseToFormForEdit(txId, returnCardId = "") {
 function handleExpenseSubmit(e) {
     e.preventDefault();
 
+    // ── Split mode path ──────────────────────────────────────────────────
+    if (_splitMode) {
+        const payId = expensePaymentLockId || document.getElementById("expensePayment").value;
+        const date  = document.getElementById("expenseDate").value;
+        const note  = document.getElementById("expenseNote").value.trim();
+        const editId = document.getElementById("editExpenseId").value;
+        const splitValidation = validateSplitRows();
+        if (!splitValidation.valid) return;
+        const parts = splitValidation.parts;
+        if (date > getTodayISO()) {
+            showNotification(t("Expense date cannot be in the future.", "TReX cannot hunt in tomorrow yet."));
+            return;
+        }
+
+        // If editing an existing split group, replace all its parts
+        if (editId) {
+            const existingTx = state.transactions.find(t => t.id === editId);
+            const groupId = existingTx && existingTx.splitGroupId ? existingTx.splitGroupId : ('split_' + Date.now());
+            state.transactions = state.transactions.filter(t => t.splitGroupId !== groupId);
+            const now = new Date().toISOString();
+            parts.forEach((p, i) => {
+                const cat = state.categories.find(c => c.id === p.catId) || { name: '' };
+                state.transactions.push({
+                    id: `tx_split_${Date.now()}_${i}`,
+                    amount: p.amount,
+                    categoryId: p.catId,
+                    paymentId: payId,
+                    date, note,
+                    splitGroupId: groupId,
+                    splitLabel: cat.name,
+                    createdAt: now
+                });
+            });
+            showNotification(t("Split transaction updated.", "Split fossil updated."));
+            playSound(S.SYSTEM);
+        } else {
+            const groupId = 'split_' + Date.now();
+            const now = new Date().toISOString();
+            parts.forEach((p, i) => {
+                const cat = state.categories.find(c => c.id === p.catId) || { name: '' };
+                state.transactions.push({
+                    id: `tx_split_${Date.now()}_${i}`,
+                    amount: p.amount,
+                    categoryId: p.catId,
+                    paymentId: payId,
+                    date, note,
+                    splitGroupId: groupId,
+                    splitLabel: cat.name,
+                    createdAt: now
+                });
+            });
+            playSound(S.SAVE);
+            showNotification(t(`Split into ${parts.length} transactions saved.`, `🦖 Devoured in ${parts.length} bites!`));
+        }
+
+        saveStateToLocalStorage();
+        refreshCreditCardViews();
+        const returnCardId = expenseFormReturnCardId;
+        expenseFormReturnCardId = "";
+        _exitSplitMode();
+
+        if (returnCardId) { activeCreditCardId = returnCardId; switchScreen('cards'); }
+        else { switchScreen('dashboard'); }
+        updateAppDashboardView();
+        return;
+    }
+
+    // ── Normal single-transaction path ───────────────────────────────────
     const amount = parseFloat(document.getElementById("expenseAmount").value);
     const catId = document.getElementById("expenseCategory").value;
     const payId = expensePaymentLockId || document.getElementById("expensePayment").value;
@@ -474,7 +749,7 @@ function toggleLedgerSelectMode(force) {
 
 function toggleLedgerRowSelect(txId) {
     const tx = state.transactions.find(t => t.id === txId);
-    if (!tx || tx.tripRef) return;
+    if (!tx || tx.tripRef || tx.splitGroupId) return;
     if (ledgerSelectedIds.has(txId)) {
         ledgerSelectedIds.delete(txId);
     } else {
@@ -705,7 +980,89 @@ function filterHistory() {
         return;
     }
 
+    // Separate split groups from normal transactions
+    const renderedSplitGroups = new Set();
+
     items.forEach(t => {
+        // Split group: render once as a parent+children block
+        if (t.splitGroupId) {
+            if (renderedSplitGroups.has(t.splitGroupId)) return;
+            renderedSplitGroups.add(t.splitGroupId);
+
+            // Collect ALL members of this group from filtered items
+            const groupParts = items.filter(tx => tx.splitGroupId === t.splitGroupId)
+                .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+            const groupTotal = groupParts.reduce((s, tx) => s + tx.amount, 0);
+            const pay = state.payments.find(p => p.id === t.paymentId) || { name: "Cash" };
+            const dateStr = formatDateReadable(new Date(t.date), { year: '2-digit' });
+
+            const groupWrapper = document.createElement("div");
+            groupWrapper.className = "split-group-wrapper";
+            groupWrapper.id = `split-group-${t.splitGroupId}`;
+
+            // Parent row
+            const parentRow = document.createElement("div");
+            parentRow.className = "split-group-header bg-slate-900 border border-indigo-500/20 rounded-t-2xl px-3 py-3 flex justify-between items-center gap-2 cursor-pointer active:scale-95 transition-all";
+            parentRow.onclick = () => groupWrapper.classList.toggle('split-group-expanded');
+            parentRow.innerHTML = `
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    <span class="split-badge shrink-0">Split</span>
+                    <div class="min-w-0 flex-1">
+                        <span class="text-[11px] font-bold text-slate-200 truncate block">${t.note || 'Split Transaction'}</span>
+                        <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                            <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 shrink-0">
+                                <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="14" height="10" rx="2"/><path d="M1 7h14"/><path d="M5 1v3M11 1v3"/></svg>
+                                <span>${pay.name}</span>
+                            </span>
+                            <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-950 text-slate-500 shrink-0">
+                                <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="2" width="14" height="13" rx="2"/><path d="M1 6h14"/><path d="M5 1v2M11 1v2"/></svg>
+                                ${dateStr}
+                            </span>
+                            <span class="text-[8px] text-slate-600">${groupParts.length} parts</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col items-end gap-1 shrink-0">
+                    <span class="text-xs font-black text-indigo-300">${state.currencySymbol}${groupTotal.toLocaleString()}</span>
+                    <span class="running-balance">Spent ${state.currencySymbol}${(runningById.get(t.id) || groupTotal).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                    <div class="flex items-center gap-1">
+                        <button onclick="event.stopPropagation(); loadExpenseToFormForEdit('${t.id}')" class="p-1 text-slate-600 hover:text-indigo-400 rounded hover:bg-slate-950 transition-all" title="Edit split">
+                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button onclick="event.stopPropagation(); deleteTransaction('${t.id}')" class="p-1 text-slate-600 hover:text-rose-400 rounded hover:bg-slate-950 transition-all" title="Delete split">
+                            <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>`;
+            groupWrapper.appendChild(parentRow);
+
+            // Child rows container (collapsed by default)
+            const childrenContainer = document.createElement("div");
+            childrenContainer.className = "split-group-children border-l border-r border-b border-indigo-500/20 rounded-b-2xl overflow-hidden";
+            groupParts.forEach((part, idx) => {
+                const cat = state.categories.find(c => c.id === part.categoryId) || { name: "Other", color: "#64748b" };
+                const isLast = idx === groupParts.length - 1;
+                const child = document.createElement("div");
+                child.id = `tx-row-${part.id}`;
+                child.className = `split-child-row flex items-center justify-between gap-2 px-3 py-2.5 bg-slate-950/60 ${isLast ? '' : 'border-b border-slate-800/50'}`;
+                child.innerHTML = `
+                    <div class="flex items-center gap-2 min-w-0 flex-1">
+                        <span class="w-0.5 self-stretch rounded-full shrink-0" style="background-color:${cat.color}"></span>
+                        <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md shrink-0" style="background-color:${cat.color}22;color:${cat.color}">
+                            <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color:${cat.color}"></span>
+                            <span class="truncate max-w-[80px]">${cat.name}</span>
+                        </span>
+                        <span class="text-[10px] text-slate-500 truncate">${part.note || part.splitLabel || ''}</span>
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-300 shrink-0">${state.currencySymbol}${part.amount.toLocaleString()}</span>`;
+                childrenContainer.appendChild(child);
+            });
+            groupWrapper.appendChild(childrenContainer);
+            container.appendChild(groupWrapper);
+            return;
+        }
+
+        // Normal transaction rendering
         const cat = state.categories.find(c => c.id === t.categoryId) || { name: "Other", color: "#64748b" };
         const pay = state.payments.find(p => p.id === t.paymentId) || { name: "Cash" };
         const dateStr = formatDateReadable(new Date(t.date), { year: '2-digit' });
@@ -966,9 +1323,96 @@ function _refreshRunningBalances() {
     });
 }
 
+function chooseSplitDeleteScope(tx, groupParts, total) {
+    return new Promise(resolve => {
+        const old = document.getElementById("splitDeleteChoiceModal");
+        if (old) old.remove();
+
+        const div = document.createElement("div");
+        div.id = "splitDeleteChoiceModal";
+        div.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[125] flex items-center justify-center p-4";
+        div.innerHTML = `
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 max-w-xs w-full shadow-2xl space-y-4">
+                <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
+                        <i data-lucide="split" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-extrabold text-white uppercase tracking-wider">Delete split?</h3>
+                        <p class="text-[10px] text-slate-400 leading-relaxed mt-1">
+                            This split has ${groupParts.length} parts totaling ${state.currencySymbol}${total.toLocaleString()}.
+                        </p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 gap-2">
+                    <button type="button" id="splitDeletePartBtn"
+                        class="w-full bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-bold py-2.5 rounded-xl text-xs active:scale-95">
+                        Delete This Part Only
+                    </button>
+                    <button type="button" id="splitDeleteAllBtn"
+                        class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-xs active:scale-95">
+                        Delete All Parts
+                    </button>
+                    <button type="button" id="splitDeleteCancelBtn"
+                        class="w-full text-slate-500 font-bold py-2 rounded-xl text-xs active:scale-95">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        `;
+
+        const cleanup = value => {
+            div.remove();
+            resolve(value);
+        };
+
+        document.body.appendChild(div);
+        document.getElementById("splitDeletePartBtn").onclick = () => cleanup("part");
+        document.getElementById("splitDeleteAllBtn").onclick = () => cleanup("all");
+        document.getElementById("splitDeleteCancelBtn").onclick = () => cleanup(null);
+        initLucideIcons(div);
+    });
+}
+
 async function deleteTransaction(id) {
     const tx = state.transactions.find(t => t.id === id);
     if (tx && tx.tripRef) { showNotification(t("Edit this expense inside the Trip.", "This fossil belongs to a trip. Edit it there.")); return; }
+
+    if (tx && tx.splitGroupId) {
+        const groupParts = state.transactions.filter(t => t.splitGroupId === tx.splitGroupId);
+        const total = groupParts.reduce((s, t) => s + t.amount, 0);
+        const scope = await chooseSplitDeleteScope(tx, groupParts, total);
+        if (!scope) return;
+
+        const rowEls = (scope === "all" ? groupParts : [tx])
+            .map(t => document.getElementById(`tx-row-${t.id}`))
+            .filter(Boolean);
+        if (dp('dinoMode') && rowEls.length) {
+            rowEls.forEach(r => r.classList.add('going-extinct'));
+            await new Promise(r => setTimeout(r, 380));
+        }
+
+        if (scope === "all") {
+            state.transactions = state.transactions.filter(t => t.splitGroupId !== tx.splitGroupId);
+            showNotification(t("Split transaction deleted.", "🦴 Split fossils gone extinct."));
+        } else {
+            state.transactions = state.transactions.filter(t => t.id !== tx.id);
+            const remaining = state.transactions.filter(t => t.splitGroupId === tx.splitGroupId);
+            if (remaining.length === 1) {
+                remaining[0].splitGroupId = null;
+                remaining[0].splitLabel = null;
+            }
+            showNotification(t("Split part deleted.", "🦴 Split fossil gone extinct."));
+        }
+
+        saveStateToLocalStorage();
+        playSound(S.DELETE);
+        filterHistory();
+        refreshCreditCardViews();
+        updateAppDashboardView();
+        return;
+    }
+
     const label = tx ? (tx.note ? `"${tx.note}"` : `₹${tx.amount}`) : "this transaction";
     if (!await customConfirm(t(`Delete ${label}? This cannot be undone.`, `Send ${label} extinct? This cannot be undone.`), t("Delete this?", "Send it extinct?"), t("Delete", "Extinct it"))) return;
 

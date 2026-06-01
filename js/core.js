@@ -205,6 +205,8 @@ window.onload = function () {
         if (tx.tripId === undefined) tx.tripId = null;
         if (tx.tripType === undefined) tx.tripType = null;
         if (tx.tripRef === undefined) tx.tripRef = false;
+        if (tx.splitGroupId === undefined) tx.splitGroupId = null;
+        if (tx.splitLabel === undefined) tx.splitLabel = null;
     });
     state.payments.forEach(pay => {
         if (pay.billingDay === undefined) pay.billingDay = null;

@@ -71,7 +71,9 @@ function normalizeImportedState(raw) {
                 recurringId: t.recurringId || "",
                 tripId:   t.tripId   || null,
                 tripType: t.tripType || null,
-                tripRef:  !!t.tripRef
+                tripRef:  !!t.tripRef,
+                splitGroupId: t.splitGroupId || null,
+                splitLabel:   t.splitLabel   || null
             }))
             : [],
         transactionTemplates: Array.isArray(src.transactionTemplates)
@@ -161,6 +163,8 @@ function applyFullStateRestore(importedRaw) {
         if (tx.tripId    === undefined) tx.tripId    = null;
         if (tx.tripType  === undefined) tx.tripType  = null;
         if (tx.tripRef   === undefined) tx.tripRef   = false;
+        if (tx.splitGroupId === undefined) tx.splitGroupId = null;
+        if (tx.splitLabel   === undefined) tx.splitLabel   = null;
     });
     if (state.creditCardsEnabled) {
         backfillMissingCreditCardBillingDays();
@@ -327,7 +331,9 @@ function buildStateFromCSVSections(sections) {
             date: row.date,
             note: row.note,
             isRecurring: row.isRecurring === "true",
-            recurringId: row.recurringId || ""
+            recurringId: row.recurringId || "",
+            splitGroupId: row.splitGroupId || null,
+            splitLabel:   row.splitLabel   || null
         });
     });
 
@@ -424,11 +430,12 @@ function exportDataToCSV() {
     csv += "\n";
 
     csv += "[TRANSACTIONS]\n";
-    csv += csvRow(["id", "amount", "categoryId", "paymentId", "date", "note", "isRecurring", "recurringId"]);
+    csv += csvRow(["id", "amount", "categoryId", "paymentId", "date", "note", "isRecurring", "recurringId", "splitGroupId", "splitLabel"]);
     state.transactions.forEach(t => {
         csv += csvRow([
             t.id, t.amount, t.categoryId, t.paymentId, t.date, t.note || "",
-            t.isRecurring ? "true" : "false", t.recurringId || ""
+            t.isRecurring ? "true" : "false", t.recurringId || "",
+            t.splitGroupId || "", t.splitLabel || ""
         ]);
     });
     csv += "\n";
