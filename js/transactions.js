@@ -126,6 +126,55 @@ function _renderTxTagChips(tags, extraClass = "") {
     return `<div class="tx-tag-row ${extraClass}">${clean.map(tag => `<span class="tx-tag-chip">#${_escapeHtml(tag)}</span>`).join("")}</div>`;
 }
 
+function _getCategory(catId) {
+    return state.categories.find(c => c.id === catId) || { name: "Other", color: "#64748b" };
+}
+
+function _renderCategoryPills(catIds, max = 3) {
+    const unique = Array.from(new Set((catIds || []).filter(Boolean)));
+    const visible = unique.slice(0, max);
+    const extra = unique.length - visible.length;
+    return `
+        <div class="flex items-center gap-1.5 flex-wrap">
+            ${visible.map(id => {
+                const cat = _getCategory(id);
+                return `<span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md shrink-0" style="background-color:${cat.color}22; color:${cat.color}">
+                    <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color:${cat.color}"></span>
+                    <span class="truncate max-w-[72px]">${_escapeHtml(cat.name)}</span>
+                </span>`;
+            }).join("")}
+            ${extra > 0 ? `<span class="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-500">+${extra}</span>` : ""}
+        </div>`;
+}
+
+function _splitStripeStyle(groupParts) {
+    const colors = Array.from(new Set((groupParts || []).map(p => _getCategory(p.categoryId).color))).slice(0, 3);
+    if (colors.length === 0) return "background-color:#64748b";
+    if (colors.length === 1) return `background-color:${colors[0]}`;
+    const stop = 100 / colors.length;
+    const segments = colors.map((color, i) => `${color} ${Math.round(i * stop)}%, ${color} ${Math.round((i + 1) * stop)}%`);
+    return `background:linear-gradient(to bottom, ${segments.join(",")})`;
+}
+
+function _setSplitModeUI(isSplit) {
+    const container = document.getElementById('splitRowsContainer');
+    const toggle = document.getElementById('splitModeToggleBtn');
+    const display = document.getElementById('splitTotalDisplay');
+    const categorySelect = document.getElementById('expenseCategory');
+    const validMsg = document.getElementById('splitValidationMsg');
+    _splitMode = !!isSplit;
+    if (toggle && toggle.checked !== _splitMode) toggle.checked = _splitMode;
+    if (container) container.classList.toggle('hidden', !_splitMode);
+    if (categorySelect) {
+        const categoryWrap = categorySelect.closest('.select-wrap');
+        if (categoryWrap) categoryWrap.classList.toggle('hidden', _splitMode);
+        categorySelect.classList.toggle('hidden', _splitMode);
+        categorySelect.required = !_splitMode;
+    }
+    if (display) display.classList.toggle('hidden', !_splitMode);
+    if (validMsg) validMsg.classList.add('hidden');
+}
+
 function _buildSplitCategoryOptions(selectedId) {
     const sorted = [...state.categories].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     return sorted.map(c => `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${c.name}</option>`).join('');
@@ -180,6 +229,10 @@ function validateSplitRows() {
     if (parts.some(p => !p.catId || isNaN(p.amount) || p.amount <= 0)) {
         return fail("Every split row needs a category and positive amount.");
     }
+    const uniqueCats = new Set(parts.map(p => p.catId));
+    if (uniqueCats.size !== parts.length) {
+        return fail("Each split row needs a different category. Merge duplicate categories first.");
+    }
 
     const total = parts.reduce((sum, part) => sum + part.amount, 0);
     if (Math.abs(total - target) >= 0.01) {
@@ -231,38 +284,17 @@ function removeSplitRow(rowId) {
     else _updateSplitTotal();
 }
 
-function toggleSplitMode() {
-    _splitMode = !_splitMode;
-    const container = document.getElementById('splitRowsContainer');
-    const btn = document.getElementById('splitModeToggleBtn');
-    const label = document.getElementById('splitModeToggleLabel');
-    const display = document.getElementById('splitTotalDisplay');
-    const amountPanel = document.getElementById('expenseAmount')?.closest('.bg-slate-950');
-    const validMsg = document.getElementById('splitValidationMsg');
+function toggleSplitMode(force) {
+    const next = typeof force === "boolean" ? force : !_splitMode;
+    _setSplitModeUI(next);
 
     if (_splitMode) {
-        container.classList.remove('hidden');
-        if (amountPanel) amountPanel.classList.remove('hidden');
-        if (label) label.textContent = 'Cancel split';
-        if (btn) btn.classList.add('text-rose-400');
-        if (btn) btn.classList.remove('text-slate-400');
-        if (display) display.classList.remove('hidden');
-        if (validMsg) validMsg.classList.add('hidden');
-        // Pre-populate two rows
         const list = document.getElementById('splitRowsList');
         if (list) list.innerHTML = '';
         _splitRowCounter = 0;
         addSplitRow();
         addSplitRow();
     } else {
-        _splitMode = false;
-        container.classList.add('hidden');
-        if (amountPanel) amountPanel.classList.remove('hidden');
-        if (label) label.textContent = 'Split across categories';
-        if (btn) btn.classList.remove('text-rose-400');
-        if (btn) btn.classList.add('text-slate-400');
-        if (display) display.classList.add('hidden');
-        if (validMsg) validMsg.classList.add('hidden');
         const list = document.getElementById('splitRowsList');
         if (list) list.innerHTML = '';
     }
@@ -270,19 +302,7 @@ function toggleSplitMode() {
 
 function _exitSplitMode() {
     if (!_splitMode) return;
-    _splitMode = false;
-    const container = document.getElementById('splitRowsContainer');
-    const label = document.getElementById('splitModeToggleLabel');
-    const btn = document.getElementById('splitModeToggleBtn');
-    const display = document.getElementById('splitTotalDisplay');
-    const amountPanel = document.getElementById('expenseAmount')?.closest('.bg-slate-950');
-    const validMsg = document.getElementById('splitValidationMsg');
-    if (container) container.classList.add('hidden');
-    if (amountPanel) amountPanel.classList.remove('hidden');
-    if (label) label.textContent = 'Split across categories';
-    if (btn) { btn.classList.remove('text-rose-400'); btn.classList.add('text-slate-400'); }
-    if (display) display.classList.add('hidden');
-    if (validMsg) validMsg.classList.add('hidden');
+    _setSplitModeUI(false);
     const list = document.getElementById('splitRowsList');
     if (list) list.innerHTML = '';
     _splitRowCounter = 0;
@@ -389,23 +409,10 @@ function loadExpenseToFormForEdit(txId, returnCardId = "") {
         populateExpenseFormDropdowns(tx.paymentId);
         document.getElementById("expensePayment").value = tx.paymentId;
 
-        // Enter split mode and populate rows from existing parts
-        if (!_splitMode) {
-            const container = document.getElementById('splitRowsContainer');
-            const btn = document.getElementById('splitModeToggleBtn');
-            const label = document.getElementById('splitModeToggleLabel');
-            const display = document.getElementById('splitTotalDisplay');
-            const amountPanel = document.getElementById('expenseAmount')?.closest('.bg-slate-950');
-            _splitMode = true;
-            if (container) container.classList.remove('hidden');
-            if (amountPanel) amountPanel.classList.remove('hidden');
-            if (label) label.textContent = 'Cancel split';
-            if (btn) { btn.classList.add('text-rose-400'); btn.classList.remove('text-slate-400'); }
-            if (display) display.classList.remove('hidden');
-            const list = document.getElementById('splitRowsList');
-            if (list) list.innerHTML = '';
-            _splitRowCounter = 0;
-        }
+        _setSplitModeUI(true);
+        const list = document.getElementById('splitRowsList');
+        if (list) list.innerHTML = '';
+        _splitRowCounter = 0;
         parts.forEach(p => addSplitRow(p.categoryId, p.amount));
         _updateSplitTotal();
         return;
@@ -1085,6 +1092,13 @@ function filterHistory() {
 
     const runningById = new Map();
     let runningTotal = 0;
+    const runningSplitGroups = new Set();
+    const allSplitTotals = new Map();
+    state.transactions.forEach(tx => {
+        if (tx.splitGroupId) {
+            allSplitTotals.set(tx.splitGroupId, (allSplitTotals.get(tx.splitGroupId) || 0) + Number(tx.amount || 0));
+        }
+    });
     [...items].sort((a, b) => {
         const da = new Date(a.date || a.createdAt || 0).getTime();
         const db = new Date(b.date || b.createdAt || 0).getTime();
@@ -1093,15 +1107,29 @@ function filterHistory() {
         const cb = new Date(b.createdAt || b.date || 0).getTime();
         return ca - cb;
     }).forEach(tx => {
-        runningTotal += Number(tx.amount || 0);
+        if (tx.splitGroupId) {
+            if (runningSplitGroups.has(tx.splitGroupId)) {
+                runningById.set(tx.id, runningTotal);
+                return;
+            }
+            runningSplitGroups.add(tx.splitGroupId);
+            runningTotal += Number(allSplitTotals.get(tx.splitGroupId) || tx.amount || 0);
+        } else {
+            runningTotal += Number(tx.amount || 0);
+        }
         runningById.set(tx.id, runningTotal);
+        if (tx.splitGroupId) runningById.set(tx.splitGroupId, runningTotal);
     });
 
     // Update summary bar
     const total = items.reduce((s, t) => s + t.amount, 0);
+    const visibleCount = items.reduce((acc, tx, idx, arr) => {
+        if (!tx.splitGroupId) return acc + 1;
+        return arr.findIndex(p => p.splitGroupId === tx.splitGroupId) === idx ? acc + 1 : acc;
+    }, 0);
     const countEl = document.getElementById("ledgerTxCount");
     const totalEl = document.getElementById("ledgerPeriodTotal");
-    if (countEl) countEl.textContent = `${items.length} transaction${items.length !== 1 ? "s" : ""}`;
+    if (countEl) countEl.textContent = `${visibleCount} transaction${visibleCount !== 1 ? "s" : ""}`;
     if (totalEl) totalEl.textContent  = items.length ? `${state.currencySymbol}${total.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` : "—";
     syncLedgerBulkBar();
 
@@ -1126,42 +1154,52 @@ function filterHistory() {
             const groupTags = Array.from(new Set(groupParts.flatMap(tx => Array.isArray(tx.tags) ? tx.tags : []).map(normalizeTag).filter(Boolean)));
             const pay = state.payments.find(p => p.id === t.paymentId) || { name: "Cash" };
             const dateStr = formatDateReadable(new Date(t.date), { year: '2-digit' });
+            const categoryRow = _renderCategoryPills(groupParts.map(p => p.categoryId), 3);
+            const splitBadge = `<span class="text-[8px] px-1.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 font-bold uppercase shrink-0">Split</span>`;
 
             const groupWrapper = document.createElement("div");
-            groupWrapper.className = "split-group-wrapper";
+            groupWrapper.className = "split-group-wrapper swipe-row-wrapper";
             groupWrapper.id = `split-group-${t.splitGroupId}`;
 
             // Parent row
             const parentRow = document.createElement("div");
-            parentRow.className = "split-group-header bg-slate-900 border border-indigo-500/20 rounded-t-2xl px-3 py-3 flex justify-between items-center gap-2 cursor-pointer active:scale-95 transition-all";
-            parentRow.onclick = () => groupWrapper.classList.toggle('split-group-expanded');
+            parentRow.id = `tx-group-row-${t.splitGroupId}`;
+            parentRow.className = "split-group-header tx-row bg-slate-900 border border-slate-850 rounded-2xl px-3 py-3 flex justify-between items-stretch gap-2 cursor-pointer active:scale-95 transition-all";
+            parentRow.onclick = event => {
+                if (event.target.closest("button")) return;
+                groupWrapper.classList.toggle('split-group-expanded');
+            };
             parentRow.innerHTML = `
-                <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                    <span class="split-badge shrink-0">Split</span>
-                    <div class="min-w-0 flex-1">
-                        <span class="text-[11px] font-bold text-slate-200 truncate block">${t.note || 'Split Transaction'}</span>
-                        <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
-                            <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 shrink-0">
-                                <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="14" height="10" rx="2"/><path d="M1 7h14"/><path d="M5 1v3M11 1v3"/></svg>
-                                <span>${pay.name}</span>
-                            </span>
+                <div class="flex items-stretch gap-2.5 min-w-0 flex-1">
+                    <span class="w-1 self-stretch rounded-full shrink-0" style="${_splitStripeStyle(groupParts)}"></span>
+                    <div class="min-w-0 flex-1 space-y-1 py-0.5">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <span class="text-[11px] font-bold text-slate-200 truncate">${_escapeHtml(t.note || 'Split Transaction')}</span>
+                            ${splitBadge}
+                        </div>
+                        <div class="flex items-center gap-1.5 flex-wrap">
                             <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-950 text-slate-500 shrink-0">
                                 <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="2" width="14" height="13" rx="2"/><path d="M1 6h14"/><path d="M5 1v2M11 1v2"/></svg>
                                 ${dateStr}
                             </span>
+                            <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 shrink-0">
+                                <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="14" height="10" rx="2"/><path d="M1 7h14"/><path d="M5 1v3M11 1v3"/></svg>
+                                <span>${_escapeHtml(pay.name)}</span>
+                            </span>
                             <span class="text-[8px] text-slate-600">${groupParts.length} parts</span>
                         </div>
+                        ${categoryRow}
                         ${_renderTxTagChips(groupTags)}
                     </div>
                 </div>
                 <div class="flex flex-col items-end gap-1 shrink-0">
                     <span class="text-xs font-black text-indigo-300">${state.currencySymbol}${groupTotal.toLocaleString()}</span>
-                    <span class="running-balance">Spent ${state.currencySymbol}${(runningById.get(t.id) || groupTotal).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                    <span class="running-balance">Spent ${state.currencySymbol}${(runningById.get(t.splitGroupId) || groupTotal).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                     <div class="flex items-center gap-1">
-                        <button onclick="event.stopPropagation(); loadExpenseToFormForEdit('${t.id}')" class="p-1 text-slate-600 hover:text-indigo-400 rounded hover:bg-slate-950 transition-all" title="Edit split">
+                        <button type="button" onclick="event.stopPropagation(); loadExpenseToFormForEdit('${t.id}')" class="p-1 text-slate-600 hover:text-indigo-400 rounded hover:bg-slate-950 transition-all" title="Edit split">
                             <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                         </button>
-                        <button onclick="event.stopPropagation(); deleteTransaction('${t.id}')" class="p-1 text-slate-600 hover:text-rose-400 rounded hover:bg-slate-950 transition-all" title="Delete split">
+                        <button type="button" onclick="event.stopPropagation(); deleteTransaction('${t.id}')" class="p-1 text-slate-600 hover:text-rose-400 rounded hover:bg-slate-950 transition-all" title="Delete split">
                             <i data-lucide="trash" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
@@ -1170,7 +1208,7 @@ function filterHistory() {
 
             // Child rows container (collapsed by default)
             const childrenContainer = document.createElement("div");
-            childrenContainer.className = "split-group-children border-l border-r border-b border-indigo-500/20 rounded-b-2xl overflow-hidden";
+            childrenContainer.className = "split-group-children border-l border-r border-b border-slate-850 rounded-b-2xl overflow-hidden";
             groupParts.forEach((part, idx) => {
                 const cat = state.categories.find(c => c.id === part.categoryId) || { name: "Other", color: "#64748b" };
                 const isLast = idx === groupParts.length - 1;
@@ -1195,7 +1233,7 @@ function filterHistory() {
         }
 
         // Normal transaction rendering
-        const cat = state.categories.find(c => c.id === t.categoryId) || { name: "Other", color: "#64748b" };
+        const cat = _getCategory(t.categoryId);
         const pay = state.payments.find(p => p.id === t.paymentId) || { name: "Cash" };
         const dateStr = formatDateReadable(new Date(t.date), { year: '2-digit' });
         const recurringBadge = (t.source === "recurring" || t.isRecurring)
@@ -1234,7 +1272,7 @@ function filterHistory() {
                 : `<span class="text-[8px] font-bold uppercase tracking-wide text-slate-600">Select</span>`)
             : (t.tripRef
             ? `<span class="p-1 text-slate-700" title="Managed via Trip"><i data-lucide="lock" class="w-3.5 h-3.5"></i></span>`
-            : `<button onclick="loadExpenseToFormForEdit('${t.id}')" class="p-1 text-slate-600 hover:text-indigo-400 rounded hover:bg-slate-950 transition-all" title="Edit">
+            : `<button onclick="event.stopPropagation(); loadExpenseToFormForEdit('${t.id}')" class="p-1 text-slate-600 hover:text-indigo-400 rounded hover:bg-slate-950 transition-all" title="Edit">
                         <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                     </button>
                     <button onclick="event.stopPropagation(); deleteTransaction('${t.id}')" class="p-1 text-slate-600 hover:text-rose-400 rounded hover:bg-slate-950 transition-all" title="Delete">
@@ -1271,21 +1309,16 @@ function filterHistory() {
                         ${tripBadge}
                     </div>
                     <div class="flex items-center gap-1.5 flex-wrap">
-                        <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md shrink-0" style="background-color:${cat.color}22; color:${cat.color}">
-                            <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color:${cat.color}"></span>
-                            <span class="truncate max-w-[72px]">${cat.name}</span>
-                        </span>
-                        <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 shrink-0">
-                            <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="14" height="10" rx="2"/><path d="M1 7h14"/><path d="M5 1v3M11 1v3"/></svg>
-                            <span class="truncate max-w-[72px]">${pay.name}</span>
-                        </span>
-                    </div>
-                    <div class="flex items-center">
                         <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-950 text-slate-500 shrink-0">
                             <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="2" width="14" height="13" rx="2"/><path d="M1 6h14"/><path d="M5 1v2M11 1v2"/></svg>
                             ${dateStr}
                         </span>
+                        <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 shrink-0">
+                            <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="14" height="10" rx="2"/><path d="M1 7h14"/><path d="M5 1v3M11 1v3"/></svg>
+                            <span class="truncate max-w-[72px]">${_escapeHtml(pay.name)}</span>
+                        </span>
                     </div>
+                    ${_renderCategoryPills([t.categoryId], 1)}
                     ${tagChips}
                 </div>
             </div>

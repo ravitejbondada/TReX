@@ -1356,17 +1356,46 @@ function renderRecentActivityList() {
         const tb = b.createdAt ? new Date(b.createdAt) : new Date(b.date);
         return tb - ta;
     });
-    const limit = sorted.slice(0, 4);
+    const seenSplitGroups = new Set();
+    const visibleItems = [];
+    sorted.forEach(tx => {
+        if (!tx.splitGroupId) {
+            visibleItems.push({ type: "tx", tx, amount: Number(tx.amount || 0), parts: [tx] });
+            return;
+        }
+        if (seenSplitGroups.has(tx.splitGroupId)) return;
+        seenSplitGroups.add(tx.splitGroupId);
+        const parts = state.transactions
+            .filter(part => part.splitGroupId === tx.splitGroupId)
+            .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+        visibleItems.push({
+            type: "split",
+            tx,
+            parts,
+            amount: parts.reduce((sum, part) => sum + Number(part.amount || 0), 0)
+        });
+    });
+    const limit = visibleItems.slice(0, 4);
 
     if (limit.length === 0) {
         container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4 bg-slate-900/20 rounded-xl border border-slate-850">${t('Tap "+ Add Expense" to begin tracking.', 'Tap "+ Add Expense" to feed TReX its first fossil.')}</p>`;
         return;
     }
 
-    limit.forEach(tx => {
+    limit.forEach(item => {
+        const tx = item.tx;
         const cat = state.categories.find(c => c.id === tx.categoryId) || { name: "Other", color: "#64748b" };
         const pay = state.payments.find(p => p.id === tx.paymentId) || { name: "Cash" };
         const dateText = formatDateReadable(new Date(tx.date), { year: '2-digit' });
+        const splitCats = item.type === "split"
+            ? Array.from(new Set(item.parts.map(p => p.categoryId))).slice(0, 3).map(id => state.categories.find(c => c.id === id)).filter(Boolean)
+            : [cat];
+        const stripeStyle = item.type === "split" && typeof _splitStripeStyle === "function"
+            ? _splitStripeStyle(item.parts)
+            : `background-color: ${cat.color}`;
+        const badge = item.type === "split"
+            ? `<span class="text-[8px] px-1.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 font-bold uppercase shrink-0">Split</span>`
+            : "";
 
         const card = document.createElement("div");
         card.className = "bg-slate-900/60 hover:bg-slate-850 border border-slate-900 rounded-2xl px-3 py-3 flex justify-between items-stretch gap-2 transition-all cursor-pointer active:scale-[0.99]";
@@ -1374,14 +1403,13 @@ function renderRecentActivityList() {
 
         card.innerHTML = `
             <div class="flex items-stretch gap-2.5 min-w-0 flex-1">
-                <span class="w-1 self-stretch rounded-full shrink-0" style="background-color: ${cat.color}"></span>
+                <span class="w-1 self-stretch rounded-full shrink-0" style="${stripeStyle}"></span>
                 <div class="min-w-0 flex-1 space-y-1 py-0.5">
-                    <span class="text-[11px] font-bold text-slate-100 block truncate">${tx.note || cat.name}</span>
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="text-[11px] font-bold text-slate-100 block truncate">${tx.note || (item.type === "split" ? "Split Transaction" : cat.name)}</span>
+                        ${badge}
+                    </div>
                     <div class="flex items-center gap-1.5 flex-wrap">
-                        <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md shrink-0" style="background-color:${cat.color}22; color:${cat.color}">
-                            <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color:${cat.color}"></span>
-                            <span class="truncate max-w-[68px]">${cat.name}</span>
-                        </span>
                         <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 shrink-0">
                             <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="14" height="10" rx="2"/><path d="M1 7h14"/><path d="M5 1v3M11 1v3"/></svg>
                             <span class="truncate max-w-[68px]">${pay.name}</span>
@@ -1391,9 +1419,16 @@ function renderRecentActivityList() {
                             ${dateText}
                         </span>
                     </div>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        ${splitCats.map(c => `<span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md shrink-0" style="background-color:${c.color}22; color:${c.color}">
+                            <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color:${c.color}"></span>
+                            <span class="truncate max-w-[68px]">${c.name}</span>
+                        </span>`).join("")}
+                        ${item.type === "split" && new Set(item.parts.map(p => p.categoryId)).size > 3 ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-500">+</span>` : ""}
+                    </div>
                 </div>
             </div>
-            <span class="text-xs font-black text-indigo-300 shrink-0 ml-1 self-center">${state.currencySymbol}${tx.amount.toLocaleString()}</span>
+            <span class="text-xs font-black text-indigo-300 shrink-0 ml-1 self-center">${state.currencySymbol}${item.amount.toLocaleString()}</span>
         `;
         container.appendChild(card);
     });

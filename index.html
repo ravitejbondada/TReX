@@ -697,17 +697,36 @@
                     </div>
 
                     <!-- Dropdown Select Category with Quick Add option -->
-                    <div class="space-y-2">
+                    <div id="expenseCategoryBlock" class="space-y-2">
                         <div class="flex justify-between items-center">
                             <label class="text-[10px] uppercase tracking-widest font-extrabold text-slate-400">Category
                                 Tag</label>
-                            <button type="button" onclick="openInlineCategoryModal()"
-                                class="text-[10px] text-indigo-400 font-bold flex items-center gap-1 hover:underline">
-                                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add New
-                            </button>
+                            <div class="flex items-center gap-2.5">
+                                <button type="button" onclick="openInlineCategoryModal()"
+                                    class="text-[10px] text-indigo-400 font-bold flex items-center gap-1 hover:underline">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add New
+                                </button>
+                                <label class="split-toggle-wrap" title="Split across categories">
+                                    <i data-lucide="split" class="w-3.5 h-3.5"></i>
+                                    <span id="splitModeToggleLabel">Split across cat</span>
+                                    <input type="checkbox" id="splitModeToggleBtn" onchange="toggleSplitMode(this.checked)" />
+                                    <span class="split-toggle-track"></span>
+                                </label>
+                            </div>
                         </div>
                         <select id="expenseCategory" onchange="applyCategoryDefaultPayment()" required
                             class="w-full app-dropdown rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"></select>
+
+                        <!-- Split rows container (replaces category dropdown in split mode) -->
+                        <div id="splitRowsContainer" class="hidden space-y-2">
+                            <div id="splitRowsList" class="space-y-2"></div>
+                            <button type="button" onclick="addSplitRow()"
+                                class="w-full flex items-center justify-center gap-1.5 text-[10px] font-bold text-indigo-400 hover:text-indigo-300 border border-dashed border-indigo-500/30 hover:border-indigo-400/50 rounded-xl py-2.5 transition-all">
+                                <i data-lucide="plus" class="w-3 h-3"></i> Add Row
+                            </button>
+                            <div id="splitValidationMsg" class="hidden text-[9px] font-bold text-rose-400 text-center"></div>
+                        </div>
+                        <span id="splitTotalDisplay" class="hidden text-[10px] font-extrabold text-indigo-300"></span>
                     </div>
 
                     <!-- Dropdown Select Payment Method -->
@@ -724,26 +743,6 @@
                             class="w-full app-dropdown rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"></select>
                         <p id="expensePaymentLockNote" class="text-[9px] text-slate-500 mt-1 hidden">Payment is locked
                             to the selected credit card.</p>
-                    </div>
-
-                    <!-- Split mode toggle -->
-                    <div class="flex items-center justify-between">
-                        <button type="button" id="splitModeToggleBtn" onclick="toggleSplitMode()"
-                            class="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-400 hover:text-indigo-300 transition-colors">
-                            <i data-lucide="split" class="w-3.5 h-3.5"></i>
-                            <span id="splitModeToggleLabel">Split across categories</span>
-                        </button>
-                        <span id="splitTotalDisplay" class="hidden text-[10px] font-extrabold text-indigo-300"></span>
-                    </div>
-
-                    <!-- Split rows container (hidden in normal mode) -->
-                    <div id="splitRowsContainer" class="hidden space-y-2">
-                        <div id="splitRowsList" class="space-y-2"></div>
-                        <button type="button" onclick="addSplitRow()"
-                            class="w-full flex items-center justify-center gap-1.5 text-[10px] font-bold text-indigo-400 hover:text-indigo-300 border border-dashed border-indigo-500/30 hover:border-indigo-400/50 rounded-xl py-2.5 transition-all">
-                            <i data-lucide="plus" class="w-3 h-3"></i> Add Row
-                        </button>
-                        <div id="splitValidationMsg" class="hidden text-[9px] font-bold text-rose-400 text-center"></div>
                     </div>
 
                     <div class="grid grid-cols-[minmax(9.75rem,1.2fr)_minmax(0,0.8fr)] gap-2.5 sm:gap-3.5">

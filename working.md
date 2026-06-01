@@ -8,7 +8,7 @@
 
 ## Current Item
 
-Phase 3 - Items 13-14: Tag / label system, EMI foreclosure calculator
+Phase 3 - Split transaction polish fixes
 
 ## Status
 
@@ -34,6 +34,8 @@ Phase 3 - Items 13-14: Tag / label system, EMI foreclosure calculator
 - Completed split transactions. Split mode now validates rows against the total amount, stores parts with shared `splitGroupId`, renders grouped ledger rows, supports split edit, preserves split fields in backup/core migration, and delete now offers part-only vs all-parts choices.
 - Starting tag labels and EMI foreclosure together because both add persisted optional fields and backup/sync normalization.
 - Completed tag labels and EMI foreclosure. Expense form now saves transaction tags, ledger can search/filter tags, rows show compact tag chips, backup/sync/core preserve tag state, EMI cards expose Foreclose on active schedules, and foreclosure records a payoff transaction while stopping future EMI processing.
+- Fixing split transaction UX issues: toggle placement, category replacement behavior, duplicate-category warning, dashboard recent spend inclusion, ledger visual parity, running totals, and split edit/delete actions.
+- Completed split polish pass. Split toggle now lives in the Category Tag header and replaces the category picker with split rows, duplicate split categories are blocked with a warning, dashboard recent logs collapse split parts into one item, ledger split cards share the normal bordered tile style, running balance counts split groups once, and split edit/delete buttons stop event bleed-through.
 
 ---
 
