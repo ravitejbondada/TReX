@@ -391,12 +391,12 @@ function renderSpendHeatmap() {
     const maxSpend = Math.max(1, ...Object.values(dailySpend).filter(v => v > 0));
 
     function heatColor(amount) {
-        if (!amount) return { bg: "bg-slate-700/10", border: "border-slate-700/65", text: "text-slate-500" };
+        if (!amount) return { bg: "rgba(148, 163, 184, 0.045)", border: "rgba(100, 116, 139, 0.65)", text: "text-slate-500" };
         const r = amount / maxSpend;
-        if (r < 0.25) return { bg: "bg-emerald-500/10", border: "border-emerald-400/45", text: "text-emerald-200/85" };
-        if (r < 0.55) return { bg: "bg-yellow-400/10",  border: "border-yellow-300/45",  text: "text-yellow-100/85" };
-        if (r < 0.80) return { bg: "bg-amber-500/12",   border: "border-amber-400/50",   text: "text-amber-100/85" };
-        return             { bg: "bg-rose-500/14",    border: "border-rose-400/55",    text: "text-rose-100/85" };
+        if (r < 0.25) return { bg: "rgba(16, 185, 129, 0.12)", border: "rgba(52, 211, 153, 0.5)", text: "text-emerald-200" };
+        if (r < 0.55) return { bg: "rgba(250, 204, 21, 0.13)", border: "rgba(253, 224, 71, 0.52)", text: "text-yellow-100" };
+        if (r < 0.80) return { bg: "rgba(245, 158, 11, 0.18)", border: "rgba(251, 191, 36, 0.6)", text: "text-amber-100" };
+        return             { bg: "rgba(244, 63, 94, 0.2)",   border: "rgba(251, 113, 133, 0.68)", text: "text-rose-100" };
     }
 
     // ── Build flat list of all cells the grid will show ───────────────────────
@@ -467,9 +467,13 @@ function renderSpendHeatmap() {
                     "aspect-square rounded-md border flex items-center justify-center transition-all relative",
                     isFuture
                         ? "opacity-35 cursor-default bg-slate-700/10 border-slate-700/50"
-                        : `cursor-pointer hover:scale-110 hover:z-10 hover:ring-1 hover:ring-indigo-400/60 hover:ring-offset-1 hover:ring-offset-slate-950 ${colors.bg} ${colors.border}`,
+                        : "cursor-pointer hover:scale-110 hover:z-10 hover:ring-1 hover:ring-indigo-400/60 hover:ring-offset-1 hover:ring-offset-slate-950",
                     isToday ? "ring-1 ring-indigo-400 ring-offset-1 ring-offset-slate-950" : "",
                 ].join(" ");
+                if (!isFuture) {
+                    cell.style.backgroundColor = colors.bg;
+                    cell.style.borderColor = colors.border;
+                }
                 cell.innerHTML = `<span class="text-[8px] font-bold ${isToday ? 'text-indigo-300' : isFuture ? 'text-slate-700' : colors.text}">${cDay}</span>`;
 
                 cell.addEventListener("mouseenter", () => {
