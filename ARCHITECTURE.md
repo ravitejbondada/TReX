@@ -328,6 +328,10 @@ Full dark / light / fossil theme variants defined in `styles.css`.
 
 `switchScreen(viewName)` calls `resetAppScrollToTop(viewName)` after rendering and repeats it on the next animation frame plus a short timeout. The helper resets `window`, `document.scrollingElement`, `documentElement`, `body`, `<main>`, `#screenContainer`, and the active `.view-panel`, because mobile browsers differ on which element owns scroll.
 
+## Add Expense Mobile Layout
+
+The main Add Expense view is optimized for frequent mobile entry. Date and note fields use a two-column grid even on phones: the date column has a protected minimum width so native date text remains readable, while note flexes into the remaining space. The view includes bottom padding so the save button clears the fixed bottom nav.
+
 ## Credit Card Billing Logic (settings.js)
 
 When `state.creditCardsEnabled` is true:

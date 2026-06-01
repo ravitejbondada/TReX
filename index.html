@@ -654,7 +654,7 @@
             </div>
 
             <!-- VIEW 2: ADD/EDIT EXPENSE FORM -->
-            <div id="addExpenseView" class="view-panel hidden flex flex-col space-y-6">
+            <div id="addExpenseView" class="view-panel hidden flex flex-col space-y-6 pb-24">
                 <div class="flex items-center justify-between">
                     <button onclick="switchScreen('dashboard')"
                         class="p-2.5 bg-slate-900 hover:bg-slate-850 rounded-xl text-slate-400 border border-slate-850">
@@ -708,24 +708,23 @@
                             to the selected credit card.</p>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div class="grid grid-cols-[minmax(9.25rem,0.95fr)_minmax(0,1fr)] gap-2.5 sm:gap-3.5">
                         <div class="space-y-2">
                             <label
-                                class="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block">Transaction
-                                Date</label>
+                                class="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block">Date</label>
                             <input type="date" id="expenseDate" required
-                                class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                                class="w-full min-w-0 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-3.5 sm:p-3.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                         </div>
                         <div class="space-y-2">
                             <label
                                 class="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block">Brief
                                 Note</label>
                             <input type="text" id="expenseNote" placeholder="e.g. Starbucks chai"
-                                class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                                class="w-full min-w-0 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-3.5 sm:p-3.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                         </div>
                     </div>
 
-                    <div class="pt-3">
+                    <div class="pt-1">
                         <button type="submit"
                             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-4 rounded-xl shadow-lg shadow-indigo-600/10 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95">
                             <i data-lucide="save" class="w-4.5 h-4.5"></i> Save Transaction

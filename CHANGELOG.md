@@ -5,7 +5,7 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 ## [v4.14] 2026-06-01 — Mobile polish and Dino Mode guardrails
 
-**What changed:** Tightened mobile navigation/dropdown behavior and made Dino Mode opt-in/experimental.
+**What changed:** Tightened mobile navigation/dropdown/add-expense behavior and made Dino Mode opt-in/experimental.
 
 **Files modified:**
 - `js/core.js` — added picker page scroll lock/unlock so the page behind the custom picker cannot scroll on mobile; added `resetAppScrollToTop(viewName)` so navigation resets `window`, document/body, `<main>`, `#screenContainer`, and the active panel; changed clean-start `dinoPrefs.dinoMode` default to `false`.
@@ -14,6 +14,7 @@ Files listed are the ones modified. Always update this on any meaningful change.
 - `js/dashboard.js` — heatmap footprints now require both `dinoMode` and `dinoFootprints`, preventing footprint/egg markers while Dino Mode is off.
 - `js/settings.js` — Dino dependent controls default to disabled/hidden when Dino Mode is off; dependent toggle handlers bail out if Dino Mode is off.
 - `js/backup.js`, `js/sync.js` — backup/sync normalization and reset defaults now preserve Dino Mode as opt-in (`false`) when absent.
+- `index.html` — Add Expense date and note fields now share one compact mobile row with a protected date width; Add Expense view has extra bottom padding so the save button clears the bottom nav.
 - `README.md`, `ARCHITECTURE.md`, `FUNCTIONS.md`, `CHANGELOG.md` — updated docs.
 
 **Behavior:**
@@ -22,6 +23,7 @@ Files listed are the ones modified. Always update this on any meaningful change.
 - Fossil Mode, Dino Footprints, and Extinction Warnings have no visible/runtime effect while Dino Mode is off.
 - Opening the custom picker locks the page behind it; only the picker list scrolls.
 - Bottom nav switches reliably scroll the target page to the top across mobile browsers.
+- The high-use Add Expense form keeps the save button easier to reach on mobile.
 - The header sync icon intentionally spins while `state.syncStatus === "syncing"`; it should stop when sync settles to idle/offline/error.
 
 ---

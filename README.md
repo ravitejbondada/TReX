@@ -152,6 +152,7 @@ The Reports / Premium Insights screen includes a **Download PDF Summary Report**
 - **Heatmap legend:** Four colour swatches (Low → High: emerald, amber, orange, yellow) rendered as static HTML below the heatmap grid. Matches `heatColor()` thresholds.
 - **Heatmap → Ledger:** Tapping a heatmap day opens the ledger scoped to that single day, sorted Dated ↓ by default.
 - **Ledger sort:** Tap the sort button to open the custom picker with 4 options — Dated ↓, Dated ↑, Amt ↓, Amt ↑. "Dated" sorts by the expense date field. Resets to Dated ↓ on every ledger open.
+- **Add Expense mobile layout:** Date and note share one compact row on phones, with the date field given a protected minimum width so the save button sits above the bottom nav more reliably.
 - **Custom picker scroll lock:** Opening any custom dropdown locks the page behind the picker on mobile; only the picker sheet/list scrolls.
 - **Dino Mode:** Off by default for new users and labelled experimental in Settings. Fossil Mode, Dino Footprints, and Extinction Warnings are dependent on Dino Mode and have no visible effect while it is off.
 - **Sync icon:** The header sync icon spins while Drive sync is actively pushing/pulling (`syncStatus="syncing"`), then returns to synced/offline/error when the operation settles.
