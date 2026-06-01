@@ -358,6 +358,11 @@ function saveInlinePayment() {
 
 /* LEDGER WORKFLOW FILTER MODULE */
 function renderHistoryList() {
+    // Reset sort to Dated ↓ on every fresh open
+    const sortSel = document.getElementById("ledgerSortSelect");
+    if (sortSel) { sortSel.value = "date-desc"; }
+    const sortLbl = document.getElementById("ledgerSortLabel");
+    if (sortLbl) { sortLbl.textContent = "Dated ↓"; }
     // Always seed date pickers with current cycle on fresh open (only if blank)
     const fromEl = document.getElementById("ledgerDateFrom");
     if (!fromEl.value) initLedgerMonthSelector();
@@ -445,10 +450,14 @@ function filterHistory() {
         return matchesCat && matchesPay && matchesDate && matchesText;
     });
 
+    const sortMode = (document.getElementById("ledgerSortSelect") || {}).value || "date-desc";
     items.sort((a, b) => {
+        if (sortMode === "amt-desc") return b.amount - a.amount;
+        if (sortMode === "amt-asc")  return a.amount - b.amount;
+        // date-desc (default) and date-asc both use createdAt for tiebreak
         const ta = a.createdAt ? new Date(a.createdAt) : new Date(a.date);
         const tb = b.createdAt ? new Date(b.createdAt) : new Date(b.date);
-        return tb - ta;
+        return sortMode === "date-asc" ? ta - tb : tb - ta;
     });
 
     // Update summary bar

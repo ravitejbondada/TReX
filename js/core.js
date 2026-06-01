@@ -260,26 +260,132 @@ function registerTrexServiceWorker() {
    Called once on init and exposed globally so dynamic screens can call
    it after injecting new <select> elements.
 ─────────────────────────────────────────────────────────────────────── */
+/* ── CUSTOM PICKER SHEET ──────────────────────────────────────────────────────
+   openCustomPicker(selectEl, title?)
+   Opens a bottom-sheet listing all <option> elements from any <select>.
+   On selection it sets select.value and fires a real 'change' event so every
+   existing onchange handler (filterHistory, renderMomReport, etc.) fires
+   automatically — no changes needed in any other module.
+
+   wrapAllSelects() hides the native <select> chrome and attaches the
+   interceptor. The underlying <select> element is kept in the DOM (hidden
+   behind appearance:none + pointer-events:none on mobile) so all JS that
+   reads .value / sets .innerHTML / populates options keeps working as-is.
+─────────────────────────────────────────────────────────────────────────── */
+
+function _ensurePickerDOM() {
+    if (document.getElementById("customPickerOverlay")) return;
+    const overlay = document.createElement("div");
+    overlay.id = "customPickerOverlay";
+    overlay.innerHTML = `
+        <div id="customPickerBackdrop" style="position:absolute;inset:0"></div>
+        <div id="customPickerPanel">
+            <div id="customPickerHandle"></div>
+            <div id="customPickerTitle"></div>
+            <div id="customPickerList"></div>
+        </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById("customPickerBackdrop").addEventListener("click", closeCustomPicker);
+}
+
+let _pickerActiveSelect = null;
+
+function openCustomPicker(selectEl, titleOverride) {
+    if (!selectEl) return;
+    _ensurePickerDOM();
+    _pickerActiveSelect = selectEl;
+
+    // Build title from label sibling, aria-label, or override
+    const wrapper = selectEl.closest(".select-wrap") || selectEl.parentElement;
+    const labelEl = wrapper && wrapper.closest("div") && wrapper.closest("div").querySelector("label");
+    const title = titleOverride || (labelEl && labelEl.textContent.trim()) || "";
+    const titleEl = document.getElementById("customPickerTitle");
+    titleEl.textContent = title;
+    titleEl.style.display = title ? "" : "none";
+
+    // Populate option rows
+    const list = document.getElementById("customPickerList");
+    list.innerHTML = "";
+    const currentVal = selectEl.value;
+    Array.from(selectEl.options).forEach(opt => {
+        if (opt.disabled && !opt.value) return; // skip placeholder-only disabled opts
+        const row = document.createElement("div");
+        row.className = "picker-option" + (opt.value === currentVal ? " selected" : "");
+        row.dataset.value = opt.value;
+        row.innerHTML = `<span>${opt.textContent}</span>
+            <svg class="picker-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>`;
+        row.addEventListener("click", () => {
+            selectEl.value = opt.value;
+            selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+            // update selected highlight
+            list.querySelectorAll(".picker-option").forEach(r => r.classList.remove("selected"));
+            row.classList.add("selected");
+            setTimeout(closeCustomPicker, 160);
+        });
+        list.appendChild(row);
+    });
+
+    // Scroll selected item into view
+    const overlay = document.getElementById("customPickerOverlay");
+    overlay.classList.add("open");
+    requestAnimationFrame(() => {
+        const sel = list.querySelector(".picker-option.selected");
+        if (sel) sel.scrollIntoView({ block: "nearest" });
+    });
+}
+
+function closeCustomPicker() {
+    const overlay = document.getElementById("customPickerOverlay");
+    if (overlay) overlay.classList.remove("open");
+    _pickerActiveSelect = null;
+}
+
+/* Called by ledger sort button in index.html */
+function openLedgerSortPicker() {
+    const sel = document.getElementById("ledgerSortSelect");
+    if (sel) openCustomPicker(sel, "Sort by");
+}
+
 function forceDropdownDarkTheme(sel) {
     if (!sel) return;
     sel.style.colorScheme = "dark";
-    Array.from(sel.options || []).forEach(opt => {
-        opt.style.backgroundColor = "#0f172a";
-        opt.style.color = "#f8fafc";
-        opt.style.colorScheme = "dark";
-    });
 }
 
 function wrapAllSelects(root) {
     const scope = root || document;
     scope.querySelectorAll("select.app-dropdown").forEach(sel => {
         forceDropdownDarkTheme(sel);
-        if (sel.parentElement && sel.parentElement.classList.contains("select-wrap")) return;
-        const wrapper = document.createElement("div");
-        wrapper.className = "select-wrap";
-        sel.parentNode.insertBefore(wrapper, sel);
-        wrapper.appendChild(sel);
-        sel.style.width = "100%";
+        // Wrap in .select-wrap if not already
+        if (!sel.parentElement || !sel.parentElement.classList.contains("select-wrap")) {
+            const wrapper = document.createElement("div");
+            wrapper.className = "select-wrap";
+            sel.parentNode.insertBefore(wrapper, sel);
+            wrapper.appendChild(sel);
+            sel.style.width = "100%";
+        }
+        // Intercept tap/click to show custom picker instead of native OS picker
+        if (!sel.dataset.pickerAttached) {
+            sel.dataset.pickerAttached = "1";
+            // mousedown/touchstart fires before the native picker opens — preventDefault stops it
+            sel.addEventListener("mousedown", function(e) {
+                e.preventDefault();
+                this.blur();
+                openCustomPicker(this);
+            });
+            sel.addEventListener("touchstart", function(e) {
+                e.preventDefault();
+                openCustomPicker(this);
+            }, { passive: false });
+            // Also intercept keydown space/enter to stay consistent
+            sel.addEventListener("keydown", function(e) {
+                if (e.key === " " || e.key === "Enter") {
+                    e.preventDefault();
+                    openCustomPicker(this);
+                }
+            });
+        }
     });
 }
 
@@ -303,9 +409,7 @@ if (window.MutationObserver) {
         });
         selects.forEach(sel => {
             forceDropdownDarkTheme(sel);
-            if (!sel.parentElement || !sel.parentElement.classList.contains("select-wrap")) {
-                wrapAllSelects(sel.parentElement || document);
-            }
+            wrapAllSelects(sel.parentElement || document);
         });
     });
     dropdownThemeObserver.observe(document.documentElement, { childList: true, subtree: true });

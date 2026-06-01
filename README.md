@@ -53,7 +53,7 @@ TReX/
 ├── index.html          HTML shell — all views + CDN script tags + module loaders
 ├── manifest.json       External PWA manifest for proper icon resolution
 ├── sw.js               Service worker for PWA notification click handling
-├── styles.css          All app CSS (dark/light theme, glassmorphism, dropdowns)
+├── styles.css          All app CSS (dark/light theme, glassmorphism, custom picker sheet)
 ├── assets/
 │   └── favicon.png        App icon (transparent, favicon + Apple touch icon + PWA icon)
 └── js/
@@ -151,7 +151,7 @@ The Reports / Premium Insights screen includes a **Download PDF Summary Report**
 - **Ledger header:** Compact three-row design — title + Sort button + Filter icon button / search bar / summary + active filter chips. Filter sheet (date range, category, payment) is collapsed by default; tap the filter icon to expand. Sort cycles through 6 modes (Date ↓↑, Amt ↓↑, Day ↓↑) and resets to Date ↓ on each ledger open. Active filters appear as dismissible chips; a dot on the filter icon signals active filters.
 - **Heatmap legend:** Four colour swatches (Low → High: emerald, amber, orange, yellow) rendered as static HTML below the heatmap grid. Matches `heatColor()` thresholds.
 - **Heatmap → Ledger:** Tapping a heatmap day opens the ledger scoped to that single day, sorted Dated ↓ by default.
-- **Ledger sort:** Tap the sort button to open a dropdown picker with 4 options — Dated ↓, Dated ↑, Amt ↓, Amt ↑. "Dated" sorts by the expense date field; resets to Dated ↓ on every ledger open.
+- **Ledger sort:** Tap the sort button to open the custom picker with 4 options — Dated ↓, Dated ↑, Amt ↓, Amt ↑. "Dated" sorts by the expense date field. Resets to Dated ↓ on every ledger open.
 - **Goal editing:** Each goal card has a pencil icon that opens an inline edit row (target amount + goal date) inside the accordion. `toggleGoalEdit` / `saveGoalEdit` handle open/save.
 - **Drawer — Goals & Trips:** Now open sub-panels (`openDrawerSection('goals'/'trips')`) showing live tiles with Fund/Edit/Delete (goals) and Add Expense/View/Edit (trips, auto-detects pre/on status). Each panel has a "View" link at top and "+ New" at bottom.
 - **Drawer — Credit Cards:** "View Cards Tab" link moved to top of the section.

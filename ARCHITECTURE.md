@@ -275,7 +275,7 @@ IDs use `Date.now()` as a string: `id: "cat_" + Date.now()` or `"tx_" + Date.now
 ### Dynamic HTML + Icons
 After injecting innerHTML, always call `initLucideIcons(containerElement)` to render
 Lucide icon `<i data-lucide="...">` tags inside the injected content.
-Also call `wrapAllSelects(containerElement)` if any `<select class="app-dropdown">` was injected.
+Also call `wrapAllSelects(containerElement)` if any `<select class="app-dropdown">` was injected — this wraps the element in `.select-wrap`, attaches the custom picker interceptors, and ensures it is covered by the MutationObserver auto-wrap on subsequent option population.
 
 ### Custom Confirm Dialog
 Use `await customConfirm(message, title, okLabel)` instead of `window.confirm`.
@@ -292,6 +292,35 @@ Phase 3 uses `t(...)` for toasts, confirm dialog labels/messages, empty states, 
 Dino Mode is the master preference. `toggleDinoMode(sourceEl?)` keeps the Settings toggle and drawer-header toggle in sync, while `syncDinoDependentControls()` disables dependent controls when Dino Mode is off without clearing their saved values.
 
 ---
+
+## Custom Picker System (core.js)
+All `<select class="app-dropdown">` elements use a central bottom-sheet custom picker instead of the native OS picker. This ensures consistent app-branded UI across iOS, Android, and desktop.
+
+### How it works
+- `wrapAllSelects()` wraps each select in `.select-wrap` and attaches `mousedown`/`touchstart`/`keydown` interceptors that call `preventDefault()` (stopping the native OS picker from opening) then call `openCustomPicker(selectEl)`.
+- A `MutationObserver` in `core.js` automatically calls `wrapAllSelects()` when new `app-dropdown` selects are injected into the DOM (e.g. after a drawer section renders) — no manual call needed in other modules.
+- `openCustomPicker(selectEl, titleOverride?)` reads the live `<option>` list from the underlying `<select>` at call time (so dynamically populated selects like category/payment always show current data), builds styled rows in `#customPickerList`, and slides the `#customPickerPanel` up.
+- On row tap: `select.value = opt.value` then `select.dispatchEvent(new Event('change', { bubbles: true }))` — every existing `onchange` handler (e.g. `filterHistory`, `renderMomReport`, `applyCategoryDefaultPayment`, `syncPaymentBillingDayRequirement`) fires automatically with zero changes to other modules.
+- `data-picker-attached` guard on each select prevents duplicate interceptor attachment on repeated `wrapAllSelects()` calls.
+
+### Ledger sort button
+The ledger sort button (`openLedgerSortPicker()`) is a thin wrapper over `openCustomPicker` targeting the hidden `#ledgerSortSelect`. The select has four static options (`date-desc`, `date-asc`, `amt-desc`, `amt-asc`). Its `onchange` updates `#ledgerSortLabel` text and calls `filterHistory()`. `renderHistoryList()` resets it to `date-desc` on every open.
+
+### DOM elements (injected once by `_ensurePickerDOM()`)
+| ID | Role |
+|---|---|
+| `#customPickerOverlay` | Fixed full-screen backdrop + slide-up panel host |
+| `#customPickerBackdrop` | Tap-to-dismiss area |
+| `#customPickerPanel` | Slide-up sheet |
+| `#customPickerHandle` | Visual drag handle |
+| `#customPickerTitle` | Optional label above options (from associated `<label>` or `titleOverride`) |
+| `#customPickerList` | Scrollable option rows (`.picker-option`, `.picker-option.selected`) |
+
+### CSS classes
+- `.picker-option` — option row; tap highlight via `:active`
+- `.picker-option.selected` — indigo tint + check icon visible
+- `.picker-check` — SVG checkmark, `opacity:0` by default, `opacity:1` when selected
+Full dark / light / fossil theme variants defined in `styles.css`.
 
 ## Credit Card Billing Logic (settings.js)
 

@@ -747,6 +747,15 @@
                     <div class="flex items-center gap-1.5 shrink-0">
                         <!-- Sort picker anchor -->
                         <div id="ledgerSortAnchor" class="relative">
+                            <!-- Hidden backing select — populated statically; value read by filterHistory() -->
+                            <select id="ledgerSortSelect" class="app-dropdown" aria-label="Sort by"
+                                style="position:absolute;opacity:0;pointer-events:none;width:0;height:0"
+                                onchange="document.getElementById('ledgerSortLabel').textContent=this.options[this.selectedIndex].text;filterHistory();">
+                                <option value="date-desc">Dated ↓</option>
+                                <option value="date-asc">Dated ↑</option>
+                                <option value="amt-desc">Amt ↓</option>
+                                <option value="amt-asc">Amt ↑</option>
+                            </select>
                             <button onclick="openLedgerSortPicker()"
                                 class="flex items-center gap-1 px-2.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-850 rounded-xl text-slate-400 transition-all active:scale-95">
                                 <i data-lucide="arrow-up-down" class="w-3.5 h-3.5"></i>

@@ -23,8 +23,12 @@ To find where to add/edit something, scan the relevant section header then go to
 
 | Function | Description |
 |---|---|
-| `forceDropdownDarkTheme(sel)` | Applies dark colour scheme inline to a `<select>` and its `<option>` elements |
-| `wrapAllSelects(root?)` | Wraps all `.app-dropdown` selects in a `.select-wrap` div for custom chevron styling |
+| `_ensurePickerDOM()` | Lazily injects the `#customPickerOverlay` bottom-sheet DOM into `<body>` on first use; idempotent |
+| `openCustomPicker(selectEl, titleOverride?)` | Opens the central custom bottom-sheet picker for any `<select class="app-dropdown">`; reads live options, builds styled rows, sets `select.value` and dispatches a real `change` event on selection so all existing `onchange` handlers fire automatically |
+| `closeCustomPicker()` | Slides the custom picker sheet away and clears the active select reference |
+| `openLedgerSortPicker()` | Thin wrapper — calls `openCustomPicker` on `#ledgerSortSelect` with title "Sort by"; wired to the ledger sort button |
+| `forceDropdownDarkTheme(sel)` | Sets `color-scheme: dark` on a `<select>` element |
+| `wrapAllSelects(root?)` | Wraps all `.app-dropdown` selects in a `.select-wrap` div, attaches `mousedown`/`touchstart`/`keydown` interceptors to open the custom picker instead of the native OS picker; uses `data-picker-attached` guard so it is safe to call multiple times |
 | `generateDynamicIcons()` | **Deprecated — no longer used.** Static app icon is now served from `assets/favicon.png`, with the PWA manifest moved to external `manifest.json`. Previously drew the logo to canvas and set the favicon + Apple touch icon |
 | `initLucideIcons(root?)` | Calls `lucide.createIcons()` on the document or a scoped root element |
 | `cleanArchivedPayments()` | Removes archived payments that have zero linked transactions |
@@ -141,13 +145,13 @@ To find where to add/edit something, scan the relevant section header then go to
 | `openInlinePaymentModal(mode?)` | Calls `closeDrawer()` then opens the quick-add payment modal; works from expense form and drawer |
 | `closeInlinePaymentModal()` | Closes the inline payment modal |
 | `saveInlinePayment()` | Creates a new payment method from the inline modal, updates dropdowns |
-| `renderHistoryList()` | Renders the full ledger/history list; resets sort to Dated ↓ and date range to current cycle on every open; populates category and payment filter dropdowns sorted A→Z |
+| `renderHistoryList()` | Renders the full ledger/history list; resets `#ledgerSortSelect` to `date-desc` and sort label to "Dated ↓" on every open; seeds date pickers with current cycle; populates category and payment filter dropdowns sorted A→Z |
 | `initLedgerMonthSelector()` | Populates the ledger date range pickers with the current active cycle |
 | `resetLedgerToCycle()` | Resets ledger date range to the current active cycle and re-runs filterHistory |
 | `getLedgerDateRange()` | Returns `{ from, to }` ISO strings from the ledger date pickers |
 | `openLedgerWithDate(dateISO)` | Switches to history view (resetting sort + cycle dates), then overrides both date pickers to a single day and calls filterHistory; used by the spend heatmap |
-| `filterHistory()` | Applies search text + category/payment filters, dynamic sort, active chip rendering, and search-clear button visibility |
-| `cycleLedgerSort()` | Cycles through 6 sort modes (Date ↓↑, Amt ↓↑, Day ↓↑) updating the sort button label and re-running filterHistory |
+| `filterHistory()` | Applies search text + category/payment filters; reads `#ledgerSortSelect` value (`date-desc`, `date-asc`, `amt-desc`, `amt-asc`) for dynamic sort; renders summary bar, chips, and search-clear button visibility |
+| ~~`cycleLedgerSort()`~~ | **Removed** — replaced by `openLedgerSortPicker()` + the central custom picker system |
 | `toggleLedgerFilterSheet()` | Toggles the collapsed filter sheet (date range + category + payment dropdowns) |
 | `clearLedgerSearch()` | Clears the search input and re-runs filterHistory |
 | `_renderLedgerChips(catId, payId, from, to)` | Renders dismissible active-filter chips below the summary bar; shows/hides the filter dot indicator on the filter button |

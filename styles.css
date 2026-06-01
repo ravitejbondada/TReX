@@ -920,3 +920,121 @@
         }
         .egg-crack-transition { animation: egg-crack 0.6s ease; }
         .goal-egg-icon { display:inline-block; line-height:1; }
+
+        /* ── CUSTOM PICKER SHEET ─────────────────────────────────────────────
+           Central bottom-sheet picker that replaces the native OS <select>
+           picker on all app-dropdown elements. Triggered by openCustomPicker().
+        ──────────────────────────────────────────────────────────────────── */
+        #customPickerOverlay {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            background: rgba(2, 6, 23, 0.6);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.22s ease;
+        }
+        #customPickerOverlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+        #customPickerPanel {
+            background: #0f172a;
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            border-bottom: none;
+            border-radius: 1.5rem 1.5rem 0 0;
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(100%);
+            transition: transform 0.28s cubic-bezier(0.34, 1.2, 0.64, 1);
+            box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
+        }
+        #customPickerOverlay.open #customPickerPanel {
+            transform: translateY(0);
+        }
+        #customPickerHandle {
+            width: 2.5rem;
+            height: 0.25rem;
+            background: rgba(148, 163, 184, 0.3);
+            border-radius: 9999px;
+            margin: 0.75rem auto 0;
+            flex-shrink: 0;
+        }
+        #customPickerTitle {
+            font-size: 0.6875rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #64748b;
+            padding: 0.625rem 1.25rem 0.5rem;
+            flex-shrink: 0;
+        }
+        #customPickerList {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 0.375rem 0.625rem 1.5rem;
+            flex: 1;
+        }
+        .picker-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0.875rem;
+            border-radius: 0.875rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: #e2e8f0;
+            cursor: pointer;
+            transition: background 0.12s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .picker-option:active {
+            background: rgba(99, 102, 241, 0.12);
+        }
+        .picker-option.selected {
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+            font-weight: 700;
+        }
+        .picker-option .picker-check {
+            width: 1rem;
+            height: 1rem;
+            color: #6366f1;
+            flex-shrink: 0;
+            opacity: 0;
+        }
+        .picker-option.selected .picker-check {
+            opacity: 1;
+        }
+        /* Light theme */
+        html[data-theme="light"] #customPickerPanel {
+            background: #ffffff;
+            border-color: rgba(15, 23, 42, 0.1);
+        }
+        html[data-theme="light"] .picker-option {
+            color: #0f172a;
+        }
+        html[data-theme="light"] .picker-option.selected {
+            background: rgba(99, 102, 241, 0.1);
+            color: #4338ca;
+        }
+        html[data-theme="light"] #customPickerTitle {
+            color: #94a3b8;
+        }
+        /* Fossil theme */
+        html[data-theme="fossil"] #customPickerPanel {
+            background: #1a1612;
+            border-color: #3d3025;
+        }
+        html[data-theme="fossil"] .picker-option.selected {
+            background: rgba(180, 83, 9, 0.15);
+            color: #fbbf24;
+        }
+        html[data-theme="fossil"] .picker-option .picker-check {
+            color: #d97706;
+        }
