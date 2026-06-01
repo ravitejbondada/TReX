@@ -761,13 +761,22 @@ function filterHistory() {
                 </button>`
             : "";
 
+        const canInlineEdit = !t.tripRef && !ledgerSelectMode;
+        const noteSpanHtml = canInlineEdit
+            ? `<span id="tx-inline-note-${t.id}" class="text-[11px] font-bold text-slate-200 truncate cursor-pointer hover:text-indigo-300" title="Tap to edit note" onclick="startInlineEdit(event,'${t.id}','note')">${t.note || cat.name}</span>`
+            : `<span class="text-[11px] font-bold text-slate-200 truncate">${t.note || cat.name}</span>`;
+        const amountSpanHtml = canInlineEdit
+            ? `<span id="tx-inline-amount-${t.id}" class="text-xs font-black text-indigo-300 cursor-pointer hover:text-indigo-200 hover:underline" title="Tap to edit amount" onclick="startInlineEdit(event,'${t.id}','amount')">${state.currencySymbol}${t.amount.toLocaleString()}</span>`
+            : `<span class="text-xs font-black text-indigo-300">${state.currencySymbol}${t.amount.toLocaleString()}</span>`;
+
+        card.dataset.txId = t.id;
         card.innerHTML = `
             ${selectControl}
             <div class="flex items-stretch gap-2.5 min-w-0 flex-1 ${t.tripRef ? "cursor-default" : "cursor-pointer active:scale-95"}" ${clickHandler}>
                 <span class="w-1 self-stretch rounded-full shrink-0" style="background-color: ${cat.color}"></span>
                 <div class="min-w-0 flex-1 space-y-1 py-0.5">
                     <div class="flex items-center gap-1.5 min-w-0">
-                        <span class="text-[11px] font-bold text-slate-200 truncate">${t.note || cat.name}</span>
+                        ${noteSpanHtml}
                         ${recurringBadge}
                         ${tripBadge}
                     </div>
@@ -790,7 +799,7 @@ function filterHistory() {
                 </div>
             </div>
             <div class="flex flex-col items-end gap-1.5 shrink-0 ml-1">
-                <span class="text-xs font-black text-indigo-300">${state.currencySymbol}${t.amount.toLocaleString()}</span>
+                ${amountSpanHtml}
                 <span class="running-balance">Spent ${state.currencySymbol}${(runningById.get(t.id) || t.amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                 <div class="flex items-center gap-1">
                     ${actionButtons}
@@ -803,6 +812,158 @@ function filterHistory() {
     });
 
     initLucideIcons();
+}
+
+/* === Inline Edit (amount + note) === */
+let _inlineEditActive = false;
+
+function startInlineEdit(event, txId, field) {
+    event.stopPropagation();
+    const tx = state.transactions.find(t => t.id === txId);
+    if (!tx || tx.tripRef) return;
+    // Prevent two inline edits at once
+    if (_inlineEditActive) return;
+
+    const spanId = field === "amount" ? `tx-inline-amount-${txId}` : `tx-inline-note-${txId}`;
+    const span = document.getElementById(spanId);
+    if (!span) return;
+
+    _inlineEditActive = true;
+    const currentVal = field === "amount" ? String(tx.amount) : (tx.note || "");
+
+    const input = document.createElement("input");
+    input.type = field === "amount" ? "number" : "text";
+    input.value = currentVal;
+    input.className = "inline-edit-input";
+    if (field === "amount") {
+        input.min = "0.01";
+        input.step = "any";
+        input.style.width = "70px";
+    } else {
+        input.placeholder = "Add note…";
+        input.maxLength = 120;
+    }
+
+    span.replaceWith(input);
+    input.focus();
+    input.select();
+
+    const commit = () => {
+        commitInlineEdit(txId, field, input.value, input);
+    };
+    const cancel = () => {
+        _inlineEditActive = false;
+        // Restore original span without saving
+        const restoredSpan = _buildInlineSpan(txId, field, tx);
+        if (input.parentNode) input.replaceWith(restoredSpan);
+    };
+
+    input.addEventListener("blur", commit, { once: true });
+    input.addEventListener("keydown", e => {
+        if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+        if (e.key === "Escape") { input.removeEventListener("blur", commit); cancel(); }
+    });
+}
+
+function _buildInlineSpan(txId, field, tx) {
+    const span = document.createElement("span");
+    if (field === "amount") {
+        span.id = `tx-inline-amount-${txId}`;
+        span.className = "text-xs font-black text-indigo-300 cursor-pointer hover:text-indigo-200 hover:underline";
+        span.title = "Tap to edit amount";
+        span.textContent = `${state.currencySymbol}${tx.amount.toLocaleString()}`;
+        span.addEventListener("click", e => startInlineEdit(e, txId, "amount"));
+    } else {
+        const cat = state.categories.find(c => c.id === tx.categoryId) || { name: "Other" };
+        span.id = `tx-inline-note-${txId}`;
+        span.className = "text-[11px] font-bold text-slate-200 truncate cursor-pointer hover:text-indigo-300";
+        span.title = "Tap to edit note";
+        span.textContent = tx.note || cat.name;
+        span.addEventListener("click", e => startInlineEdit(e, txId, "note"));
+    }
+    return span;
+}
+
+function commitInlineEdit(txId, field, rawValue, inputEl) {
+    _inlineEditActive = false;
+    const tx = state.transactions.find(t => t.id === txId);
+    if (!tx) return;
+
+    if (field === "amount") {
+        const parsed = parseFloat(rawValue);
+        if (isNaN(parsed) || parsed <= 0) {
+            showNotification(t("Amount must be a positive number.", "TReX needs a real amount."));
+            // Restore span with original value
+            const span = _buildInlineSpan(txId, field, tx);
+            if (inputEl.parentNode) inputEl.replaceWith(span);
+            return;
+        }
+        if (parsed === tx.amount) {
+            const span = _buildInlineSpan(txId, field, tx);
+            if (inputEl.parentNode) inputEl.replaceWith(span);
+            return;
+        }
+        tx.amount = parsed;
+    } else {
+        const newNote = rawValue.trim();
+        if (newNote === (tx.note || "")) {
+            const span = _buildInlineSpan(txId, field, tx);
+            if (inputEl.parentNode) inputEl.replaceWith(span);
+            return;
+        }
+        tx.note = newNote;
+    }
+
+    saveStateToLocalStorage();
+    playSound(S.SAVE);
+
+    // Update only the changed span in-place (no full re-render = no scroll jump)
+    const span = _buildInlineSpan(txId, field, tx);
+    if (inputEl.parentNode) inputEl.replaceWith(span);
+
+    // If note changed, also update the running balance display (amount didn't change, skip)
+    if (field === "amount") {
+        // Recompute running balances for all visible rows
+        _refreshRunningBalances();
+    }
+
+    updateAppDashboardView();
+}
+
+function _refreshRunningBalances() {
+    // Re-compute running totals over the currently rendered rows
+    const container = document.getElementById("historyList");
+    if (!container) return;
+    const rows = [...container.querySelectorAll("[data-tx-id]")];
+    const ids = rows.map(r => r.dataset.txId);
+    const txMap = new Map(state.transactions.map(t => [t.id, t]));
+
+    // Sort ascending (same logic as renderHistoryList running total)
+    const sorted = ids
+        .map(id => txMap.get(id))
+        .filter(Boolean)
+        .sort((a, b) => {
+            const da = new Date(a.date || a.createdAt || 0).getTime();
+            const db = new Date(b.date || b.createdAt || 0).getTime();
+            if (da !== db) return da - db;
+            return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+        });
+
+    let running = 0;
+    const runningById = new Map();
+    sorted.forEach(tx => {
+        running += Number(tx.amount || 0);
+        runningById.set(tx.id, running);
+    });
+
+    ids.forEach(id => {
+        const tx = txMap.get(id);
+        if (!tx) return;
+        const balEl = container.querySelector(`#tx-row-${id} .running-balance`);
+        if (balEl) {
+            balEl.textContent = `Spent ${state.currencySymbol}${(runningById.get(id) || tx.amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+        }
+    });
 }
 
 async function deleteTransaction(id) {

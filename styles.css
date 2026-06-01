@@ -1220,3 +1220,32 @@
         html[data-theme="fossil"] .picker-option .picker-check {
             color: #d97706;
         }
+
+        /* === Inline Edit (amount + note) === */
+        .inline-edit-input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--indigo, #6366f1);
+            font-size: inherit;
+            font-family: inherit;
+            font-weight: inherit;
+            color: inherit;
+            outline: none;
+            padding: 0 2px;
+            min-width: 0;
+        }
+        .inline-edit-input[type="number"] {
+            width: 70px;
+        }
+        .inline-edit-input[type="text"] {
+            width: 100%;
+            max-width: 140px;
+        }
+        /* Remove number input spinners */
+        .inline-edit-input[type="number"]::-webkit-outer-spin-button,
+        .inline-edit-input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        .inline-edit-input[type="number"] { -moz-appearance: textfield; }
+        html[data-theme="light"] .inline-edit-input {
+            border-bottom-color: #4338ca;
+            color: #0f172a;
+        }

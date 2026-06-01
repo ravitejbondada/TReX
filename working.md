@@ -8,7 +8,7 @@
 
 ## Current Item
 
-Phase 1 - Items 4-5: Running balance, transaction templates / presets
+Phase 1 - Item 6: Inline edit (amount + note)
 
 ## Status
 
@@ -23,6 +23,7 @@ Phase 1 - Items 4-5: Running balance, transaction templates / presets
 - Completed ledger swipe-to-delete, bulk select/delete, and amount range filtering.
 - Implementing running balance and transaction presets together because both touch ledger row rendering and the add-expense form.
 - Completed ledger running balance and transaction presets/preset manager.
+- Completed inline edit for amount + note on ledger rows. Scoped to non-tripRef, non-selectMode rows. Tap amount or note span to edit in-place; Escape cancels, Enter/blur commits. Running balances recomputed in-place on amount change with no full re-render.
 
 ---
 
@@ -42,7 +43,7 @@ Phase 1 - Items 4-5: Running balance, transaction templates / presets
 [x] 3. Filter by amount range
 [x] 4. Running balance
 [x] 5. Transaction templates / presets
-[ ] 6. Inline edit (amount + note)
+[x] 6. Inline edit (amount + note)
 
 ### Phase 2 - Analytics & Insights
 
