@@ -37,7 +37,7 @@ function loadExpenseToFormForEditFromCreditCard(txId, payId) {
 
 function renderCreditCardTransactionRows(container, txs, pay) {
     if (!container) return;
-    const sym = state.currencySymbol || "₹";
+    const sym = state.currencySymbol || "";
     if (txs.length === 0) {
         container.innerHTML = `
             <div class="bg-slate-900/40 border border-slate-850 rounded-2xl p-4 text-center">
@@ -47,9 +47,37 @@ function renderCreditCardTransactionRows(container, txs, pay) {
         return;
     }
 
-    container.innerHTML = txs.map(tx => {
+    const seenSplitGroups = new Set();
+    const visibleItems = [];
+    txs.forEach(tx => {
+        if (!tx.splitGroupId) {
+            visibleItems.push({ type: "tx", tx, parts: [tx], amount: Number(tx.amount || 0) });
+            return;
+        }
+        if (seenSplitGroups.has(tx.splitGroupId)) return;
+        seenSplitGroups.add(tx.splitGroupId);
+        const parts = txs
+            .filter(part => part.splitGroupId === tx.splitGroupId)
+            .sort((a, b) => _txChronologicalCompare(a, b));
+        visibleItems.push({
+            type: "split",
+            tx,
+            parts,
+            amount: parts.reduce((sum, part) => sum + Number(part.amount || 0), 0)
+        });
+    });
+
+    container.innerHTML = visibleItems.map(item => {
+        const tx = item.tx;
         const cat = state.categories.find(c => c.id === tx.categoryId) || { name: "Other", color: "#64748b" };
         const dateText = formatDateReadable(new Date(tx.date), { year: "2-digit" });
+        const payName = pay?.name || (state.payments.find(p => p.id === tx.paymentId) || { name: "Cash" }).name;
+        const stripeStyle = item.type === "split" && typeof _splitStripeStyle === "function"
+            ? _splitStripeStyle(item.parts)
+            : `background-color: ${cat.color}`;
+        const splitBadge = item.type === "split"
+            ? `<span class="text-[8px] px-1.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 font-bold uppercase shrink-0">Split</span>`
+            : "";
         const tripBadge = tx.tripRef
             ? `<span class="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-950 text-amber-400 font-bold uppercase shrink-0">${tx.tripType === "pre" ? "Pre-Trip" : "Trip"}</span>`
             : "";
@@ -58,30 +86,25 @@ function renderCreditCardTransactionRows(container, txs, pay) {
             : `<button onclick="loadExpenseToFormForEditFromCreditCard('${tx.id}', '${pay.id}')" class="p-1 text-slate-600 hover:text-indigo-400 rounded hover:bg-slate-950 transition-all" title="Edit">
                         <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                     </button>
-                    <button onclick="event.stopPropagation(); deleteTransaction('${tx.id}')" class="p-1 text-slate-600 hover:text-rose-400 rounded hover:bg-slate-950 transition-all" title="Delete">
+                    <button onclick="event.stopPropagation(); deleteTransaction('${tx.id}', '${item.type === "split" ? "all" : "part"}')" class="p-1 text-slate-600 hover:text-rose-400 rounded hover:bg-slate-950 transition-all" title="Delete">
                         <i data-lucide="trash" class="w-3.5 h-3.5"></i>
                     </button>`;
-        const badgesHtml = tripBadge ? `<div class="flex items-center gap-1.5 flex-wrap">${tripBadge}</div>` : "";
         return `
             <div class="bg-slate-900/60 border border-slate-850 rounded-2xl p-3 flex justify-between items-stretch gap-2.5 transition-all">
                 <div class="flex items-stretch gap-2.5 min-w-0 flex-1">
-                    <span class="w-1 self-stretch rounded-full shrink-0" style="background-color: ${cat.color}"></span>
-                    <div class="min-w-0 flex-1 space-y-2">
-                        ${badgesHtml}
-                        <div class="min-w-0">
-                            <p class="text-[11px] font-bold text-slate-100 truncate">${tx.note || t("No note", "No fossil note")}</p>
-                            <p class="text-[9px] text-slate-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                                <span class="inline-flex items-center gap-1 rounded-md bg-slate-950 px-1.5 py-0.5">${dateText}</span>
-                                <span class="inline-flex items-center gap-1 rounded-md bg-slate-950 px-1.5 py-0.5">
-                                    <span class="w-2 h-2 rounded-full" style="background-color:${cat.color}"></span>
-                                    ${cat.name}
-                                </span>
-                            </p>
+                    <span class="w-1 self-stretch rounded-full shrink-0" style="${stripeStyle}"></span>
+                    <div class="min-w-0 flex-1 space-y-1 py-0.5">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <span class="text-[11px] font-bold text-slate-100 truncate">${tx.note || (item.type === "split" ? "Split Transaction" : cat.name)}</span>
+                            ${splitBadge}
+                            ${tripBadge}
                         </div>
+                        ${_renderTxMetaRow(dateText, payName)}
+                        ${_renderCategoryPills(item.type === "split" ? item.parts.map(p => p.categoryId) : [tx.categoryId])}
                     </div>
                 </div>
                 <div class="flex flex-col items-end gap-1.5 shrink-0 ml-1">
-                    <span class="text-xs font-black text-indigo-300">${sym}${tx.amount.toLocaleString()}</span>
+                    <span class="text-xs font-black text-indigo-300">${sym}${item.amount.toLocaleString()}</span>
                     <div class="flex items-center gap-1">
                         ${actionButtons}
                     </div>
@@ -92,7 +115,6 @@ function renderCreditCardTransactionRows(container, txs, pay) {
 
     initLucideIcons(container);
 }
-
 function renderCreditCardDetailView(pay, snapshot) {
     const detailPanel = document.getElementById("creditCardDetailPanel");
     const overviewPanel = document.getElementById("creditCardOverviewPanel");

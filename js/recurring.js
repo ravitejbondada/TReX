@@ -206,54 +206,6 @@ function renderRecurringExpenses() {
     const list = [...state.recurringExpenses].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     const symbol = state.currencySymbol;
 
-    const dashContainer = document.getElementById("dashboardRecurringList");
-    const dashEmpty = document.getElementById("dashboardRecurringEmpty");
-    const countBadge = document.getElementById("recurringCountBadge");
-    if (countBadge) {
-        if (list.length > 0) {
-            countBadge.textContent = list.length;
-            countBadge.classList.remove("hidden");
-        } else {
-            countBadge.classList.add("hidden");
-        }
-    }
-    if (dashContainer) {
-        if (list.length === 0) {
-            dashContainer.innerHTML = "";
-            if (dashEmpty) {
-                dashEmpty.textContent = t("No recurring expenses configured.", "🔁 No stampedes scheduled yet.");
-                dashEmpty.classList.remove("hidden");
-            }
-        } else {
-            if (dashEmpty) dashEmpty.classList.add("hidden");
-            dashContainer.innerHTML = list.map(r => {
-                const cat = state.categories.find(c => c.id === r.categoryId);
-                const freqColors = { daily: "text-amber-400", weekly: "text-cyan-400", monthly: "text-violet-400" };
-                const freqColor = freqColors[r.freq] || "text-slate-400";
-                return `
-                <div class="${r.paused ? 'bg-slate-950 border border-slate-800 opacity-60' : 'bg-slate-950 border border-slate-850'} p-3.5 rounded-xl flex justify-between items-center">
-                    <div class="min-w-0 pr-2">
-                        <span class="text-xs font-bold text-slate-100 block truncate">${r.name}${r.paused ? ' <span style=\"font-size:8px;color:#f59e0b;font-weight:700\">PAUSED</span>' : ''}</span>
-                        <span class="text-[9px] ${freqColor} uppercase font-bold block mt-0.5">${r.freq} &bull; from ${r.startDate || "—"}</span>
-                        ${cat ? `<span class="text-[9px] text-slate-500 block mt-0.5">Folder: ${cat.name}</span>` : ""}
-                    </div>
-                    <div class="flex items-center gap-1.5 shrink-0 ml-2">
-                        <span class="text-xs font-extrabold text-indigo-400">${symbol}${r.amount.toLocaleString()}</span>
-                        <button onclick="toggleRecurringPause('${r.id}')" class="p-1 hover:bg-slate-800 rounded-lg transition-all ${r.paused ? 'text-amber-400' : 'text-slate-500'} hover:text-amber-400" title="${r.paused ? 'Resume' : 'Pause'}">
-                            <i data-lucide="${r.paused ? 'play' : 'pause'}" class="w-3.5 h-3.5"></i>
-                        </button>
-                        <button onclick="openRecurringModal('${r.id}')" class="p-1 hover:bg-slate-800 rounded-lg transition-all text-slate-500 hover:text-indigo-400">
-                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                        </button>
-                        <button onclick="deleteRecurring('${r.id}')" class="p-1 hover:bg-slate-800 rounded-lg transition-all text-slate-500 hover:text-rose-400">
-                            <i data-lucide="trash" class="w-3.5 h-3.5"></i>
-                        </button>
-                    </div>
-                </div>`;
-            }).join("");
-        }
-    }
-
     const settContainer = document.getElementById("settingsRecurringList");
     const settEmpty = document.getElementById("settingsRecurringEmpty");
     const settBadge = document.getElementById("settingsRecurringCountBadge");

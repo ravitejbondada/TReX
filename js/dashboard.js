@@ -1387,9 +1387,6 @@ function renderRecentActivityList() {
         const cat = state.categories.find(c => c.id === tx.categoryId) || { name: "Other", color: "#64748b" };
         const pay = state.payments.find(p => p.id === tx.paymentId) || { name: "Cash" };
         const dateText = formatDateReadable(new Date(tx.date), { year: '2-digit' });
-        const splitCats = item.type === "split"
-            ? Array.from(new Set(item.parts.map(p => p.categoryId))).slice(0, 3).map(id => state.categories.find(c => c.id === id)).filter(Boolean)
-            : [cat];
         const stripeStyle = item.type === "split" && typeof _splitStripeStyle === "function"
             ? _splitStripeStyle(item.parts)
             : `background-color: ${cat.color}`;
@@ -1409,23 +1406,8 @@ function renderRecentActivityList() {
                         <span class="text-[11px] font-bold text-slate-100 block truncate">${tx.note || (item.type === "split" ? "Split Transaction" : cat.name)}</span>
                         ${badge}
                     </div>
-                    <div class="flex items-center gap-1.5 flex-wrap">
-                        <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 shrink-0">
-                            <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="14" height="10" rx="2"/><path d="M1 7h14"/><path d="M5 1v3M11 1v3"/></svg>
-                            <span class="truncate max-w-[68px]">${pay.name}</span>
-                        </span>
-                        <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-950 text-slate-500 shrink-0">
-                            <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="2" width="14" height="13" rx="2"/><path d="M1 6h14"/><path d="M5 1v2M11 1v2"/></svg>
-                            ${dateText}
-                        </span>
-                    </div>
-                    <div class="flex items-center gap-1.5 flex-wrap">
-                        ${splitCats.map(c => `<span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md shrink-0" style="background-color:${c.color}22; color:${c.color}">
-                            <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color:${c.color}"></span>
-                            <span class="truncate max-w-[68px]">${c.name}</span>
-                        </span>`).join("")}
-                        ${item.type === "split" && new Set(item.parts.map(p => p.categoryId)).size > 3 ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-500">+</span>` : ""}
-                    </div>
+                    ${_renderTxMetaRow(dateText, pay.name)}
+                    ${_renderCategoryPills(item.type === "split" ? item.parts.map(p => p.categoryId) : [cat.id])}
                 </div>
             </div>
             <span class="text-xs font-black text-indigo-300 shrink-0 ml-1 self-center">${state.currencySymbol}${item.amount.toLocaleString()}</span>

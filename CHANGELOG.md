@@ -14,6 +14,10 @@ Files listed are the ones modified. Always update this on any meaningful change.
 
 **Behavior:**
 - Split totals are entered only in individual row amounts; the main amount displays their sum.
+- Transaction tiles use a uniform format across ledger, dashboard recent activity, and credit-card transaction lists: name, date + payment, then categories.
+- Split category rows now show every unique category instead of a `+` overflow marker, and the split color stripe uses all unique split category colors.
+- Dashboard recurring expenses panel was removed; recurring schedules stay in the sidebar/drawer, with a subtle "Make this recurring" link on Add Expense that opens the recurring modal.
+- Split toggle icon/text now shows rose/red while off and light green/green while on.
 - Ledger cumulative values are calculated only from the visible ledger tiles by summing bottom-to-top after the current filter/search/sort is applied. Split groups count once as grouped tiles.
 - Deleting from the parent split card warns that the entire split will be deleted. To delete one part, expand the split card and use the row-level delete action.
 

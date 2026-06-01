@@ -342,7 +342,8 @@ Normal rows are wrapped in `.swipe-row-wrapper`; `attachSwipeToDelete()` handles
 - Split mode is toggled from the Category Tag header in Add Expense. When enabled, the normal category picker is hidden and replaced by split rows, and the main amount field becomes read-only.
 - `_updateSplitTotal()` derives the main amount from the individual split row amounts. `validateSplitRows()` requires at least two rows, positive amounts, and no duplicate categories; there is no separate target-total check.
 - A split expense persists as multiple normal transactions sharing the same `splitGroupId`; each part keeps its own `categoryId`, amount, optional tags, and `splitLabel`.
-- Ledger rendering collapses a split group into one bordered card with a Split badge, grouped total, date/payment line, up to three category chips, and a vertical stripe using up to three category colors. Cumulative balance counts each visible split group once and is calculated from the current displayed tile order, bottom to top.
+- Transaction tiles share the same content order across ledger, dashboard recent activity, and credit-card transaction lists: name on row 1, date then payment on row 2, and category chips on row 3.
+- Ledger rendering collapses a split group into one bordered card with a Split badge, grouped total, date/payment line, all split category chips, and a vertical stripe using all unique split category colors. Cumulative balance counts each visible split group once and is calculated from the current displayed tile order, bottom to top.
 - The parent split-card delete action confirms and deletes the entire group. Expanded child rows expose individual delete buttons for deleting a single split part. Edit loads the whole group into split mode.
 - Tags are normalized free-text labels. `state.knownTags[]` plus existing transaction tags power suggestions. Ledger search includes tags, and `activeTagFilter` narrows results by tag text.
 
@@ -388,6 +389,8 @@ Called on every `window.onload`:
 2. `processEMIs()` checks each EMI and posts due monthly installments.
 
 Recurring is only a scheduler. Daily and weekly schedules catch up missed due dates; monthly schedules use the original start day and clamp to the month's last day when that day does not exist. `postRecurringEntry()` pushes a normal transaction into `state.transactions` with `amount`, `categoryId`, `paymentId`, `date`, `note`, and `createdAt`; it does not set `isRecurring` or `recurringId`. After insertion, edit/delete/report/history behavior is identical to a manually added transaction. Pausing skips processing. Resuming asks for a resume date, defaults to today, sets `lastPostedDate` to the day before that date, and then runs the normal catch-up engine, so month-end clamp behavior remains consistent. Deleting a recurring rule leaves past transactions untouched.
+
+Recurring management lives in the sidebar/drawer recurring panel. The dashboard does not render recurring schedules; Add Expense only exposes a subtle "Make this recurring" shortcut that opens the recurring modal.
 
 ---
 

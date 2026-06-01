@@ -130,10 +130,9 @@ function _getCategory(catId) {
     return state.categories.find(c => c.id === catId) || { name: "Other", color: "#64748b" };
 }
 
-function _renderCategoryPills(catIds, max = 3) {
+function _renderCategoryPills(catIds, max = Infinity) {
     const unique = Array.from(new Set((catIds || []).filter(Boolean)));
-    const visible = unique.slice(0, max);
-    const extra = unique.length - visible.length;
+    const visible = Number.isFinite(max) ? unique.slice(0, max) : unique;
     return `
         <div class="flex items-center gap-1.5 flex-wrap">
             ${visible.map(id => {
@@ -143,17 +142,30 @@ function _renderCategoryPills(catIds, max = 3) {
                     <span class="truncate max-w-[72px]">${_escapeHtml(cat.name)}</span>
                 </span>`;
             }).join("")}
-            ${extra > 0 ? `<span class="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-500">+${extra}</span>` : ""}
         </div>`;
 }
 
 function _splitStripeStyle(groupParts) {
-    const colors = Array.from(new Set((groupParts || []).map(p => _getCategory(p.categoryId).color))).slice(0, 3);
+    const colors = Array.from(new Set((groupParts || []).map(p => _getCategory(p.categoryId).color)));
     if (colors.length === 0) return "background-color:#64748b";
     if (colors.length === 1) return `background-color:${colors[0]}`;
     const stop = 100 / colors.length;
     const segments = colors.map((color, i) => `${color} ${Math.round(i * stop)}%, ${color} ${Math.round((i + 1) * stop)}%`);
     return `background:linear-gradient(to bottom, ${segments.join(",")})`;
+}
+
+function _renderTxMetaRow(dateText, paymentName) {
+    return `
+        <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-950 text-slate-500 shrink-0">
+                <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="2" width="14" height="13" rx="2"/><path d="M1 6h14"/><path d="M5 1v2M11 1v2"/></svg>
+                ${_escapeHtml(dateText)}
+            </span>
+            <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 shrink-0">
+                <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="14" height="10" rx="2"/><path d="M1 7h14"/><path d="M5 1v3M11 1v3"/></svg>
+                <span class="truncate max-w-[72px]">${_escapeHtml(paymentName)}</span>
+            </span>
+        </div>`;
 }
 
 function _setSplitModeUI(isSplit) {
@@ -1175,7 +1187,7 @@ function filterHistory() {
             const groupTags = Array.from(new Set(groupParts.flatMap(tx => Array.isArray(tx.tags) ? tx.tags : []).map(normalizeTag).filter(Boolean)));
             const pay = state.payments.find(p => p.id === t.paymentId) || { name: "Cash" };
             const dateStr = formatDateReadable(new Date(t.date), { year: '2-digit' });
-            const categoryRow = _renderCategoryPills(groupParts.map(p => p.categoryId), 3);
+            const categoryRow = _renderCategoryPills(groupParts.map(p => p.categoryId));
             const splitBadge = `<span class="text-[8px] px-1.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 font-bold uppercase shrink-0">Split</span>`;
 
             const groupWrapper = document.createElement("div");
@@ -1198,17 +1210,7 @@ function filterHistory() {
                             <span class="text-[11px] font-bold text-slate-200 truncate">${_escapeHtml(t.note || 'Split Transaction')}</span>
                             ${splitBadge}
                         </div>
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-950 text-slate-500 shrink-0">
-                                <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="2" width="14" height="13" rx="2"/><path d="M1 6h14"/><path d="M5 1v2M11 1v2"/></svg>
-                                ${dateStr}
-                            </span>
-                            <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 shrink-0">
-                                <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="14" height="10" rx="2"/><path d="M1 7h14"/><path d="M5 1v3M11 1v3"/></svg>
-                                <span>${_escapeHtml(pay.name)}</span>
-                            </span>
-                            <span class="text-[8px] text-slate-600">${groupParts.length} parts</span>
-                        </div>
+                        ${_renderTxMetaRow(dateStr, pay.name)}
                         ${categoryRow}
                         ${_renderTxTagChips(groupTags)}
                     </div>
@@ -1360,17 +1362,8 @@ function filterHistory() {
                         ${recurringBadge}
                         ${tripBadge}
                     </div>
-                    <div class="flex items-center gap-1.5 flex-wrap">
-                        <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-950 text-slate-500 shrink-0">
-                            <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="2" width="14" height="13" rx="2"/><path d="M1 6h14"/><path d="M5 1v2M11 1v2"/></svg>
-                            ${dateStr}
-                        </span>
-                        <span class="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 shrink-0">
-                            <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="14" height="10" rx="2"/><path d="M1 7h14"/><path d="M5 1v3M11 1v3"/></svg>
-                            <span class="truncate max-w-[72px]">${_escapeHtml(pay.name)}</span>
-                        </span>
-                    </div>
-                    ${_renderCategoryPills([t.categoryId], 1)}
+                    ${_renderTxMetaRow(dateStr, pay.name)}
+                    ${_renderCategoryPills([t.categoryId])}
                     ${tagChips}
                 </div>
             </div>
