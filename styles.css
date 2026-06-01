@@ -1249,3 +1249,41 @@
             border-bottom-color: #4338ca;
             color: #0f172a;
         }
+
+        /* === Goal projected date === */
+        .goal-projected {
+            font-size: 0.7rem;
+            margin-top: 0.2rem;
+        }
+        html[data-theme="light"] .goal-projected {
+            color: #64748b;
+        }
+
+        /* === Trip daily budget breakdown === */
+        .trip-daily-breakdown-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+            border-radius: 1rem;
+            padding: 0.875rem;
+        }
+        .trip-daily-row {
+            padding: 0.25rem 0;
+        }
+        .trip-daily-over-badge {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #f87171;
+            background: rgba(127, 29, 29, 0.4);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 9999px;
+            padding: 0 0.375rem;
+        }
+        html[data-theme="light"] .trip-daily-breakdown-card {
+            background: rgba(241, 245, 249, 0.8);
+            border-color: rgba(203, 213, 225, 0.8);
+        }
+        html[data-theme="light"] .trip-daily-over-badge {
+            background: rgba(254, 226, 226, 0.8);
+            border-color: rgba(252, 165, 165, 0.6);
+            color: #dc2626;
+        }

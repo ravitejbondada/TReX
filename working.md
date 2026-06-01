@@ -8,7 +8,7 @@
 
 ## Current Item
 
-Phase 2 - Item 9: Category spend trend (reports)
+Phase 2 - Item 11: Trip daily budget breakdown
 
 ## Status
 
@@ -27,6 +27,8 @@ Phase 2 - Item 9: Category spend trend (reports)
 - Item 7 (payment split chart) skipped by design decision.
 - Completed spend comparison chart on dashboard. Week mode: grouped bar per day Mon–Sun, this week vs last week. Month mode: this month-to-date vs same date range last month. Toggle matches Spend Velocity style. Chart instance destroyed/recreated on toggle.
 - Completed category spend trend in reports. New Trends tab (4th tab) added to reports tab bar. Multi-line Chart.js, one line per category (top 6 by total spend). 3M/6M toggle. Empty state handled. `categoryTrendChartInstance` added to `resizeReportCharts`. `_catTrendPeriod` defaults to 3.
+- Completed goal progress bar + projected date. `calcGoalProjectedDate(goal)` computes average daily contribution rate from contribution history and projects forward from today. Projected date shown inline below the progress bar in each goal card. Color-coded: emerald if on track to beat target date, rose if late, slate if no target set. Hidden when goal is fully funded or has no contributions.
+- Completed trip daily budget breakdown. `renderTripDailyBreakdown(trip)` renders below the stats card in trip detail view. Groups on-trip expenses by day, computes daily budget = total budget / trip days, renders a mini bar per day with actual vs budget. Over-budget days get a rose bar and a "+₹N" badge. Header shows daily budget rate and a count of over-budget days. Empty (no on-trip expenses) renders nothing. Called at end of `renderTripDetailStats`. `<div id="tripDailyBreakdown">` added to index.html between the stats card and the tab bar.
 
 ---
 
@@ -53,8 +55,8 @@ Phase 2 - Item 9: Category spend trend (reports)
 [-] 7. Payment split chart (dashboard) — skipped
 [x] 8. Weekly/monthly comparison (dashboard)
 [x] 9. Category spend trend (reports)
-[ ] 10. Goal progress bar + projected date
-[ ] 11. Trip daily budget breakdown
+[x] 10. Goal progress bar + projected date
+[x] 11. Trip daily budget breakdown
 
 ### Phase 3 - Power Features
 

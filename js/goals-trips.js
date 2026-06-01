@@ -10,6 +10,27 @@
  * Global state: window.state (defined in core.js)
  */
 
+function calcGoalProjectedDate(goal) {
+    if (!goal.contributions || goal.contributions.length === 0) return null;
+    const remaining = goal.target - goal.current;
+    if (remaining <= 0) return null;
+
+    const sorted = goal.contributions.slice().sort((a, b) => a.date.localeCompare(b.date));
+    const firstDate = new Date(sorted[0].date + "T00:00:00");
+    const lastDate  = new Date(sorted[sorted.length - 1].date + "T00:00:00");
+    const totalContributed = sorted.reduce((s, c) => s + c.amount, 0);
+
+    const spanDays = Math.max(1, Math.round((lastDate - firstDate) / 86400000));
+    const dayRate  = totalContributed / spanDays;
+
+    if (dayRate <= 0) return null;
+
+    const daysNeeded = Math.ceil(remaining / dayRate);
+    const projected  = new Date();
+    projected.setDate(projected.getDate() + daysNeeded);
+    return projected;
+}
+
 function renderSavingGoalsDedicated() {
     const container = document.getElementById("dedicatedSavingGoalsListContainer");
     container.innerHTML = "";
@@ -87,6 +108,16 @@ function renderSavingGoalsDedicated() {
                     <p class="text-[9px] text-slate-500 font-bold">${Math.round(percent)}% · ${state.currencySymbol}${Math.max(0, g.target - g.current).toLocaleString()} remaining</p>
                     ${g.targetDate ? `<p class="text-[9px] text-slate-600 font-bold flex items-center gap-1"><i data-lucide="calendar" class="w-2.5 h-2.5"></i>${formatDateReadable(new Date(g.targetDate), { year: '2-digit' })}</p>` : ""}
                 </div>
+                ${(() => {
+                    if (percent >= 100) return '';
+                    const proj = calcGoalProjectedDate(g);
+                    if (!proj) return '';
+                    const projLabel = proj.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+                    const targetOk = g.targetDate && proj <= new Date(g.targetDate + "T23:59:59");
+                    const targetLate = g.targetDate && proj > new Date(g.targetDate + "T23:59:59");
+                    const color = targetLate ? "text-rose-400" : targetOk ? "text-emerald-400" : "text-slate-500";
+                    return `<p class="goal-projected ${color}"><i data-lucide="trending-up" class="w-2.5 h-2.5 inline-block mr-0.5" style="vertical-align:-1px"></i>Projected: <strong>${projLabel}</strong></p>`;
+                })()}
             </div>
 
             <!-- Expandable panel -->
@@ -765,6 +796,8 @@ function renderTripDetailStats() {
             </div>
         </div>
         ${trip.lastSyncedAt ? `<p class="text-[9px] text-slate-600 text-right">Last synced: ${formatDateTime(new Date(trip.lastSyncedAt))}</p>` : `<p class="text-[9px] text-slate-600 text-right">On-trip not yet synced to ledger</p>`}`;
+
+    renderTripDailyBreakdown(trip);
 }
 
 function getTripDaysCount(trip) {
@@ -772,6 +805,80 @@ function getTripDaysCount(trip) {
     const s = new Date(trip.startDate), e = new Date(trip.endDate);
     const diff = Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1;
     return diff > 0 ? diff : "—";
+}
+
+function renderTripDailyBreakdown(trip) {
+    const container = document.getElementById("tripDailyBreakdown");
+    if (!container) return;
+
+    const onExpenses = (trip.expenses || []).filter(e => e.type === "on");
+    const hasStart   = trip.startDate && trip.endDate;
+    const totalDays  = hasStart ? getTripDaysCount(trip) : null;
+    const dailyBudget = (trip.budget > 0 && typeof totalDays === "number" && totalDays > 0)
+        ? trip.budget / totalDays : null;
+    const sym = state.currencySymbol || "₹";
+
+    if (onExpenses.length === 0) {
+        container.innerHTML = "";
+        return;
+    }
+
+    const byDay = {};
+    onExpenses.forEach(e => {
+        if (!byDay[e.date]) byDay[e.date] = 0;
+        byDay[e.date] += e.amount;
+    });
+
+    const days = Object.keys(byDay).sort();
+
+    const rows = days.map(day => {
+        const actual = byDay[day];
+        const isOver = dailyBudget !== null && actual > dailyBudget;
+        const pct    = dailyBudget !== null ? Math.min((actual / dailyBudget) * 100, 100) : 100;
+        const barColor = isOver ? "bg-rose-500" : pct > 80 ? "bg-amber-500" : "bg-emerald-500";
+        const amtColor = isOver ? "text-rose-400" : "text-slate-200";
+        const dateLabel = (() => {
+            const d = new Date(day + "T00:00:00");
+            return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+        })();
+
+        return `
+        <div class="trip-daily-row">
+            <div class="flex items-center justify-between mb-0.5">
+                <span class="text-[9px] text-slate-400 font-bold">${dateLabel}</span>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[9px] font-extrabold ${amtColor}">${sym}${actual.toLocaleString()}</span>
+                    ${dailyBudget !== null ? `<span class="text-[8px] text-slate-600">/ ${sym}${Math.round(dailyBudget).toLocaleString()}</span>` : ""}
+                    ${isOver ? `<span class="trip-daily-over-badge">+${sym}${Math.round(actual - dailyBudget).toLocaleString()}</span>` : ""}
+                </div>
+            </div>
+            <div class="h-1 bg-slate-800 rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all ${barColor}" style="width:${pct}%"></div>
+            </div>
+        </div>`;
+    }).join("");
+
+    const overCount = dailyBudget !== null ? days.filter(d => byDay[d] > dailyBudget).length : 0;
+    const totalOnSpent = days.reduce((s, d) => s + byDay[d], 0);
+
+    container.innerHTML = `
+    <div class="trip-daily-breakdown-card">
+        <div class="flex items-center justify-between mb-2.5">
+            <p class="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                <i data-lucide="calendar-days" class="w-3 h-3"></i> Daily Breakdown
+            </p>
+            <div class="flex items-center gap-2">
+                ${dailyBudget !== null ? `<span class="text-[8px] text-slate-500">${sym}${Math.round(dailyBudget).toLocaleString()}/day</span>` : ""}
+                ${overCount > 0 ? `<span class="text-[8px] font-bold text-rose-400 bg-rose-950/50 border border-rose-500/30 px-1.5 py-0.5 rounded-full">${overCount} over</span>` : ""}
+            </div>
+        </div>
+        <div class="space-y-2">${rows}</div>
+        <div class="flex justify-between items-center mt-2.5 pt-2 border-t border-slate-800/60">
+            <span class="text-[9px] text-slate-500">${days.length} day${days.length !== 1 ? "s" : ""} with spend</span>
+            <span class="text-[9px] font-extrabold text-amber-400">${sym}${totalOnSpent.toLocaleString()} on-trip total</span>
+        </div>
+    </div>`;
+    initLucideIcons(container);
 }
 
 function renderTripExpenses() {
