@@ -446,6 +446,11 @@
             pointer-events: all;
         }
 
+        body > [id$="Modal"].fixed,
+        body > [id$="Sheet"].fixed {
+            z-index: 240 !important;
+        }
+
         /* ── Drawer profile area ── */
         .drawer-profile {
             display: flex;
@@ -1078,11 +1083,13 @@
         .templates-bar {
             border: 1px solid rgba(30, 41, 59, 0.9);
             background: rgba(15, 23, 42, 0.48);
-            border-radius: 1rem;
-            padding: 0.65rem;
+            border-radius: 0.875rem;
+            padding: 0.55rem 0.6rem;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.45rem;
+            max-height: 5.25rem;
+            overflow: hidden;
         }
         .templates-bar.hidden {
             display: none;
@@ -1100,7 +1107,7 @@
         .template-chip {
             --template-color: #818cf8;
             min-width: 0;
-            height: 2.25rem;
+            height: 2rem;
             display: inline-flex;
             align-items: center;
             gap: 0.4rem;
@@ -1110,7 +1117,7 @@
             background: color-mix(in srgb, var(--template-color) 16%, rgba(15, 23, 42, 0.86));
             color: rgb(226, 232, 240);
             padding: 0 0.7rem;
-            font-size: 0.62rem;
+            font-size: 0.58rem;
             font-weight: 800;
         }
         .template-dot {
@@ -1123,9 +1130,53 @@
         }
         .template-amount {
             color: rgb(199, 210, 254);
-            font-size: 0.58rem;
+            font-size: 0.54rem;
             font-weight: 900;
             white-space: nowrap;
+        }
+        .recurring-corner-action {
+            min-width: 2.5rem;
+            height: 2.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(30, 41, 59, 0.8);
+            background: rgba(15, 23, 42, 0.34);
+            color: rgba(148, 163, 184, 0.72);
+            font-size: 0.56rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .recurring-corner-action:hover,
+        .recurring-corner-action:focus-visible {
+            color: rgb(110, 231, 183);
+            border-color: rgba(16, 185, 129, 0.36);
+            background: rgba(6, 78, 59, 0.18);
+        }
+        .expense-form-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            min-height: 0;
+        }
+        .expense-form-scroll {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            min-height: 0;
+        }
+        .expense-form-footer {
+            position: sticky;
+            bottom: 4.25rem;
+            z-index: 5;
+            margin: 1.25rem -0.25rem 0;
+            padding: 0.75rem 0.25rem 0.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            background: linear-gradient(to top, #020617 78%, rgba(2, 6, 23, 0));
         }
         .templates-modal {
             width: 100%;

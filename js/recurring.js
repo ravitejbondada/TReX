@@ -591,9 +591,9 @@ function openEMIPrepayModal(emiId) {
     const safeName = typeof _escapeHtml === "function" ? _escapeHtml(emi.name) : String(emi.name || "EMI");
     const div = document.createElement("div");
     div.id = "emiPrepayModal";
-    div.className = "fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[110] flex items-end justify-center p-0";
+    div.className = "fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[240] flex items-center justify-center p-4";
     div.innerHTML = `
-        <div class="bg-slate-900 border border-slate-800 rounded-t-3xl w-full max-w-md p-5 space-y-4 shadow-2xl">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <h3 class="text-xs font-extrabold uppercase tracking-wider text-white">Prepay / Foreclose EMI</h3>
@@ -942,4 +942,5 @@ function postEMIEntry(emi, dateStr, monthNumber) {
         state.transactions.push(feeTx);
     }
 }
+
 

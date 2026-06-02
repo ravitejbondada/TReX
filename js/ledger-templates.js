@@ -2,8 +2,8 @@
  * ledger-templates.js - Transaction Presets
  * TReX - Devour Your Expenses
  *
- * Saves reusable expense combinations and renders one-tap preset logging
- * in Add Expense and Ledger.
+ * Saves reusable expense combinations and renders compact apply-to-form chips
+ * in Add Expense.
  *
  * Dependencies: core.js, transactions.js
  */
@@ -21,10 +21,7 @@ function getTemplateMeta(template) {
 
 function renderTransactionTemplatesBars() {
     const templates = ensureTransactionTemplates();
-    const hosts = [
-        document.getElementById("expenseTemplatesPanel"),
-        document.getElementById("ledgerTemplatesPanel")
-    ].filter(Boolean);
+    const hosts = [document.getElementById("expenseTemplatesPanel")].filter(Boolean);
 
     hosts.forEach(host => {
         if (!templates.length) {
@@ -35,7 +32,7 @@ function renderTransactionTemplatesBars() {
         host.classList.remove("hidden");
         host.innerHTML = `
             <div class="flex items-center justify-between gap-2">
-                <span class="text-[9px] font-extrabold uppercase tracking-widest text-slate-500">Presets</span>
+                <span class="text-[9px] font-extrabold uppercase tracking-widest text-slate-500">Use preset</span>
                 <button type="button" onclick="openTemplatesManager()"
                     class="text-[9px] font-bold text-indigo-400 flex items-center gap-1 active:scale-95">
                     <i data-lucide="settings-2" class="w-3 h-3"></i> Manage
@@ -45,7 +42,7 @@ function renderTransactionTemplatesBars() {
                 ${templates.map(template => {
                     const { cat } = getTemplateMeta(template);
                     return `
-                        <button type="button" onclick="logTemplateExpense('${template.id}')"
+                        <button type="button" onclick="applyTemplateToExpenseForm('${template.id}')"
                             class="template-chip" style="--template-color:${cat.color}">
                             <span class="template-dot"></span>
                             <span class="truncate max-w-[7.5rem]">${template.name}</span>
@@ -109,40 +106,6 @@ function applyTemplateToExpenseForm(templateId) {
     applyCategoryDefaultPayment();
     if (!expensePaymentLockId) document.getElementById("expensePayment").value = template.paymentId;
     document.getElementById("expenseNote").value = template.note || "";
-}
-
-async function logTemplateExpense(templateId) {
-    const template = ensureTransactionTemplates().find(t => t.id === templateId);
-    if (!template) return;
-    const cat = state.categories.find(c => c.id === template.categoryId);
-    const pay = state.payments.find(p => p.id === template.paymentId && !p.archived);
-    if (!cat || !pay) {
-        showNotification("Preset needs an active category and payment account.");
-        return;
-    }
-
-    const confirmed = await customConfirm(
-        `Log ${state.currencySymbol}${Number(template.amount || 0).toLocaleString()} for "${template.name}" today?`,
-        "Log preset?",
-        "Log"
-    );
-    if (!confirmed) return;
-
-    state.transactions.push({
-        id: `tx_${Date.now()}`,
-        amount: Number(template.amount || 0),
-        categoryId: template.categoryId,
-        paymentId: template.paymentId,
-        date: getTodayISO(),
-        note: template.note || template.name,
-        createdAt: new Date().toISOString()
-    });
-    saveStateToLocalStorage();
-    playSound(S.SAVE);
-    showNotification("Preset expense logged.");
-    updateAppDashboardView();
-    refreshCreditCardViews();
-    if (!document.getElementById("historyView").classList.contains("hidden")) filterHistory();
 }
 
 function openTemplatesManager() {

@@ -1,533 +1,226 @@
-TReX Local Capacitor Migration Plan
-===================================
+===============================================================================
+TReX LOCAL-FIRST MIGRATION PLAN
+(Clean Slate Implementation)
 
-Direction
----------
+STEP 1: ARCHIVE CURRENT CLOUD REPOSITORY
 
-Move to a 100% local app using Capacitor.
+Keep your existing repository completely separate to serve as a read-only
+visual reference for your UI layout and CSS styling.
 
-Recommended architecture:
-
-- Capacitor wraps the app as a proper Android/iOS application.
-- SQLite is the live local database and source of truth.
-- Capacitor Filesystem is used for backup/export/import files.
-- Capacitor Share is used to let the user save/share backup files to Drive, iCloud, Desktop, USB, etc.
-- Capacitor Local Notifications is used to remind the user to export backups.
-
-Important note:
-
-Do not use a single JSON/cache file as the live database. JSON is fine for backup/export, but SQLite is safer for daily finance data, splits, recurring expenses, filters, sorting, and migrations.
-
-
-Step 1: Freeze Current Repo
----------------------------
-
-Keep the existing TReX repo as reference only.
-
-Commands:
-
+Run these commands in your old project folder:
 git status
 git add .
-git commit -m "Freeze current cloud-enabled TReX app"
+git commit -m "Archive cloud-enabled TReX application"
 
-Purpose:
+STEP 2: INITIALIZE NEW CLEAN REPOSITORY
 
-- Preserve the current working app.
-- Keep all current fixes safe.
-- Use it as reference while building the clean local version.
+Create a brand new folder to ensure absolutely zero legacy Google SDK, sync
+scripts, or old localStorage fallback configurations leak into the local code.
 
-
-Step 2: Create New Repo
------------------------
-
-Create a new folder.
-
-Example:
-
+Run these commands:
 mkdir TReX-Local
 cd TReX-Local
 git init
 
-Recommended repo name:
+STEP 3: BOOTSTRAP & INITIALIZE WORKSPACE WITH VITE (VANILLA JS)
 
-TReX-Local
+Set up a clean, modern, and lightning-fast asset bundler without taking on the
+overhead or structural complexity of a full framework like React or Vue.
 
-Purpose:
-
-- Clean break from Google/cloud sync.
-- No accidental cloud code left behind.
-- Easier mental model.
-
-
-Step 3: Install Required Software
----------------------------------
-
-For Windows/Android development, install:
-
-- Node.js LTS
-- Git
-- VS Code
-- Android Studio
-- Java/JDK 21 if Android Studio does not bundle/configure it cleanly
-
-For iPhone/iPad builds:
-
-- Mac required
-- Xcode required
-- Apple Developer account required for real device/TestFlight/App Store
-
-For now, on Windows, focus on Android first.
-
-
-Step 4: Create Frontend App
----------------------------
-
-Since the current app is plain HTML/CSS/JS, use Vite vanilla JS.
-
-Command:
-
+Run these commands:
 npm create vite@latest . -- --template vanilla
 npm install
 
-Purpose:
+STEP 4: INSTALL CAPACITOR & CORE MOBILE PLUGINS
 
-- Gives a clean build system.
-- Capacitor can package the built dist folder.
-- Keeps the app simple without forcing React/Vue.
+Install the core mobile runtime shell alongside the necessary native device
+plugins for local file sharing, manual backup handling, and local reminders.
 
-
-Step 5: Copy UI Gradually
--------------------------
-
-From the old repo, copy only useful UI pieces:
-
-- index.html structure
-- styles.css
-- dashboard/ledger/add expense screens
-- category/payment UI
-- recurring UI
-- credit card UI
-
-Do not copy these directly without review:
-
-- sync.js
-- Google auth code
-- Google Drive logic
-- cloud conflict logic
-- remote backup logic
-- old localStorage-as-main-store logic
-
-Purpose:
-
-- Keep visual/product work.
-- Remove cloud architecture completely.
-
-
-Step 6: Install Capacitor
--------------------------
-
-Commands:
-
-npm install @capacitor/core
+Run these commands:
+npm install @capacitor/core @capacitor/filesystem @capacitor/share @capacitor/local-notifications
 npm install -D @capacitor/cli
+
+Initialize the project configuration:
 npx cap init
 
-Use app values like:
+(Recommended Prompt Inputs)
 
-App name: TReX
-App id: com.yourname.trex
-Web directory: dist
+App Name: TReX
 
-Then build once:
+App ID: com.yourname.trex
 
-npm run build
+Web Directory: dist
 
+STEP 5: INSTALL THE MOBILE SQLITE ENGINE
 
-Step 7: Add Android Platform
-----------------------------
+Install the industry-standard community plugin to establish a secure, native,
+structured database directly on the device hardware.
 
-Commands:
-
-npm install @capacitor/android
-npx cap add android
-
-After every frontend build:
-
-npm run build
-npx cap sync android
-
-To open the native Android project:
-
-npx cap open android
-
-Purpose:
-
-- Creates the real Android wrapper.
-- Android Studio handles emulator/device build.
-
-
-Step 8: Add Official Capacitor Plugins
---------------------------------------
-
-Install official plugins for backup/sharing/notifications.
-
-Commands:
-
-npm install @capacitor/filesystem
-npm install @capacitor/share
-npm install @capacitor/local-notifications
-npx cap sync
-
-Use them like this:
-
-- Filesystem: internal snapshots and backup file creation
-- Share: user exports backup to Drive/iCloud/Desktop/USB via OS share/save sheet
-- Local Notifications: remind user to export backup daily/weekly
-
-
-Step 9: Add SQLite
-------------------
-
-Capacitor does not have an official SQLite plugin. For a free option, use:
-
+Run these commands:
 npm install @capacitor-community/sqlite
 npx cap sync
 
-Purpose:
+STEP 6: CLEAN-SLATE SQLITE DATABASE SCHEMA (src/storage/migrations.js)
+
+Because you are starting with a blank slate, you can leverage native SQL foreign
+key relationships and unique indices immediately to guarantee data integrity.
+
+Create this file to hold your initialization scripts:
+
+export const INITIAL_MIGRATION = `
+CREATE TABLE IF NOT EXISTS categories (
+id TEXT PRIMARY KEY,
+name TEXT NOT NULL,
+icon TEXT,
+color TEXT
+);
+
+CREATE TABLE IF NOT EXISTS payment_methods (
+id TEXT PRIMARY KEY,
+name TEXT NOT NULL,
+type TEXT
+);
+
+CREATE TABLE IF NOT EXISTS recurring_rules (
+id TEXT PRIMARY KEY,
+name TEXT NOT NULL,
+amount REAL NOT NULL,
+frequency TEXT NOT NULL,
+next_due_date TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS settings (
+key TEXT PRIMARY KEY,
+value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS transactions (
+id TEXT PRIMARY KEY,
+title TEXT NOT NULL,
+total_amount REAL NOT NULL,
+date TEXT NOT NULL,
+category_id TEXT,
+payment_method_id TEXT,
+recurring_rule_id TEXT,
+is_split INTEGER DEFAULT 0,
+FOREIGN KEY(category_id) REFERENCES categories(id),
+FOREIGN KEY(payment_method_id) REFERENCES payment_methods(id),
+FOREIGN KEY(recurring_rule_id) REFERENCES recurring_rules(id)
+);
+
+CREATE TABLE IF NOT EXISTS split_items (
+id TEXT PRIMARY KEY,
+transaction_id TEXT NOT NULL,
+title TEXT NOT NULL,
+amount REAL NOT NULL,
+category_id TEXT,
+FOREIGN KEY(transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,
+FOREIGN KEY(category_id) REFERENCES categories(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_recurring_unique
+ON transactions(recurring_rule_id, date);
+`;
+
+STEP 7: SUGGESTED REPOSITORY DIRECTORY LAYOUT
+
+Separate your database connection logic from your visual components using the
+Repository Pattern. Your user interface will exclusively interact with clean
+JavaScript functions rather than writing raw SQL strings inside UI files.
+
+TReX-Local/
++-- src/
+|   +-- ui/                     # Your clean UI components and views
+|   +-- storage/
+|   |   +-- db.js               # Capacitor SQLite connection management
+|   |   +-- migrations.js       # DB creation scripts (defined in Step 6)
+|   |   +-- transactionsRepo.js # Handles standard CRUD & ledger queries
+|   |   +-- settingsRepo.js     # Handles lightweight local app settings
+|   +-- main.js                 # Main application loader and entry point
++-- dist/                       # Output folder for production web builds
++-- capacitor.config.json       # Capacitor bridge configurations
++-- package.json                # Dependencies and build scripts
+
+STEP 8: REBUILD AND FUNCTIONAL TESTING EXECUTION ORDER
+
+Because a local database starts completely empty, implement features following
+this specific data dependency chain to make testing smooth:
+
+THE SEED LAYER: Build small admin interfaces or setup configurations to
+populate your 'categories' and 'payment_methods' tables first.
+
+THE SAMPLE TEST LAYER: Add temporary manual test entries only when needed for
+development. Do not build a data reload/import path until you have real data to
+preserve.
+
+THE INPUT ENGINE: Port over your "Add Expense" forms to write rows directly
+into the native 'transactions' table.
+
+THE LEDGER LIST: Construct your primary history feed utilizing straightforward
+SQL select queries with 'ORDER BY date DESC'.
+
+THE SPLIT ENGINE: Implement advanced transaction splits. If a primary parent
+transaction row is deleted, the database's native ON DELETE CASCADE rule
+will automatically drop child 'split_items' rows without custom code.
 
-- Creates local DB on device.
-- Stores real app data safely.
-- Avoids JSON-file-as-live-database risk.
+THE DISPLAY CALCULATOR: Run cumulative math operations dynamically in memory
+on the array subsets returned by your ledger queries. Never save changing
+cumulative balances straight back down to the database.
 
+THE MANUAL BACKUP UTILITY: Assemble a clean "Export Backup" feature using
+@capacitor/filesystem and @capacitor/share. This converts your active SQLite
+state into a structured JSON string and passes it directly to the OS Share
+Sheet so users can save backups to external targets (Drive, iCloud, Local).
 
-Step 10: Design Database Schema
--------------------------------
+STEP 9: REQUIRED FEATURE REVAMPS DURING LOCAL MIGRATION
 
-Start with tables like:
+Some current features should not be copied directly. Rebuild these around the
+new local SQLite model instead of preserving old sync-era behavior.
 
-- transactions
-- split_items
-- categories
-- payment_methods
-- credit_cards
-- recurring_rules
-- settings
-- app_metadata
-- backup_log
+TRIP EXPENSES: Remove manual trip-to-ledger sync. Store trip expenses as normal
+transactions with an optional trip_id. Show a small trip pill and the actual
+trip name in the transaction description or metadata. Ledger, credit-card views,
+and trip details should all read from the same transaction row instead of using
+duplicate synced records.
 
-Important constraints:
+TRIP EDIT / DELETE RULES: Allow edit/delete wherever the transaction is visible
+as long as the trip pill is clearly shown. The Trips section remains the focused
+trip view, but it should not be the only place where a trip-linked transaction
+can be managed.
 
-- transactions.id unique
-- split_items.transaction_id links to parent transaction
-- recurring_rules.id unique
-- transactions.recurring_rule_id optional
-- one recurring transaction per recurring_rule_id + date
+RECURRING EXPENSES: Rebuild recurring as a schedule engine that creates normal
+transaction rows when due. Keep schedule editing separate from transaction
+editing. Deleted/edited generated dates should be tracked so the engine does not
+recreate them accidentally.
 
-That last constraint prevents duplicate recurring entries at database level.
+EMI / FORECLOSURE: Rebuild EMI schedules as first-class local records with clear
+posting history, outstanding principal calculation, and centered modal flows for
+schedule, prepayment, and foreclosure actions.
 
+PRESETS: Keep presets as form-fill shortcuts only. Do not create one-tap instant
+logging sections in ledger or dashboard. Presets should stay compact near the
+top of Add Expense and must never push the save action below the bottom nav.
 
-Step 11: Create Storage Layer
------------------------------
+CREDIT CARD TRANSACTIONS: Treat card spends as normal transactions linked to a
+payment method/card. Card views should filter and summarize the same transaction
+data instead of maintaining separate expense copies.
 
-Do not let screens talk directly to SQLite.
+CLOUD / SYNC CODE: Do not migrate Google Drive sync, OAuth, conflict modals,
+reset-boundary logic, or reload/apply-remote flows into the local repo. Replace
+them with explicit local export/import backup utilities only when real data
+needs preservation.
 
-Suggested files:
+STEP 10: ACTIVATE MOBILE BUILDS
 
-src/storage/db.js
-src/storage/migrations.js
-src/storage/transactionsRepo.js
-src/storage/categoriesRepo.js
-src/storage/recurringRepo.js
-src/storage/settingsRepo.js
-src/storage/backupRepo.js
+Once your code runs reliably inside your web browser environment, activate and
+compile your real native Android application shell.
 
-The UI should call functions like:
-
-await transactionsRepo.createTransaction(data)
-await transactionsRepo.updateTransaction(id, data)
-await transactionsRepo.deleteTransaction(id)
-await transactionsRepo.listLedger(filters)
-
-Purpose:
-
-- Future changes stay contained.
-- Easier testing.
-- No messy SQL spread across UI files.
-
-
-Step 12: Build Migration System
--------------------------------
-
-Create DB versioning from day one.
-
-Example:
-
-version 1: initial tables
-version 2: add recurring skipped dates
-version 3: add card billing metadata
-
-Store current version in:
-
-app_metadata
-
-Purpose:
-
-- When app updates, old users' databases upgrade safely.
-
-
-Step 13: Import Existing Data
------------------------------
-
-Add one-time importer from current backup/local JSON format.
-
-Flow:
-
-1. User opens new app.
-2. App detects empty SQLite DB.
-3. User chooses old backup JSON.
-4. App validates it.
-5. App inserts categories, payments, transactions, recurring rules.
-6. App marks import complete.
-
-Do not rely on old cloud sync.
-
-
-Step 14: Rebuild Core Features One By One
------------------------------------------
-
-Recommended order:
-
-1. Settings and theme
-2. Categories/payment methods
-3. Add expense
-4. Ledger list
-5. Edit/delete transaction
-6. Split transactions
-7. Cumulative sum
-8. Dashboard
-9. Recurring expenses
-10. Credit cards
-11. Backup/export/import
-12. Notifications
-
-This order is important because ledger and dashboard depend on clean transaction data.
-
-
-Step 15: Rebuild Cumulative Sum Engine
---------------------------------------
-
-For the new app:
-
-1. Fetch visible ledger rows from SQLite based on current search/filter/sort.
-2. Render them.
-3. Calculate cumulative amount from bottom to top.
-4. Display result per visible tile.
-
-Do not store cumulative sum in DB. It is a display calculation.
-
-
-Step 16: Rebuild Split Logic Properly
--------------------------------------
-
-Database model:
-
-transactions
-- id
-- title
-- total_amount
-- date
-- payment_method
-- is_split
-
-split_items
-- id
-- transaction_id
-- title
-- amount
-- category_id
-
-Rules:
-
-- Main amount = sum(split_items.amount).
-- Main amount is not editable when split is enabled.
-- Delete parent = delete all split items after warning.
-- Delete split item = delete only that item.
-
-
-Step 17: Rebuild Recurring Safely
----------------------------------
-
-Use DB constraints.
-
-Recurring rule:
-
-recurring_rules
-- id
-- name
-- amount
-- frequency
-- next_due_date
-- last_posted_date
-
-Generated transaction:
-
-transactions.recurring_rule_id = recurring_rules.id
-transactions.date = due date
-
-Add uniqueness protection:
-
-one transaction per recurring_rule_id + date
-
-This stops duplicate recurring entries permanently.
-
-
-Step 18: Add Backup System
---------------------------
-
-Use two backup types.
-
-Internal automatic backup:
-
-- App writes local JSON snapshot inside app storage.
-- Keep last 7 or last 14 backups.
-- Runs when app opens or once per day.
-
-Manual export:
-
-- User taps Export Backup File.
-- App creates JSON backup.
-- Share plugin opens native share/save dialog.
-- User chooses Drive/iCloud/Desktop/USB/etc.
-
-This is OS-compliant and realistic.
-
-
-Step 19: Add Backup Reminder
-----------------------------
-
-Use Local Notifications.
-
-Example:
-
-Every day at 9 PM or user-selected time:
-"Backup reminder: export your TReX backup file"
-
-Do not promise silent export to Google Drive/iCloud. The OS generally blocks silent write access to arbitrary personal locations.
-
-
-Step 20: Test on Web First
---------------------------
-
-Command:
-
-npm run dev
-
-Test:
-
-- add/edit/delete transaction
-- split add/delete
-- ledger filter/search/sort
-- cumulative sum
-- recurring generation
-- backup export JSON shape
-- import restore
-
-
-Step 21: Test on Android
-------------------------
-
-Commands:
-
+Run these commands:
 npm run build
+npm install @capacitor/android
+npx cap add android
 npx cap sync android
+
+To compile the real app and open it inside an emulator or on a physical test
+phone via Android Studio, execute:
 npx cap open android
-
-Then in Android Studio:
-
-- Run on emulator.
-- Run on real phone.
-- Test app close/reopen.
-- Test database persistence.
-- Test backup export.
-- Test import restore.
-- Test notification permission.
-
-
-Step 22: Remove All Cloud Concepts
-----------------------------------
-
-Before first serious release, search for and remove:
-
-- google
-- drive
-- oauth
-- sync
-- remote
-- cloud
-- conflict
-- access token
-- refresh token
-
-The local app should have no hidden dependency on cloud code.
-
-
-Step 23: Package Release Build
-------------------------------
-
-For Android:
-
-Android Studio -> Generate Signed App Bundle / APK
-
-Later, if publishing:
-
-- Google Play internal testing
-- Closed testing
-- Production
-
-For personal use, APK install is enough.
-
-
-Step 24: Keep Docs From Day One
--------------------------------
-
-Create docs in the new repo:
-
-- README.md
-- ARCHITECTURE.md
-- DATA_MODEL.md
-- BACKUP_RESTORE.md
-- MIGRATIONS.md
-- CHANGELOG.md
-
-Most important one is DATA_MODEL.md. That will keep SQLite sane as the app grows.
-
-
-Suggested Final Structure
--------------------------
-
-TReX-Local
-  src/
-    ui/
-    storage/
-      db.js
-      migrations.js
-      transactionsRepo.js
-      recurringRepo.js
-      backupRepo.js
-    services/
-      cumulativeService.js
-      recurringService.js
-      backupService.js
-    styles/
-  capacitor.config.ts
-  android/
-
-
-Final Recommendation
---------------------
-
-SQLite should be the app's brain.
-Capacitor should be the app shell/body.
-Filesystem should be the backup locker.
-
-That gives TReX a proper local-first foundation without making the data fragile.
