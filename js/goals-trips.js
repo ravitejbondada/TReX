@@ -1,6 +1,6 @@
 /**
  * goals-trips.js — Saving Goals & Trips
- * TReX � Devour Your Expenses
+ * TReX — Devour Your Expenses
  *
  * Saving goals list, goal accordion, contribution editor, goal funding,
  * trips list, trip create/edit/detail/delete, trip expense add/edit/delete,
@@ -11,6 +11,7 @@
  */
 
 function calcGoalProjectedDate(goal) {
+    if (goal.completed) return null;
     if (!goal.contributions || goal.contributions.length === 0) return null;
     const remaining = goal.target - goal.current;
     if (remaining <= 0) return null;
@@ -55,7 +56,7 @@ function openGoalsTripsInfo() {
         : [
             ["Set a target & track progress", "Create a goal with a name, target amount, and an optional deadline. Your progress bar updates automatically as you add contributions."],
             ["Log contributions anytime", "Add each deposit with an amount, date, and optional note. TReX uses your contribution history to project when you'll reach your goal at your current pace."],
-            ["Goal achieved?", "Once you hit 100%, your goal is marked Fully Funded. You can keep it as a record or delete it whenever you're ready."]
+            ["Flexible completion controls", "You can mark goals complete early when you hit targets, manually archive incomplete targets whenever you are satisfied, or let the system auto-complete expired goals."]
         ];
 
     const div = document.createElement("div");
@@ -95,7 +96,54 @@ function closeGoalsTripsInfo() {
     const modal = document.getElementById("goalsTripsInfoModal");
     if (modal) modal.remove();
 }
+
+/**
+ * iv. Auto-close system verification once target date is reached.
+ * Returns true if state changed, so we can save and trigger re-render.
+ */
+function verifyAndAutocloseGoals() {
+    let changed = false;
+    const todayStr = getTodayISO();
+    
+    (state.savingGoals || []).forEach(g => {
+        if (!g.completed && g.targetDate && g.targetDate < todayStr) {
+            g.completed = true;
+            g.completedReason = "expired"; // Auto-closed because target date passed
+            changed = true;
+            
+            // Alert user that the goal has expired and auto-closed
+            setTimeout(async () => {
+                await customConfirm(
+                    t(`The target date for your goal "${g.name}" has been reached. TReX has auto-closed this goal. If you'd like to continue saving towards this goal, you can edit it and update its target date.`, 
+                      `The hunt deadline for "${g.name}" has expired! The egg was harvested. If you want to continue the hunt, edit it to update its target date.`),
+                    t("Goal Date Reached", "Hunt Deadline Reached!"),
+                    t("Extend Date", "Extend Hunt")
+                ).then(wantsToExtend => {
+                    if (wantsToExtend) {
+                        // Undo completion and open accordion to edit
+                        g.completed = false;
+                        delete g.completedReason;
+                        saveStateToLocalStorage();
+                        renderSavingGoalsDedicated();
+                        setTimeout(() => {
+                            toggleGoalAccordion(g.id);
+                            toggleGoalEdit(g.id);
+                        }, 50);
+                    }
+                });
+            }, 100);
+        }
+    });
+    
+    return changed;
+}
+
 function renderSavingGoalsDedicated() {
+    // Check auto-close criteria first
+    const autoClosedAny = verifyAndAutocloseGoals();
+    if (autoClosedAny) {
+        saveStateToLocalStorage();
+    }
 
     const container = document.getElementById("dedicatedSavingGoalsListContainer");
     container.innerHTML = "";
@@ -114,10 +162,17 @@ function renderSavingGoalsDedicated() {
         const eggHtml = dp('dinoMode') ? `<span class="goal-egg-icon" id="goal-egg-${g.id}">${getEggSvg(percent)}</span>` : '';
 
         let badgeHtml = "";
-        if (percent >= 100)      badgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-950/80 border border-emerald-500/20 text-emerald-400 rounded-lg text-[9px] font-extrabold uppercase"><i data-lucide="trophy" class="w-3 h-3"></i>Fully Funded</span>`;
-        else if (percent >= 75)  badgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-950/80 border border-indigo-500/20 text-indigo-400 rounded-lg text-[9px] font-extrabold uppercase"><i data-lucide="sparkles" class="w-3 h-3"></i>Almost There</span>`;
-        else if (percent >= 50)  badgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-950/80 border border-amber-500/20 text-amber-500 rounded-lg text-[9px] font-extrabold uppercase"><i data-lucide="target" class="w-3 h-3"></i>Halfway</span>`;
-        else                     badgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-500 rounded-lg text-[9px] font-bold uppercase"><i data-lucide="flag" class="w-3 h-3"></i>Initiated</span>`;
+        if (g.completed) {
+            badgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-900 border border-slate-700 text-slate-400 rounded-lg text-[9px] font-extrabold uppercase"><i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-400"></i>Completed</span>`;
+        } else if (percent >= 100) {
+            badgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-950/80 border border-emerald-500/20 text-emerald-400 rounded-lg text-[9px] font-extrabold uppercase"><i data-lucide="trophy" class="w-3 h-3"></i>Fully Funded</span>`;
+        } else if (percent >= 75) {
+            badgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-950/80 border border-indigo-500/20 text-indigo-400 rounded-lg text-[9px] font-extrabold uppercase"><i data-lucide="sparkles" class="w-3 h-3"></i>Almost There</span>`;
+        } else if (percent >= 50) {
+            badgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-950/80 border border-amber-500/20 text-amber-500 rounded-lg text-[9px] font-extrabold uppercase"><i data-lucide="target" class="w-3 h-3"></i>Halfway</span>`;
+        } else {
+            badgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-500 rounded-lg text-[9px] font-bold uppercase"><i data-lucide="flag" class="w-3 h-3"></i>Initiated</span>`;
+        }
 
         // Build contributions HTML
         const contribRows = g.contributions.length === 0
@@ -138,25 +193,44 @@ function renderSavingGoalsDedicated() {
                             <button onclick="cancelEditContribution('${c.id}')" class="text-[9px] font-bold px-2 py-1 bg-slate-800 text-slate-400 rounded-lg">Cancel</button>
                         </div>
                     </div>
+                    ${g.completed ? '' : `
                     <div class="flex gap-1 shrink-0">
                         <button onclick="editGoalContribution('${c.id}')" class="p-1 text-slate-600 hover:text-indigo-400 rounded transition-all"><i data-lucide="pencil" class="w-3 h-3"></i></button>
                         <button onclick="deleteGoalContribution('${g.id}','${c.id}')" class="p-1 text-slate-600 hover:text-rose-400 rounded transition-all"><i data-lucide="trash" class="w-3 h-3"></i></button>
-                    </div>
+                    </div>`}
                 </div>`).join("");
 
         const item = document.createElement("div");
-        item.className = "bg-slate-900 border border-slate-800/80 rounded-2xl overflow-hidden text-xs";
+        item.className = `bg-slate-900 border rounded-2xl overflow-hidden text-xs transition-all duration-300 ${g.completed ? 'border-slate-800/40 opacity-75' : 'border-slate-800/80'}`;
+        
+        let completionActionBtn = "";
+        if (!g.completed) {
+            // iii. Add a Direct Manual Complete action
+            completionActionBtn = `
+                <button onclick="manuallyCompleteGoal('${g.id}')" class="flex items-center gap-1 text-[9px] font-bold text-emerald-400 hover:text-emerald-300 transition-all px-2.5 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-500/20 shadow-sm" title="Mark this goal complete">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i> Complete Goal
+                </button>
+            `;
+        } else {
+            // Option to reopen the goal
+            completionActionBtn = `
+                <button onclick="reopenSavingGoal('${g.id}')" class="flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-indigo-400 transition-all px-2.5 py-1.5 rounded-lg bg-slate-850 border border-slate-800" title="Re-open this goal to continue saving">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reopen Goal
+                </button>
+            `;
+        }
+
         item.innerHTML = `
             <!-- Clickable header -->
             <div class="p-4 cursor-pointer select-none" onclick="toggleGoalAccordion('${g.id}')">
                 <div class="flex justify-between items-start gap-2">
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2">
-                            <span class="p-1.5 rounded-lg bg-indigo-600/15 text-indigo-400 border border-indigo-500/20 shrink-0">
-                                <i data-lucide="target" class="w-3.5 h-3.5"></i>
+                            <span class="p-1.5 rounded-lg ${g.completed ? 'bg-slate-800 text-slate-500' : 'bg-indigo-600/15 text-indigo-400 border border-indigo-500/20'} shrink-0">
+                                <i data-lucide="${g.completed ? 'check-circle' : 'target'}" class="w-3.5 h-3.5"></i>
                             </span>
                             ${eggHtml}
-                            <span class="font-extrabold text-slate-100 block truncate text-[11px]">${g.name}</span>
+                            <span class="font-extrabold ${g.completed ? 'text-slate-400 line-through' : 'text-slate-100'} block truncate text-[11px]">${g.name}</span>
                             <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-500 shrink-0 transition-transform duration-200" id="goal-chevron-${g.id}"></i>
                         </div>
                         <div class="mt-2 flex items-center gap-1.5 flex-wrap">${badgeHtml}</div>
@@ -167,13 +241,14 @@ function renderSavingGoalsDedicated() {
                     </div>
                 </div>
                 <div class="mt-3 w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-900">
-                    <div class="bg-gradient-to-r from-indigo-600 to-violet-400 h-full rounded-full transition-all duration-500" style="width:${percent}%"></div>
+                    <div class="h-full rounded-full transition-all duration-500 ${g.completed ? 'bg-emerald-600' : 'bg-gradient-to-r from-indigo-600 to-violet-400'}" style="width:${percent}%"></div>
                 </div>
                 <div class="flex items-center justify-between mt-1">
                     <p class="text-[9px] text-slate-500 font-bold">${Math.round(percent)}% · ${state.currencySymbol}${Math.max(0, g.target - g.current).toLocaleString()} remaining</p>
-                    ${g.targetDate ? `<p class="text-[9px] text-slate-600 font-bold flex items-center gap-1"><i data-lucide="calendar" class="w-2.5 h-2.5"></i>${formatDateReadable(new Date(g.targetDate), { year: '2-digit' })}</p>` : ""}
+                    ${g.targetDate ? `<p class="text-[9px] text-slate-600 font-bold flex items-center gap-1"><i data-lucide="calendar" class="w-2.5 h-2.5"></i>${formatDateReadable(new Date(g.targetDate), { year: '2-digit' })}${g.completedReason === 'expired' ? ' (Expired)' : ''}</p>` : ""}
                 </div>
                 ${(() => {
+                    if (g.completed) return '';
                     if (percent >= 100) return '';
                     const proj = calcGoalProjectedDate(g);
                     if (!proj) return '';
@@ -197,7 +272,9 @@ function renderSavingGoalsDedicated() {
                         ${contribRows}
                     </div>
                 </div>
-                <!-- Fund rows (2-row layout for clarity) -->
+
+                <!-- Fund inputs (only visible when not completed) -->
+                ${g.completed ? '' : `
                 <div class="px-3 pb-3 pt-2 space-y-2 border-t border-slate-800/60">
                     <!-- Row 1: Amount + Date -->
                     <div class="flex gap-2">
@@ -217,14 +294,19 @@ function renderSavingGoalsDedicated() {
                             <i data-lucide="plus" class="w-3 h-3"></i> Add
                         </button>
                     </div>
-                    <div class="flex items-center justify-between pt-1">
-                        <button onclick="toggleGoalEdit('${g.id}')" class="flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-indigo-400 transition-all px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800">
-                            <i data-lucide="pencil" class="w-3 h-3"></i> Edit Goal
+                </div>`}
+
+                <!-- Goal controls & edit/delete section -->
+                <div class="px-3 pb-3 pt-2 border-t border-slate-800/60 flex items-center justify-between gap-1.5 flex-wrap">
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="toggleGoalEdit('${g.id}')" class="flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-indigo-400 transition-all px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Edit Goal
                         </button>
-                        <button onclick="removeSavingGoalDedicated('${g.id}')" class="p-1.5 text-slate-600 hover:text-rose-400 transition-all rounded-lg" title="Delete goal">
-                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                        </button>
+                        ${completionActionBtn}
                     </div>
+                    <button onclick="removeSavingGoalDedicated('${g.id}')" class="p-1.5 text-slate-600 hover:text-rose-400 transition-all rounded-lg" title="Delete goal">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
                 </div>
 
                 <!-- Edit goal panel (hidden by default) -->
@@ -292,7 +374,7 @@ function cancelGoalEdit(id) {
     if (panel) panel.classList.add("hidden");
 }
 
-function saveGoalEdit(id) {
+async function saveGoalEdit(id) {
     const nameInput   = document.getElementById(`goal-edit-name-${id}`);
     const targetInput = document.getElementById(`goal-edit-target-${id}`);
     const dateInput   = document.getElementById(`goal-edit-date-${id}`);
@@ -306,10 +388,32 @@ function saveGoalEdit(id) {
 
     const idx = state.savingGoals.findIndex(g => g.id === id);
     if (idx === -1) return;
+    
+    const goal = state.savingGoals[idx];
+    const todayStr = getTodayISO();
 
-    state.savingGoals[idx].name       = newName;
-    state.savingGoals[idx].target     = newTarget;
-    state.savingGoals[idx].targetDate = newDate || "";
+    // ii. If user updates targetDate < current date, ask if they want to complete the goal irrespective of the target amount reached or not.
+    let askToCompleteDueToPastDate = false;
+    if (newDate && newDate < todayStr && (!goal.completed)) {
+        askToCompleteDueToPastDate = true;
+    }
+
+    goal.name       = newName;
+    goal.target     = newTarget;
+    goal.targetDate = newDate || "";
+
+    if (askToCompleteDueToPastDate) {
+        const wantsComplete = await customConfirm(
+            t(`You updated the target date to a past date. Do you want to mark "${newName}" as fully completed anyway, irrespective of whether the full target amount of ${state.currencySymbol}${newTarget} is reached?`,
+              `The deadline selected is in the past! Do you want to finalize this hunt anyway, regardless of the target remaining?`),
+            t("Complete Goal?", "Complete Hunt?"),
+            t("Yes, Complete", "Finalize Hunt")
+        );
+        if (wantsComplete) {
+            goal.completed = true;
+            goal.completedReason = "manual_date_change";
+        }
+    }
 
     saveStateToLocalStorage();
     renderSavingGoalsDedicated();
@@ -375,7 +479,18 @@ function createNewSavingGoalDedicated() {
     const dateEl = document.getElementById("newGoalDateDedicated");
     const targetDate = dateEl ? dateEl.value : "";
     if (!name || isNaN(target) || target <= 0) { showNotification(t("Please provide valid goal parameters.", "This egg needs a name and a real target.")); return; }
-    state.savingGoals.push({ id: "goal_" + Date.now(), name, target, current: 0, targetDate: targetDate || "", contributions: [] });
+    
+    const newGoal = { 
+        id: "goal_" + Date.now(), 
+        name, 
+        target, 
+        current: 0, 
+        targetDate: targetDate || "", 
+        contributions: [],
+        completed: false
+    };
+    
+    state.savingGoals.push(newGoal);
     saveStateToLocalStorage();
     document.getElementById("newGoalNameDedicated").value = "";
     document.getElementById("newGoalTargetDedicated").value = "";
@@ -385,7 +500,39 @@ function createNewSavingGoalDedicated() {
     showNotification(t("Goal created.", "🥚 New egg in the nest."));
 }
 
-function fundSavingGoalDedicated(id) {
+// iii. Direct manual complete option
+async function manuallyCompleteGoal(id) {
+    const idx = state.savingGoals.findIndex(g => g.id === id);
+    if (idx === -1) return;
+    const goal = state.savingGoals[idx];
+    
+    const textMsg = goal.current >= goal.target
+        ? t(`Mark "${goal.name}" as completed?`, `Harvest "${goal.name}"?`)
+        : t(`Mark "${goal.name}" as completed even though you haven't saved the full target amount yet?`, `Harvest "${goal.name}" early even though the egg is not fully nurtured?`);
+
+    if (await customConfirm(textMsg, t("Complete Goal?", "Complete Hunt?"), t("Yes, Complete", "Harvest"))) {
+        goal.completed = true;
+        goal.completedReason = "manual_force";
+        saveStateToLocalStorage();
+        renderSavingGoalsDedicated();
+        playSound(S.GOAL_HATCHED);
+        showNotification(t(`Goal "${goal.name}" marked complete.`, `Hunt "${goal.name}" finalized.`));
+    }
+}
+
+// Option to reopen goal
+function reopenSavingGoal(id) {
+    const idx = state.savingGoals.findIndex(g => g.id === id);
+    if (idx === -1) return;
+    state.savingGoals[idx].completed = false;
+    delete state.savingGoals[idx].completedReason;
+    saveStateToLocalStorage();
+    renderSavingGoalsDedicated();
+    playSound(S.SYSTEM);
+    showNotification(t("Goal reopened.", "Goal reopened."));
+}
+
+async function fundSavingGoalDedicated(id) {
     const amtInput  = document.getElementById(`depositInputDedicated_${id}`);
     const noteInput = document.getElementById(`depositNoteInput_${id}`);
     const depositVal = parseFloat(amtInput.value);
@@ -393,19 +540,21 @@ function fundSavingGoalDedicated(id) {
 
     const idx = state.savingGoals.findIndex(g => g.id === id);
     if (idx === -1) return;
-    if (!state.savingGoals[idx].contributions) state.savingGoals[idx].contributions = [];
+    const goal = state.savingGoals[idx];
+    if (!goal.contributions) goal.contributions = [];
 
     const dateInput = document.getElementById(`depositDateInput_${id}`);
     const depositDate = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().split("T")[0];
-    const prevPercent = (state.savingGoals[idx].current / state.savingGoals[idx].target) * 100;
-    state.savingGoals[idx].current += depositVal;
-    state.savingGoals[idx].contributions.push({
+    const prevPercent = (goal.current / goal.target) * 100;
+    
+    goal.current += depositVal;
+    goal.contributions.push({
         id:     "c_" + Date.now(),
         amount: depositVal,
         note:   noteInput ? noteInput.value.trim() : "",
         date:   depositDate
     });
-    const newPercent = (state.savingGoals[idx].current / state.savingGoals[idx].target) * 100;
+    const newPercent = (goal.current / goal.target) * 100;
 
     saveStateToLocalStorage();
     renderSavingGoalsDedicated();
@@ -426,8 +575,36 @@ function fundSavingGoalDedicated(id) {
         }
     }
 
-    if (newPercent >= 100 && prevPercent < 100) { playSound(S.GOAL_HATCHED); showNotification(t("Goal fully funded! 🎉", "🥚 Goal hatched! TReX is proud.")); }
-    else { playSound(S.SAVE); showNotification(t("Contribution added.", "Egg fed.")); }
+    if (newPercent >= 100 && prevPercent < 100) {
+        playSound(S.GOAL_HATCHED);
+        
+        // i. Ask if the goal should be marked as complete or wait till target date
+        if (goal.targetDate) {
+            setTimeout(async () => {
+                const optComplete = await customConfirm(
+                    t(`Awesome! You have fully funded "${goal.name}". Would you like to mark it as Complete now, or wait until your target date of ${formatDateReadable(new Date(goal.targetDate))}?`,
+                      `Incredible! Nurture cycle completed. Do you want to finalize this goal now or wait until your target date?`),
+                    t("Goal Fully Funded! 🎉", "Hunt Successful! 🎉"),
+                    t("Complete Now", "Complete Now")
+                );
+                if (optComplete) {
+                    goal.completed = true;
+                    goal.completedReason = "fully_funded_early";
+                    saveStateToLocalStorage();
+                    renderSavingGoalsDedicated();
+                }
+            }, 50);
+        } else {
+            goal.completed = true;
+            goal.completedReason = "fully_funded_completed";
+            saveStateToLocalStorage();
+            renderSavingGoalsDedicated();
+            showNotification(t("Goal fully funded & marked complete! 🎉", "🥚 Goal hatched! TReX is proud."));
+        }
+    } else {
+        playSound(S.SAVE);
+        showNotification(t("Contribution added.", "Egg fed."));
+    }
 }
 
 async function removeSavingGoalDedicated(id) {
@@ -1437,4 +1614,3 @@ function getEggSvg(pct) {
     if (pct >= 25)  return `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color:#94a3b8"><ellipse cx="12" cy="13" rx="7" ry="9"/><path d="M13,8 L12,11" stroke="#1a1a2e" stroke-width="1" fill="none"/></svg>`;
     return `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color:#64748b"><ellipse cx="12" cy="13" rx="7" ry="9"/></svg>`;
 }
-
