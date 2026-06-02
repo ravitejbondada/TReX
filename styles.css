@@ -1094,6 +1094,12 @@
         .templates-bar.hidden {
             display: none;
         }
+        .templates-strip {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 1.9rem;
+            align-items: center;
+            gap: 0.4rem;
+        }
         .templates-scroll {
             display: flex;
             gap: 0.35rem;
@@ -1131,9 +1137,6 @@
             border: 1px solid rgba(99, 102, 241, 0.32);
             background: rgba(79, 70, 229, 0.12);
             color: rgb(165, 180, 252);
-            position: sticky;
-            right: 0;
-            box-shadow: -10px 0 14px rgba(2, 6, 23, 0.9);
         }
         .template-dot {
             width: 0.42rem;

@@ -31,18 +31,20 @@ function renderTransactionTemplatesBars() {
         }
         host.classList.remove("hidden");
         host.innerHTML = `
-            <div class="templates-scroll">
-                ${templates.map(template => {
-                    const { cat } = getTemplateMeta(template);
-                    return `
-                        <button type="button" onclick="applyTemplateToExpenseForm('${template.id}')"
-                            class="template-chip" style="--template-color:${cat.color}">
-                            <span class="template-dot"></span>
-                            <span class="truncate max-w-[7.5rem]">${template.name}</span>
-                            <span class="template-amount">${state.currencySymbol}${Number(template.amount || 0).toLocaleString()}</span>
-                        </button>
-                    `;
-                }).join("")}
+            <div class="templates-strip">
+                <div class="templates-scroll">
+                    ${templates.map(template => {
+                        const { cat } = getTemplateMeta(template);
+                        return `
+                            <button type="button" onclick="applyTemplateToExpenseForm('${template.id}')"
+                                class="template-chip" style="--template-color:${cat.color}">
+                                <span class="template-dot"></span>
+                                <span class="truncate max-w-[7.5rem]">${template.name}</span>
+                                <span class="template-amount">${state.currencySymbol}${Number(template.amount || 0).toLocaleString()}</span>
+                            </button>
+                        `;
+                    }).join("")}
+                </div>
                 <button type="button" onclick="openTemplatesManager()"
                     class="template-manage-chip" title="Manage presets" aria-label="Manage presets">
                     <i data-lucide="settings-2" class="w-3.5 h-3.5"></i>
