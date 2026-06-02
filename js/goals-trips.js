@@ -48,16 +48,14 @@ function openGoalsTripsInfo() {
     const icon = isTrips ? "plane" : "piggy-bank";
     const rows = isTrips
         ? [
-            ["Upcoming, active, past", "Use trips to group travel spending by status without cluttering daily expense views."],
-            ["Ledger behavior", "Trip expenses should behave like normal transactions with a trip pill and trip name."],
-            ["Budget view", "Trip cards compare planned budget against actual spend so past trips can guide future planning."],
-            ["Migration note", "The local rebuild should remove manual trip sync and store trip links directly on transactions."]
+            ["Organised by status", "Your trips are automatically grouped into Upcoming, Active, and Past based on the travel dates you set — no manual sorting needed."],
+            ["Expenses flow to your ledger", "Every expense you log on a trip is also recorded in your main ledger with a trip tag, so your overall spending stays accurate and searchable."],
+            ["Budget at a glance", "Each trip card shows your planned budget vs. actual spend. Past trips are kept so you can look back and plan smarter next time."]
         ]
         : [
-            ["Active targets", "Goals track progress toward a specific amount and optional date."],
-            ["Contributions", "Add dated contributions so progress and projected completion stay meaningful."],
-            ["Completed goals", "Completed goals should move out of the active list and remain available in a completed/archive view."],
-            ["Migration note", "The local rebuild should store completed_at and archived_at for cleaner goal history."]
+            ["Set a target & track progress", "Create a goal with a name, target amount, and an optional deadline. Your progress bar updates automatically as you add contributions."],
+            ["Log contributions anytime", "Add each deposit with an amount, date, and optional note. TReX uses your contribution history to project when you'll reach your goal at your current pace."],
+            ["Goal achieved?", "Once you hit 100%, your goal is marked Fully Funded. You can keep it as a record or delete it whenever you're ready."]
         ];
 
     const div = document.createElement("div");
@@ -72,7 +70,7 @@ function openGoalsTripsInfo() {
                     </span>
                     <div class="min-w-0">
                         <h3 class="text-xs font-extrabold text-white uppercase tracking-widest">${title}</h3>
-                        <p class="text-[10px] text-slate-500 mt-0.5">How this section should work</p>
+                        <p class="text-[10px] text-slate-500 mt-0.5">${isTrips ? "Plan, track, and review your travels" : "Save towards what matters most"}</p>
                     </div>
                 </div>
                 <button type="button" onclick="closeGoalsTripsInfo()" class="p-1.5 text-slate-500 hover:text-slate-300 rounded-lg">
@@ -219,9 +217,45 @@ function renderSavingGoalsDedicated() {
                             <i data-lucide="plus" class="w-3 h-3"></i> Add
                         </button>
                     </div>
-                    <button onclick="removeSavingGoalDedicated('${g.id}')" class="p-1.5 text-slate-600 hover:text-rose-400 transition-all rounded-lg shrink-0" title="Delete goal">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                    </button>
+                    <div class="flex items-center justify-between pt-1">
+                        <button onclick="toggleGoalEdit('${g.id}')" class="flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-indigo-400 transition-all px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <i data-lucide="pencil" class="w-3 h-3"></i> Edit Goal
+                        </button>
+                        <button onclick="removeSavingGoalDedicated('${g.id}')" class="p-1.5 text-slate-600 hover:text-rose-400 transition-all rounded-lg" title="Delete goal">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Edit goal panel (hidden by default) -->
+                <div id="goal-edit-panel-${g.id}" class="hidden border-t border-slate-800 bg-slate-950/60 px-3 py-3 space-y-2">
+                    <p class="text-[9px] font-extrabold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                        <i data-lucide="pencil" class="w-3 h-3"></i> Edit Goal
+                    </p>
+                    <div class="flex gap-2">
+                        <div class="flex-1 min-w-0">
+                            <label class="text-[8px] text-slate-600 font-extrabold uppercase block mb-1">Goal Name</label>
+                            <input type="text" id="goal-edit-name-${g.id}" value="${g.name}" placeholder="Goal name" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[10px] text-white focus:outline-none" />
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex-1 min-w-0">
+                            <label class="text-[8px] text-slate-600 font-extrabold uppercase block mb-1">Target Amount</label>
+                            <input type="number" id="goal-edit-target-${g.id}" value="${g.target}" placeholder="e.g. 50000" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[10px] text-white focus:outline-none" />
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <label class="text-[8px] text-slate-600 font-extrabold uppercase block mb-1">Target Date</label>
+                            <input type="date" id="goal-edit-date-${g.id}" value="${g.targetDate || ''}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[10px] text-white focus:outline-none" />
+                        </div>
+                    </div>
+                    <div class="flex gap-2 pt-1">
+                        <button onclick="saveGoalEdit('${g.id}')" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-3 py-1.5 rounded-lg text-[10px] transition-all active:scale-95 flex items-center justify-center gap-1">
+                            <i data-lucide="check" class="w-3 h-3"></i> Save
+                        </button>
+                        <button onclick="cancelGoalEdit('${g.id}')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 hover:text-slate-200 transition-all">
+                            Cancel
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -242,6 +276,47 @@ function toggleGoalAccordion(id) {
         panel.classList.remove("hidden");
         chevron.style.transform = "rotate(180deg)";
     }
+}
+
+function toggleGoalEdit(id) {
+    const panel = document.getElementById(`goal-edit-panel-${id}`);
+    if (!panel) return;
+    const isHidden = panel.classList.contains("hidden");
+    // Close any other open edit panels first
+    document.querySelectorAll('[id^="goal-edit-panel-"]').forEach(p => p.classList.add("hidden"));
+    if (isHidden) panel.classList.remove("hidden");
+}
+
+function cancelGoalEdit(id) {
+    const panel = document.getElementById(`goal-edit-panel-${id}`);
+    if (panel) panel.classList.add("hidden");
+}
+
+function saveGoalEdit(id) {
+    const nameInput   = document.getElementById(`goal-edit-name-${id}`);
+    const targetInput = document.getElementById(`goal-edit-target-${id}`);
+    const dateInput   = document.getElementById(`goal-edit-date-${id}`);
+
+    const newName   = nameInput ? nameInput.value.trim() : "";
+    const newTarget = parseFloat(targetInput ? targetInput.value : "");
+    const newDate   = dateInput ? dateInput.value : "";
+
+    if (!newName)                         { showNotification(t("Please enter a goal name.", "Every egg needs a name.")); return; }
+    if (isNaN(newTarget) || newTarget <= 0) { showNotification(t("Please enter a valid target amount.", "TReX needs a real target.")); return; }
+
+    const idx = state.savingGoals.findIndex(g => g.id === id);
+    if (idx === -1) return;
+
+    state.savingGoals[idx].name       = newName;
+    state.savingGoals[idx].target     = newTarget;
+    state.savingGoals[idx].targetDate = newDate || "";
+
+    saveStateToLocalStorage();
+    renderSavingGoalsDedicated();
+    // Re-open the accordion after re-render so the user stays in context
+    setTimeout(() => toggleGoalAccordion(id), 10);
+    playSound(S.SAVE);
+    showNotification(t("Goal updated.", "Goal updated."));
 }
 
 function editGoalContribution(cid) {
