@@ -97,6 +97,41 @@ function closeGoalsTripsInfo() {
     if (modal) modal.remove();
 }
 
+function showGoalDateReachedChoice(goal) {
+    return new Promise(resolve => {
+        const existing = document.getElementById("goalDateReachedModal");
+        if (existing) existing.remove();
+        const div = document.createElement("div");
+        div.id = "goalDateReachedModal";
+        div.className = "fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[245] flex items-center justify-center p-4";
+        div.innerHTML = `
+            <div class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl">
+                <div class="flex items-start gap-3">
+                    <span class="w-9 h-9 rounded-xl bg-indigo-950/60 border border-indigo-500/25 text-indigo-300 flex items-center justify-center shrink-0">
+                        <i data-lucide="calendar-clock" class="w-4 h-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 class="text-xs font-extrabold text-white uppercase tracking-widest">Goal Date Reached</h3>
+                        <p class="text-[11px] text-slate-400 leading-relaxed mt-1">The target date for "${goal.name}" has arrived. You can keep it completed, or extend the goal and continue saving.</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" data-choice="complete" class="bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-bold py-3 rounded-xl text-xs active:scale-95 transition-all">Mark Complete</button>
+                    <button type="button" data-choice="extend" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3 rounded-xl text-xs active:scale-95 transition-all">Extend Goal</button>
+                </div>
+            </div>`;
+        document.body.appendChild(div);
+        initLucideIcons(div);
+        div.querySelectorAll("[data-choice]").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const choice = btn.getAttribute("data-choice");
+                div.remove();
+                resolve(choice);
+            });
+        });
+    });
+}
+
 /**
  * iv. Auto-close system verification once target date is reached.
  * Returns true if state changed, so we can save and trigger re-render.
@@ -111,26 +146,18 @@ function verifyAndAutocloseGoals() {
             g.completedReason = "expired"; // Auto-closed because target date passed
             changed = true;
             
-            // Alert user that the goal has expired and auto-closed
             setTimeout(async () => {
-                await customConfirm(
-                    t(`The target date for your goal "${g.name}" has been reached. TReX has auto-closed this goal. If you'd like to continue saving towards this goal, you can edit it and update its target date.`, 
-                      `The hunt deadline for "${g.name}" has expired! The egg was harvested. If you want to continue the hunt, edit it to update its target date.`),
-                    t("Goal Date Reached", "Hunt Deadline Reached!"),
-                    t("Extend Date", "Extend Hunt")
-                ).then(wantsToExtend => {
-                    if (wantsToExtend) {
-                        // Undo completion and open accordion to edit
-                        g.completed = false;
-                        delete g.completedReason;
-                        saveStateToLocalStorage();
-                        renderSavingGoalsDedicated();
-                        setTimeout(() => {
-                            toggleGoalAccordion(g.id);
-                            toggleGoalEdit(g.id);
-                        }, 50);
-                    }
-                });
+                const choice = await showGoalDateReachedChoice(g);
+                if (choice === "extend") {
+                    g.completed = false;
+                    delete g.completedReason;
+                    saveStateToLocalStorage();
+                    renderSavingGoalsDedicated();
+                    setTimeout(() => {
+                        toggleGoalAccordion(g.id);
+                        toggleGoalEdit(g.id);
+                    }, 50);
+                }
             }, 100);
         }
     });
@@ -138,6 +165,61 @@ function verifyAndAutocloseGoals() {
     return changed;
 }
 
+function openNewGoalModal() {
+    const existing = document.getElementById("newGoalModal");
+    if (existing) existing.remove();
+    const div = document.createElement("div");
+    div.id = "newGoalModal";
+    div.className = "fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[240] flex items-center justify-center p-4";
+    div.innerHTML = `
+        <div class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between gap-3">
+                <h3 class="text-xs font-extrabold text-white uppercase tracking-widest flex items-center gap-2"><i data-lucide="target" class="w-4 h-4 text-indigo-400"></i> New Goal</h3>
+                <button type="button" onclick="closeNewGoalModal()" class="p-1.5 text-slate-500 hover:text-slate-300 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div class="space-y-3">
+                <label class="block space-y-1.5"><span class="text-[9px] text-slate-500 font-extrabold uppercase">Target Name</span><input type="text" id="newGoalNameDedicated" placeholder="e.g., New TV" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs text-white focus:outline-none" /></label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="block space-y-1.5"><span class="text-[9px] text-slate-500 font-extrabold uppercase">Amount</span><input type="number" id="newGoalTargetDedicated" placeholder="50000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs text-white focus:outline-none" /></label>
+                    <label class="block space-y-1.5"><span class="text-[9px] text-slate-500 font-extrabold uppercase">Date</span><input type="date" id="newGoalDateDedicated" class="date-compact w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs text-white focus:outline-none" /></label>
+                </div>
+            </div>
+            <button type="button" onclick="createNewSavingGoalDedicated()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-xs active:scale-95 transition-all">Create Goal</button>
+        </div>`;
+    document.body.appendChild(div);
+    initLucideIcons(div);
+}
+function closeNewGoalModal() { const modal = document.getElementById("newGoalModal"); if (modal) modal.remove(); }
+
+function openNewTripModal() {
+    const existing = document.getElementById("newTripModal");
+    if (existing) existing.remove();
+    const div = document.createElement("div");
+    div.id = "newTripModal";
+    div.className = "fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[240] flex items-center justify-center p-4";
+    div.innerHTML = `
+        <div class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between gap-3">
+                <h3 class="text-xs font-extrabold text-white uppercase tracking-widest flex items-center gap-2"><i data-lucide="plane" class="w-4 h-4 text-amber-400"></i> New Trip</h3>
+                <button type="button" onclick="closeNewTripModal()" class="p-1.5 text-slate-500 hover:text-slate-300 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div class="space-y-3">
+                <div class="grid grid-cols-[4rem_1fr] gap-2">
+                    <label class="block space-y-1.5"><span class="text-[9px] text-slate-500 font-extrabold uppercase">Emoji</span><input type="text" id="newTripEmoji" value="??" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs text-white focus:outline-none text-center" /></label>
+                    <label class="block space-y-1.5"><span class="text-[9px] text-slate-500 font-extrabold uppercase">Trip Name</span><input type="text" id="newTripName" placeholder="e.g., Goa Jan 2026" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs text-white focus:outline-none" /></label>
+                </div>
+                <label class="block space-y-1.5"><span class="text-[9px] text-slate-500 font-extrabold uppercase">Budget</span><input type="number" id="newTripBudget" placeholder="Total budget amount" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs text-white focus:outline-none" /></label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="block space-y-1.5"><span class="text-[9px] text-slate-500 font-extrabold uppercase">Start</span><input type="date" id="newTripStart" class="date-compact w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs text-white focus:outline-none" /></label>
+                    <label class="block space-y-1.5"><span class="text-[9px] text-slate-500 font-extrabold uppercase">End</span><input type="date" id="newTripEnd" class="date-compact w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs text-white focus:outline-none" /></label>
+                </div>
+            </div>
+            <button id="createTripButton" type="button" onclick="createNewTrip()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl text-xs active:scale-95 transition-all flex items-center justify-center gap-1.5"><i data-lucide="plane" class="w-3.5 h-3.5"></i> Create Trip</button>
+        </div>`;
+    document.body.appendChild(div);
+    initLucideIcons(div);
+}
+function closeNewTripModal() { const modal = document.getElementById("newTripModal"); if (modal) modal.remove(); }
 function renderSavingGoalsDedicated() {
     // Check auto-close criteria first
     const autoClosedAny = verifyAndAutocloseGoals();
@@ -146,17 +228,24 @@ function renderSavingGoalsDedicated() {
     }
 
     const container = document.getElementById("dedicatedSavingGoalsListContainer");
+    const completedContainer = document.getElementById("completedSavingGoalsListContainer");
+    const completedSection = document.getElementById("completedGoalsSection");
     container.innerHTML = "";
+    if (completedContainer) completedContainer.innerHTML = "";
 
+    const activeGoals = (state.savingGoals || []).filter(g => !g.completed);
+    const completedGoals = (state.savingGoals || []).filter(g => g.completed);
     const countLabel = document.getElementById("goalsSummaryCount");
-    if (countLabel) countLabel.textContent = `${state.savingGoals.length} Target${state.savingGoals.length !== 1 ? 's' : ''}`;
+    if (countLabel) countLabel.textContent = `${activeGoals.length} Target${activeGoals.length !== 1 ? 's' : ''}`;
+    const completedCountLabel = document.getElementById("completedGoalsSummaryCount");
+    if (completedCountLabel) completedCountLabel.textContent = `${completedGoals.length} Done`;
+    if (completedSection) completedSection.classList.toggle("hidden", completedGoals.length === 0);
 
-    if (state.savingGoals.length === 0) {
-        container.innerHTML = `<p class="text-[11px] text-slate-500 text-center py-6 italic">${t("No active savings targets defined.", "🥚 No eggs in the nest yet. Create a goal.")}</p>`;
-        return;
+    if (activeGoals.length === 0) {
+        container.innerHTML = `<p class="text-[11px] text-slate-500 text-center py-6 italic">${t("No active savings targets defined.", "No active savings targets yet.")}</p>`;
     }
 
-    state.savingGoals.forEach(g => {
+    (state.savingGoals || []).forEach(g => {
         if (!g.contributions) g.contributions = [];
         const percent = Math.min(100, (g.current / g.target) * 100);
         const eggHtml = dp('dinoMode') ? `<span class="goal-egg-icon" id="goal-egg-${g.id}">${getEggSvg(percent)}</span>` : '';
@@ -341,10 +430,10 @@ function renderSavingGoalsDedicated() {
                 </div>
             </div>
         `;
-        container.appendChild(item);
+        (g.completed && completedContainer ? completedContainer : container).appendChild(item);
     });
 
-    initLucideIcons(container);
+    initLucideIcons(container); if (completedContainer) initLucideIcons(completedContainer);
 }
 
 function toggleGoalAccordion(id) {
@@ -495,6 +584,7 @@ function createNewSavingGoalDedicated() {
     document.getElementById("newGoalNameDedicated").value = "";
     document.getElementById("newGoalTargetDedicated").value = "";
     if (dateEl) dateEl.value = "";
+    closeNewGoalModal();
     renderSavingGoalsDedicated();
     playSound(S.SAVE);
     showNotification(t("Goal created.", "🥚 New egg in the nest."));
@@ -932,6 +1022,7 @@ function createNewTrip() {
     document.getElementById("newTripBudget").value = "";
     document.getElementById("newTripStart").value  = "";
     document.getElementById("newTripEnd").value    = "";
+    closeNewTripModal();
     renderTripsList();
     renderActiveTripBanner();
     playSound(S.SAVE);
@@ -946,6 +1037,7 @@ function openTripEdit() {
     // Switch to Goals -> Trips where the create form lives
     switchScreen('goals');
     switchGoalsTab('trips');
+    openNewTripModal();
     // Prefill form
     document.getElementById('newTripEmoji').value  = trip.emoji || '✈️';
     try { updateNewTripEmojiPickerUI(); } catch(e){}
@@ -990,6 +1082,7 @@ function saveEditedTrip() {
         btn.onclick = createNewTrip;
     }
     editingTripId = null;
+    closeNewTripModal();
     // open detail for updated trip
     openTripDetail(state.trips[idx].id);
 }
@@ -1614,3 +1707,6 @@ function getEggSvg(pct) {
     if (pct >= 25)  return `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color:#94a3b8"><ellipse cx="12" cy="13" rx="7" ry="9"/><path d="M13,8 L12,11" stroke="#1a1a2e" stroke-width="1" fill="none"/></svg>`;
     return `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color:#64748b"><ellipse cx="12" cy="13" rx="7" ry="9"/></svg>`;
 }
+
+
+

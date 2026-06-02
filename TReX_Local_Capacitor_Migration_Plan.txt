@@ -183,6 +183,17 @@ trip name in the transaction description or metadata. Ledger, credit-card views,
 and trip details should all read from the same transaction row instead of using
 duplicate synced records.
 
+GOALS: Rebuild goals with explicit active, completed, and archived states.
+Completed goals should leave the active list and move into a completed history
+section with final amount, target amount, completed date, and a reopen option.
+Goal creation and editing should use focused modals instead of always-open
+forms.
+
+TRIPS: Rebuild trips with upcoming, active, completed/past, and archived states.
+Past trips should stay available as summary records showing budget, actual
+spend, dates, and linked transactions. Trip creation and editing should use
+focused modals instead of persistent forms.
+
 TRIP EDIT / DELETE RULES: Allow edit/delete wherever the transaction is visible
 as long as the trip pill is clearly shown. The Trips section remains the focused
 trip view, but it should not be the only place where a trip-linked transaction

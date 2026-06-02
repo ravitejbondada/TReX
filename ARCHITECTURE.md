@@ -391,7 +391,7 @@ Called on every `window.onload`:
 
 Recurring is only a scheduler. Daily and weekly schedules catch up missed due dates; monthly schedules use the original start day and clamp to the month's last day when that day does not exist. `postRecurringEntry()` pushes a normal ledger transaction into `state.transactions` with `amount`, `categoryId`, `paymentId`, `date`, `note`, `createdAt`, `source="recurring"`, `recurringId`, and `sourceName`. The metadata prevents duplicate auto-posts and lets edit/delete mark the original due date as skipped; after insertion, the row is still editable/deletable from the ledger. Pausing skips processing. Resuming asks for a resume date, defaults to today, sets `lastPostedDate` to the day before that date, and then runs the normal catch-up engine, so month-end clamp behavior remains consistent. Deleting a recurring rule leaves past inserted transactions untouched.
 
-Recurring management lives in the sidebar/drawer recurring panel. The dashboard does not render recurring schedules; Add Expense only exposes a subtle "Make this recurring" shortcut that opens the recurring modal.
+Recurring management lives in the sidebar/drawer recurring panel. The dashboard does not render recurring schedules; Add Expense only exposes a subtle top-right recurring shortcut that opens the recurring modal.
 
 ---
 

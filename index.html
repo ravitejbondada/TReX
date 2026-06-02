@@ -1634,40 +1634,22 @@
                         </div>
                         <div class="space-y-3.5" id="dedicatedSavingGoalsListContainer"></div>
                     </div>
-                    <div class="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-3.5">
-                        <h3
-                            class="text-[10px] font-extrabold text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
-                            <span class="icon-slot icon-slot-md text-indigo-400"><i
-                                    data-lucide="plus-circle"></i></span>
-                            Establish New Target
-                        </h3>
-                        <div class="bg-slate-950/60 p-4 rounded-xl space-y-3 border border-slate-850">
-                            <div>
-                                <label class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Target
-                                    Name</label>
-                                <input type="text" id="newGoalNameDedicated"
-                                    placeholder="e.g., Tokyo Trip Fund, iPad Pro"
-                                    class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none" />
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <div>
-                                    <label class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Target
-                                        Amount</label>
-                                    <input type="number" id="newGoalTargetDedicated" placeholder="e.g., 120000"
-                                        class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none" />
-                                </div>
-                                <div>
-                                    <label class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Goal
-                                        Date <span class="text-slate-700">(optional)</span></label>
-                                    <input type="date" id="newGoalDateDedicated"
-                                        class="date-compact w-full min-w-0 bg-slate-900 border border-slate-800 rounded-lg px-2 py-2 text-xs text-white focus:outline-none" />
-                                </div>
-                            </div>
-                            <button onclick="createNewSavingGoalDedicated()"
-                                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all active:scale-95">
-                                Initialize Goal
-                            </button>
+                    <button type="button" onclick="openNewGoalModal()"
+                        class="w-full bg-slate-900/40 hover:bg-slate-900/70 border border-dashed border-indigo-500/30 hover:border-indigo-400/50 rounded-2xl p-4 flex items-center gap-3 text-left transition-all active:scale-[0.99]">
+                        <span class="w-9 h-9 rounded-xl bg-indigo-950/60 border border-indigo-500/25 text-indigo-300 flex items-center justify-center shrink-0">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                        </span>
+                        <span class="min-w-0">
+                            <span class="block text-xs font-extrabold text-slate-100">New Goal</span>
+                            <span class="block text-[10px] text-slate-500 mt-0.5">Create a savings target</span>
+                        </span>
+                    </button>
+                    <div id="completedGoalsSection" class="hidden space-y-3.5">
+                        <div class="flex justify-between items-center px-1">
+                            <h3 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Completed Goals</h3>
+                            <span id="completedGoalsSummaryCount" class="text-[9px] font-bold text-emerald-400 bg-emerald-950/50 px-2.5 py-0.5 rounded-full">0 Done</span>
                         </div>
+                        <div class="space-y-3.5" id="completedSavingGoalsListContainer"></div>
                     </div>
                 </div>
 
@@ -1687,74 +1669,16 @@
                             yet. Create your first trip below!</div>
                     </div>
 
-                    <!-- Create Trip Form -->
-                    <div class="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-3.5">
-                        <h3
-                            class="text-[10px] font-extrabold text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
-                            <span class="icon-slot icon-slot-md text-amber-400"><i data-lucide="plus-circle"></i></span>
-                            Plan New Trip
-                        </h3>
-                        <div class="bg-slate-950/60 p-4 rounded-xl space-y-3 border border-slate-850">
-                            <div class="grid grid-cols-4 gap-2">
-                                <div class="col-span-1">
-                                    <label
-                                        class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Emoji</label>
-                                    <div class="select-wrap">
-                                        <select id="newTripEmoji"
-                                            class="w-full app-dropdown rounded-lg focus:outline-none text-sm"
-                                            style="height: 34px; padding: 4px 24px 4px 8px;">
-                                            <option value="✈️">✈️</option>
-                                            <option value="🏖️">🏖️</option>
-                                            <option value="⛺">⛺</option>
-                                            <option value="🏔️">🏔️</option>
-                                            <option value="🗺️">🗺️</option>
-                                            <option value="🚢">🚢</option>
-                                            <option value="🎒">🎒</option>
-                                            <option value="🏝️">🏝️</option>
-                                            <option value="🚗">🚗</option>
-                                            <option value="🌆">🌆</option>
-                                            <option value="🍽️">🍽️</option>
-                                            <option value="💼">💼</option>
-                                            <option value="🛕">🛕</option>
-                                            <option value="🕌">🕌</option>
-                                            <option value="⛩️">⛩️</option>
-                                            <option value="🎡">🎡</option>
-                                            <option value="🏕️">🏕️</option>
-                                            <option value="🌍">🌍</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-span-3">
-                                    <label class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Trip
-                                        Name</label>
-                                    <input type="text" id="newTripName" placeholder="e.g., Goa Jan 2026"
-                                        class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none" />
-                                </div>
-                            </div>
-                            <div>
-                                <label class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Trip
-                                    Budget</label>
-                                <input type="number" id="newTripBudget" placeholder="Total budget amount"
-                                    class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none" />
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <div>
-                                    <label class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Trip Start</label>
-                                    <input type="date" id="newTripStart"
-                                        class="date-compact w-full min-w-0 bg-slate-900 border border-slate-800 rounded-lg px-2 py-2 text-[10px] text-white focus:outline-none" />
-                                </div>
-                                <div>
-                                    <label class="text-[9px] text-slate-500 font-extrabold uppercase block mb-1">Trip End</label>
-                                    <input type="date" id="newTripEnd"
-                                        class="date-compact w-full min-w-0 bg-slate-900 border border-slate-800 rounded-lg px-2 py-2 text-[10px] text-white focus:outline-none" />
-                                </div>
-                            </div>
-                            <button id="createTripButton" onclick="createNewTrip()"
-                                class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5">
-                                <i data-lucide="plane" class="w-3.5 h-3.5"></i> Create Trip
-                            </button>
-                        </div>
-                    </div>
+                    <button type="button" onclick="openNewTripModal()"
+                        class="w-full bg-slate-900/40 hover:bg-slate-900/70 border border-dashed border-amber-500/30 hover:border-amber-400/50 rounded-2xl p-4 flex items-center gap-3 text-left transition-all active:scale-[0.99]">
+                        <span class="w-9 h-9 rounded-xl bg-amber-950/60 border border-amber-500/25 text-amber-300 flex items-center justify-center shrink-0">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                        </span>
+                        <span class="min-w-0">
+                            <span class="block text-xs font-extrabold text-slate-100">New Trip</span>
+                            <span class="block text-[10px] text-slate-500 mt-0.5">Plan a travel budget</span>
+                        </span>
+                    </button>
                 </div>
             </div>
 
