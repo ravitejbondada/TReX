@@ -31,13 +31,6 @@ function renderTransactionTemplatesBars() {
         }
         host.classList.remove("hidden");
         host.innerHTML = `
-            <div class="flex items-center justify-between gap-2">
-                <span class="text-[9px] font-extrabold uppercase tracking-widest text-slate-500">Use preset</span>
-                <button type="button" onclick="openTemplatesManager()"
-                    class="text-[9px] font-bold text-indigo-400 flex items-center gap-1 active:scale-95">
-                    <i data-lucide="settings-2" class="w-3 h-3"></i> Manage
-                </button>
-            </div>
             <div class="templates-scroll">
                 ${templates.map(template => {
                     const { cat } = getTemplateMeta(template);
@@ -50,6 +43,10 @@ function renderTransactionTemplatesBars() {
                         </button>
                     `;
                 }).join("")}
+                <button type="button" onclick="openTemplatesManager()"
+                    class="template-manage-chip" title="Manage presets" aria-label="Manage presets">
+                    <i data-lucide="settings-2" class="w-3.5 h-3.5"></i>
+                </button>
             </div>
         `;
     });

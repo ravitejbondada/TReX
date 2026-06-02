@@ -507,21 +507,6 @@
                         class="text-[11px] text-slate-300 leading-relaxed pt-1 border-t border-white/5"></p>
                 </div>
 
-                <!-- QUICK LOG CHANNEL PAD -->
-                <div class="bg-slate-900/40 p-4 rounded-2xl border border-slate-850/80 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <h3
-                            class="text-[10px] font-extrabold text-slate-300 uppercase tracking-widest flex items-center gap-1.5">
-                            <i data-lucide="zap" class="w-4 h-4 text-indigo-400"></i> Quick 1-Tap Logs
-                        </h3>
-                        <button onclick="openQuickLogEditor()"
-                            class="text-[9px] text-indigo-400 font-bold flex items-center gap-1 hover:underline">
-                            <i data-lucide="settings-2" class="w-3 h-3"></i> Customize
-                        </button>
-                    </div>
-                    <div id="quickLogButtonsGrid" class="grid grid-cols-2 gap-2.5"></div>
-                </div>
-
                 <!-- SPENDING HEATMAP CALENDAR (Feature 4) -->
                 <div class="bg-slate-900/40 p-4 rounded-2xl border border-slate-850/80 space-y-3">
                     <div class="flex items-center justify-between">
@@ -650,7 +635,7 @@
             </div>
 
             <!-- VIEW 2: ADD/EDIT EXPENSE FORM -->
-            <div id="addExpenseView" class="view-panel hidden flex flex-col space-y-4 pb-24">
+            <div id="addExpenseView" class="view-panel hidden flex flex-col space-y-4 pb-44">
                 <div class="flex items-center justify-between">
                     <button onclick="switchScreen('dashboard')"
                         class="p-2.5 bg-slate-900 hover:bg-slate-850 rounded-xl text-slate-400 border border-slate-850">
@@ -671,8 +656,8 @@
 
                     <div class="expense-form-scroll">
                     <!-- Large Amount Input Panel -->
-                    <div class="bg-slate-950 p-6 rounded-2xl border border-slate-850 text-center space-y-1.5">
-                        <label class="text-[9px] uppercase tracking-widest font-extrabold text-slate-500 block">Expense
+                    <div class="amount-entry-card">
+                        <label class="amount-entry-label">Expense
                             Amount</label>
                         <div class="flex items-center justify-center gap-1.5">
                             <span class="text-4xl font-black text-indigo-400 current-currency-symbol">₹</span>
@@ -687,16 +672,16 @@
                             <label class="text-[10px] uppercase tracking-widest font-extrabold text-slate-400">Category
                                 Tag</label>
                             <div class="flex items-center gap-2.5">
+                                <label class="split-toggle-wrap" title="Split across categories">
+                                    <i data-lucide="split" class="w-3.5 h-3.5"></i>
+                                    <span id="splitModeToggleLabel">Split</span>
+                                    <input type="checkbox" id="splitModeToggleBtn" onchange="toggleSplitMode(this.checked)" />
+                                    <span class="split-toggle-track"></span>
+                                </label>
                                 <button type="button" onclick="openInlineCategoryModal()"
                                     class="text-[10px] text-indigo-400 font-bold flex items-center gap-1 hover:underline">
                                     <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add New
                                 </button>
-                                <label class="split-toggle-wrap" title="Split across categories">
-                                    <i data-lucide="split" class="w-3.5 h-3.5"></i>
-                                    <span id="splitModeToggleLabel">Split across cat</span>
-                                    <input type="checkbox" id="splitModeToggleBtn" onchange="toggleSplitMode(this.checked)" />
-                                    <span class="split-toggle-track"></span>
-                                </label>
                             </div>
                         </div>
                         <select id="expenseCategory" onchange="applyCategoryDefaultPayment()" required
@@ -751,12 +736,12 @@
 
                     <div class="expense-form-footer">
                         <button type="submit"
-                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-4 rounded-xl shadow-lg shadow-indigo-600/10 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95">
+                            class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-4 rounded-xl shadow-lg shadow-indigo-600/10 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95">
                             <i data-lucide="save" class="w-4.5 h-4.5"></i> Save Transaction
                         </button>
-                        <button type="button" onclick="saveCurrentAsTemplate()"
-                            class="w-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 font-bold py-3 px-4 rounded-xl transition-all text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95">
-                            <i data-lucide="bookmark-plus" class="w-3.5 h-3.5"></i> Save as Preset
+                        <button type="button" onclick="saveCurrentAsTemplate()" title="Save as preset" aria-label="Save as preset"
+                            class="w-12 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 font-bold rounded-xl transition-all flex items-center justify-center active:scale-95">
+                            <i data-lucide="bookmark-plus" class="w-4 h-4"></i>
                         </button>
                     </div>
                 </form>
