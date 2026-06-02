@@ -98,44 +98,36 @@ function closeGoalsTripsInfo() {
 
 function showGoalConfirm(message, title, okText, cancelText) {
     return new Promise((resolve) => {
-        const okBtn = document.getElementById("customConfirmOkBtn");
-        const cancelBtn = document.getElementById("customConfirmCancelBtn");
-        const iconContainer = document.querySelector("#customConfirmOverlay .w-9.h-9");
-        const iconSvg = document.querySelector("#customConfirmOverlay i[data-lucide]");
-
-        // Hold original classes to prevent leaks in standard danger dialogues
-        const origOkClass = okBtn ? okBtn.className : "";
-        const origCancelClass = cancelBtn ? cancelBtn.className : "";
-        const origIconContainerClass = iconContainer ? iconContainer.className : "";
-
-        // Stylistic override to use premium Indigo/Violet instead of hazard red
-        if (okBtn) {
-            okBtn.className = "flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs active:scale-95 transition-all";
-        }
-        if (iconContainer) {
-            iconContainer.className = "w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center flex-shrink-0 mt-0.5 text-indigo-400";
-        }
-        if (iconSvg) {
-            iconSvg.setAttribute("data-lucide", "calendar-days");
-            if (window.lucide && typeof window.lucide.createIcons === "function") {
-                window.lucide.createIcons();
-            }
-        }
-
-        // Call the system custom confirmation mechanism
+        // Invoke original modal builder
         customConfirm(message, title, okText, cancelText).then((result) => {
-            // Restore default danger attributes to confirm-system
-            if (okBtn) okBtn.className = origOkClass;
-            if (cancelBtn) cancelBtn.className = origCancelClass;
-            if (iconContainer) iconContainer.className = origIconContainerClass;
+            resolve(result);
+        });
+
+        // Style override runs asynchronously immediately after the modal elements are injected
+        setTimeout(() => {
+            const okBtn = document.getElementById("customConfirmOkBtn");
+            const cancelBtn = document.getElementById("customConfirmCancelBtn");
+            const iconContainer = document.querySelector("#customConfirmOverlay .w-9.h-9");
+            const iconSvg = document.querySelector("#customConfirmOverlay i[data-lucide]");
+
+            if (okBtn) {
+                // Change dangerous red into premium Brand Indigo
+                okBtn.className = "flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs active:scale-95 transition-all";
+            }
+            if (cancelBtn) {
+                // Style cancel / Got it as neutral dark button
+                cancelBtn.className = "flex-1 bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-300 font-bold py-2.5 rounded-xl text-xs active:scale-95 transition-all";
+            }
+            if (iconContainer) {
+                iconContainer.className = "w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center flex-shrink-0 mt-0.5 text-indigo-400";
+            }
             if (iconSvg) {
-                iconSvg.setAttribute("data-lucide", "alert-triangle");
+                iconSvg.setAttribute("data-lucide", "calendar-days");
                 if (window.lucide && typeof window.lucide.createIcons === "function") {
                     window.lucide.createIcons();
                 }
             }
-            resolve(result);
-        });
+        }, 20);
     });
 }
 
@@ -181,9 +173,9 @@ function renderSavingGoalsDedicated() {
         saveStateToLocalStorage();
     }
 
-    // Split goals into distinct array segments for Active and Completed
-    const activeGoals = state.savingGoals.filter(g => !g.completed);
-    const completedGoals = state.savingGoals.filter(g => g.completed);
+    // Segregate saving goals based on status to separate lists
+    const activeGoals = (state.savingGoals || []).filter(g => !g.completed);
+    const completedGoals = (state.savingGoals || []).filter(g => g.completed);
 
     const activeContainer = document.getElementById("dedicatedSavingGoalsListContainer");
     if (activeContainer) activeContainer.innerHTML = "";
@@ -193,7 +185,7 @@ function renderSavingGoalsDedicated() {
         countLabel.textContent = `${activeGoals.length} Active Target${activeGoals.length !== 1 ? 's' : ''}`;
     }
 
-    // Build the Completed section dynamic container if it doesn't already exist in the panel
+    // Dynamically insert/realign the Completed section below the form
     let completedSection = document.getElementById("dedicatedCompletedSavingGoalsContainer");
     if (!completedSection) {
         completedSection = document.createElement("div");
@@ -201,6 +193,7 @@ function renderSavingGoalsDedicated() {
         completedSection.className = "space-y-3.5 pt-4 border-t border-slate-900/60";
         const goalsPanel = document.getElementById("goalsPanel");
         if (goalsPanel) {
+            // Append at the bottom, which is below the Create New Target block
             goalsPanel.appendChild(completedSection);
         }
     }
@@ -213,7 +206,7 @@ function renderSavingGoalsDedicated() {
         });
     }
 
-    // Manage rendering of the Completed section below the creation box
+    // Render historical logs inside the bottom accordion section
     if (completedGoals.length === 0) {
         completedSection.innerHTML = "";
         completedSection.classList.add("hidden");
@@ -844,7 +837,7 @@ let activeTripExpenseType = "pre"; // "pre" | "on"
 const TRIP_EMOJIS = ["🏖️","✈️","⛺","🏔️","🗺️","🚢","🎒","🏝️","🚗","🌆","🍽️","💼"];
 
 function renderNewTripEmojiPicker() {
-    // Left as no-op: system select dropdown handles Picker UI native
+    // Dropdowns handle picker UI native inside modern TReX core
 }
 
 function pickTripEmoji(btn, emoji) {
@@ -858,7 +851,7 @@ function selectNewTripEmoji(e) {
 }
 
 function updateNewTripEmojiPickerUI() {
-    // Left as no-op
+    // Native picker logic handled through select lists
 }
 
 function getSelectedNewTripEmoji() {
