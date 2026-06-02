@@ -1397,6 +1397,11 @@ function renderRecentActivityList() {
         const badge = item.type === "split"
             ? `<span class="text-[8px] px-1.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 font-bold uppercase shrink-0">Split</span>`
             : "";
+        const tagPills = typeof _renderTxTagPills === "function"
+            ? _renderTxTagPills(item.type === "split"
+                ? Array.from(new Set(item.parts.flatMap(part => Array.isArray(part.tags) ? part.tags : [])))
+                : (tx.tags || []))
+            : "";
 
         const card = document.createElement("div");
         card.className = "bg-slate-900/60 hover:bg-slate-850 border border-slate-900 rounded-2xl px-3 py-3 flex justify-between items-stretch gap-2 transition-all cursor-pointer active:scale-[0.99]";
@@ -1409,6 +1414,7 @@ function renderRecentActivityList() {
                     <div class="flex items-center gap-1.5 min-w-0">
                         <span class="text-[11px] font-bold text-slate-100 block truncate">${tx.note || (item.type === "split" ? "Split Transaction" : cat.name)}</span>
                         ${badge}
+                        ${tagPills}
                     </div>
                     ${_renderTxMetaRow(dateText, pay.name)}
                     ${_renderCategoryPills(item.type === "split" ? item.parts.map(p => p.categoryId) : [cat.id])}

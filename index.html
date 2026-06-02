@@ -1600,7 +1600,13 @@
                         class="p-2.5 bg-slate-900 hover:bg-slate-850 rounded-xl text-slate-400 border border-slate-850">
                         <i data-lucide="arrow-left" class="w-4 h-4"></i>
                     </button>
-                    <h2 class="text-sm font-extrabold text-white">Trips & Goals</h2>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-sm font-extrabold text-white">Trips & Goals</h2>
+                        <button type="button" onclick="openGoalsTripsInfo()" title="About this section"
+                            class="w-7 h-7 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-500 hover:text-indigo-300 flex items-center justify-center transition-all active:scale-95">
+                            <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
                     <div class="w-10"></div>
                 </div>
 
@@ -1618,18 +1624,6 @@
 
                 <!-- GOALS PANEL -->
                 <div id="goalsPanel" class="space-y-4">
-                    <div class="bg-indigo-950/40 border border-indigo-500/20 p-4 rounded-2xl flex items-start gap-3.5">
-                        <span
-                            class="icon-slot icon-slot-lg p-2.5 rounded-xl bg-indigo-600/15 border border-indigo-500/25 text-indigo-400 mt-0.5">
-                            <i data-lucide="piggy-bank"></i>
-                        </span>
-                        <div class="space-y-1">
-                            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Smart Savings Hub</h3>
-                            <p class="text-[11px] text-slate-300 leading-relaxed">Set targets for future investments.
-                                Stash away money and receive dynamic milestone feedback badges when completing targets!
-                            </p>
-                        </div>
-                    </div>
                     <div class="space-y-3.5">
                         <div class="flex justify-between items-center px-1">
                             <h3 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Active
@@ -1679,21 +1673,6 @@
 
                 <!-- TRIPS PANEL -->
                 <div id="tripsPanel" class="hidden space-y-4">
-                    <!-- Trips welcome banner -->
-                    <div
-                        class="bg-gradient-to-br from-amber-950/50 to-slate-950 border border-amber-500/20 p-4 rounded-2xl flex items-start gap-3.5">
-                        <span
-                            class="icon-slot icon-slot-lg p-2.5 rounded-xl bg-amber-600/15 border border-amber-500/25 text-amber-400 mt-0.5">
-                            <i data-lucide="map"></i>
-                        </span>
-                        <div class="space-y-1">
-                            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Trip Budget Tracker</h3>
-                            <p class="text-[11px] text-slate-300 leading-relaxed">Plan & track holiday trips end-to-end.
-                                Log pre-trip bookings early, then day-by-day expenses on the road. One daily summary
-                                flows into your main ledger.</p>
-                        </div>
-                    </div>
-
                     <!-- Active + Past trips list -->
                     <div class="space-y-3">
                         <div class="flex justify-between items-center px-1">

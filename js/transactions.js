@@ -141,6 +141,12 @@ function _renderTxTagChips(tags, extraClass = "") {
     return `<div class="tx-tag-row ${extraClass}">${clean.map(tag => `<span class="tx-tag-chip">#${_escapeHtml(tag)}</span>`).join("")}</div>`;
 }
 
+function _renderTxTagPills(tags, extraClass = "") {
+    const clean = Array.from(new Set((tags || []).map(normalizeTag).filter(Boolean)));
+    if (!clean.length) return "";
+    return `<span class="tx-tag-inline ${extraClass}">${clean.map(tag => `<span class="tx-tag-chip">#${_escapeHtml(tag)}</span>`).join("")}</span>`;
+}
+
 function _getCategory(catId) {
     return state.categories.find(c => c.id === catId) || { name: "Other", color: "#64748b" };
 }
@@ -1195,6 +1201,7 @@ function filterHistory() {
             const dateStr = formatDateReadable(new Date(t.date), { year: '2-digit' });
             const categoryRow = _renderCategoryPills(groupParts.map(p => p.categoryId));
             const splitBadge = `<span class="text-[8px] px-1.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 font-bold uppercase shrink-0">Split</span>`;
+            const groupTagPills = _renderTxTagPills(groupTags);
 
             const groupWrapper = document.createElement("div");
             groupWrapper.className = "split-group-wrapper swipe-row-wrapper";
@@ -1215,10 +1222,10 @@ function filterHistory() {
                         <div class="flex items-center gap-1.5 min-w-0">
                             <span class="text-[11px] font-bold text-slate-200 truncate">${_escapeHtml(t.note || 'Split Transaction')}</span>
                             ${splitBadge}
+                            ${groupTagPills}
                         </div>
                         ${_renderTxMetaRow(dateStr, pay.name)}
                         ${categoryRow}
-                        ${_renderTxTagChips(groupTags)}
                     </div>
                 </div>
                 <div class="flex flex-col items-end gap-1 shrink-0">
@@ -1302,7 +1309,7 @@ function filterHistory() {
         const tripBadge = t.tripRef
             ? `<span class="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-950 text-amber-400 font-bold uppercase shrink-0">${t.tripType === "pre" ? "Pre-Trip" : "Trip"}</span>`
             : "";
-        const tagChips = _renderTxTagChips(t.tags || []);
+        const tagPills = _renderTxTagPills(t.tags || []);
 
         const wrapper = document.createElement("div");
         wrapper.className = "swipe-row-wrapper";
@@ -1367,10 +1374,10 @@ function filterHistory() {
                         ${noteSpanHtml}
                         ${recurringBadge}
                         ${tripBadge}
+                        ${tagPills}
                     </div>
                     ${_renderTxMetaRow(dateStr, pay.name)}
                     ${_renderCategoryPills([t.categoryId])}
-                    ${tagChips}
                 </div>
             </div>
             <div class="flex flex-col items-end gap-1.5 shrink-0 ml-1">

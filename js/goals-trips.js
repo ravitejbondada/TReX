@@ -31,7 +31,74 @@ function calcGoalProjectedDate(goal) {
     return projected;
 }
 
+
+function getActiveGoalsTripsTab() {
+    const tripsPanel = document.getElementById("tripsPanel");
+    return tripsPanel && !tripsPanel.classList.contains("hidden") ? "trips" : "goals";
+}
+
+function openGoalsTripsInfo() {
+    const existing = document.getElementById("goalsTripsInfoModal");
+    if (existing) existing.remove();
+
+    const activeTab = getActiveGoalsTripsTab();
+    const isTrips = activeTab === "trips";
+    const accent = isTrips ? "amber" : "indigo";
+    const title = isTrips ? "Trips" : "Goals";
+    const icon = isTrips ? "plane" : "piggy-bank";
+    const rows = isTrips
+        ? [
+            ["Upcoming, active, past", "Use trips to group travel spending by status without cluttering daily expense views."],
+            ["Ledger behavior", "Trip expenses should behave like normal transactions with a trip pill and trip name."],
+            ["Budget view", "Trip cards compare planned budget against actual spend so past trips can guide future planning."],
+            ["Migration note", "The local rebuild should remove manual trip sync and store trip links directly on transactions."]
+        ]
+        : [
+            ["Active targets", "Goals track progress toward a specific amount and optional date."],
+            ["Contributions", "Add dated contributions so progress and projected completion stay meaningful."],
+            ["Completed goals", "Completed goals should move out of the active list and remain available in a completed/archive view."],
+            ["Migration note", "The local rebuild should store completed_at and archived_at for cleaner goal history."]
+        ];
+
+    const div = document.createElement("div");
+    div.id = "goalsTripsInfoModal";
+    div.className = "fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[240] flex items-center justify-center p-4";
+    div.innerHTML = `
+        <div class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="w-9 h-9 rounded-xl bg-${accent}-950/50 border border-${accent}-500/25 text-${accent}-300 flex items-center justify-center shrink-0">
+                        <i data-lucide="${icon}" class="w-4 h-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 class="text-xs font-extrabold text-white uppercase tracking-widest">${title}</h3>
+                        <p class="text-[10px] text-slate-500 mt-0.5">How this section should work</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeGoalsTripsInfo()" class="p-1.5 text-slate-500 hover:text-slate-300 rounded-lg">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div class="space-y-2.5">
+                ${rows.map(([heading, body]) => `
+                    <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                        <p class="text-[10px] font-extrabold text-slate-200">${heading}</p>
+                        <p class="text-[10px] text-slate-500 leading-relaxed mt-1">${body}</p>
+                    </div>
+                `).join("")}
+            </div>
+        </div>
+    `;
+    document.body.appendChild(div);
+    initLucideIcons(div);
+}
+
+function closeGoalsTripsInfo() {
+    const modal = document.getElementById("goalsTripsInfoModal");
+    if (modal) modal.remove();
+}
 function renderSavingGoalsDedicated() {
+
     const container = document.getElementById("dedicatedSavingGoalsListContainer");
     container.innerHTML = "";
 
@@ -1295,3 +1362,4 @@ function getEggSvg(pct) {
     if (pct >= 25)  return `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color:#94a3b8"><ellipse cx="12" cy="13" rx="7" ry="9"/><path d="M13,8 L12,11" stroke="#1a1a2e" stroke-width="1" fill="none"/></svg>`;
     return `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color:#64748b"><ellipse cx="12" cy="13" rx="7" ry="9"/></svg>`;
 }
+

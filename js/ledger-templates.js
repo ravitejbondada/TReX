@@ -104,7 +104,7 @@ function applyTemplateToExpenseForm(templateId) {
     document.getElementById("expenseCategory").value = template.categoryId;
     applyCategoryDefaultPayment();
     if (!expensePaymentLockId) document.getElementById("expensePayment").value = template.paymentId;
-    document.getElementById("expenseNote").value = template.note || "";
+    document.getElementById("expenseNote").value = template.note || template.name || "";
 }
 
 function openTemplatesManager() {

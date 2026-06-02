@@ -81,6 +81,11 @@ function renderCreditCardTransactionRows(container, txs, pay) {
         const tripBadge = tx.tripRef
             ? `<span class="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-950 text-amber-400 font-bold uppercase shrink-0">${tx.tripType === "pre" ? "Pre-Trip" : "Trip"}</span>`
             : "";
+        const tagPills = typeof _renderTxTagPills === "function"
+            ? _renderTxTagPills(item.type === "split"
+                ? Array.from(new Set(item.parts.flatMap(part => Array.isArray(part.tags) ? part.tags : [])))
+                : (tx.tags || []))
+            : "";
         const actionButtons = tx.tripRef
             ? `<span class="p-1 text-slate-700" title="Managed via Trip"><i data-lucide="lock" class="w-3.5 h-3.5"></i></span>`
             : `<button onclick="loadExpenseToFormForEditFromCreditCard('${tx.id}', '${pay.id}')" class="p-1 text-slate-600 hover:text-indigo-400 rounded hover:bg-slate-950 transition-all" title="Edit">
@@ -98,6 +103,7 @@ function renderCreditCardTransactionRows(container, txs, pay) {
                             <span class="text-[11px] font-bold text-slate-100 truncate">${tx.note || (item.type === "split" ? "Split Transaction" : cat.name)}</span>
                             ${splitBadge}
                             ${tripBadge}
+                            ${tagPills}
                         </div>
                         ${_renderTxMetaRow(dateText, payName)}
                         ${_renderCategoryPills(item.type === "split" ? item.parts.map(p => p.categoryId) : [tx.categoryId])}
@@ -468,4 +474,6 @@ function renderCardAnalyticsChart() {
         `;
     }).join("");
 }
+
+
 

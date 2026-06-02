@@ -1640,6 +1640,13 @@
             flex-wrap: wrap;
             gap: 0.35rem;
         }
+        .tx-tag-inline {
+            display: inline-flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            min-width: 0;
+        }
         .tag-chip,
         .tx-tag-chip {
             display: inline-flex;
